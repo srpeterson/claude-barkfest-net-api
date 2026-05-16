@@ -1,0 +1,12 @@
+using Barkfest.Domain.Entities;
+
+namespace Barkfest.Domain.Interfaces;
+
+public interface IOwnerRepository
+{
+    Task<Owner?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Owner>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task AddAsync(Owner owner, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Owner owner, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+}
