@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Barkfest.API/Barkfest.API.csproj" />
+    <Project Path="src/Barkfest.Application/Barkfest.Application.csproj" />
+    <Project Path="src/Barkfest.Domain/Barkfest.Domain.csproj" />
+    <Project Path="src/Barkfest.Infrastructure/Barkfest.Infrastructure.csproj" />
+    <Project Path="src/Barkfest.Persistence/Barkfest.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Barkfest.API.Tests/Barkfest.API.Tests.csproj" />
+    <Project Path="tests/Barkfest.Application.Tests/Barkfest.Application.Tests.csproj" />
+    <Project Path="tests/Barkfest.Domain.Tests/Barkfest.Domain.Tests.csproj" />
+    <Project Path="tests/Barkfest.Infrastructure.Tests/Barkfest.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Barkfest.Integration.Tests/Barkfest.Integration.Tests.csproj" />
+    <Project Path="tests/Barkfest.Persistence.Tests/Barkfest.Persistence.Tests.csproj" />
+  </Folder>
+</Solution>

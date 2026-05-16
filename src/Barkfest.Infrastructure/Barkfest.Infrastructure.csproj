@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Barkfest.Domain\Barkfest.Domain.csproj" />
+    <ProjectReference Include="..\Barkfest.Application\Barkfest.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.28.0" />
+  </ItemGroup>
+
+</Project>
