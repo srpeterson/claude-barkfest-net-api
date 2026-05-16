@@ -9,7 +9,7 @@ public class AzureBlobStorageService(BlobServiceClient blobServiceClient) : IBlo
     public async Task UploadAsync(string containerName, string blobName, Stream content, string contentType, CancellationToken cancellationToken = default)
     {
         var container = blobServiceClient.GetBlobContainerClient(containerName);
-        await container.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
+        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
 
         var blob = container.GetBlobClient(blobName);
         await blob.UploadAsync(content, new BlobUploadOptions
