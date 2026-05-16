@@ -1,0 +1,30 @@
+<Project>
+
+  <!--
+    Signs every compiled output assembly with a per-developer self-signed certificate.
+
+    Why this exists:
+    Windows Smart App Control (SAC) blocks unsigned DLLs with no ISG reputation, which
+    includes any locally-compiled assembly. This target creates a developer certificate
+    on first use, installs it to CurrentUser\Root (one-time Windows dialog), and signs
+    each output DLL so SAC accepts it. The certificate is per-developer and never
+    committed to the repository; only the signing infrastructure lives here.
+
+    Skipped automatically in CI (GITHUB_ACTIONS / TF_BUILD / CI environment variables).
+  -->
+
+  <Target Name="SignOutputAssembly"
+          AfterTargets="Build"
+          Condition="'$(OS)' == 'Windows_NT'">
+
+    <PropertyGroup>
+      <_SignScript>$(MSBuildThisFileDirectory)sign.ps1</_SignScript>
+    </PropertyGroup>
+
+    <Exec Command="powershell.exe -NonInteractive -ExecutionPolicy Bypass -File &quot;$(_SignScript)&quot; -TargetPath &quot;$(TargetPath)&quot;"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true" />
+
+  </Target>
+
+</Project>
