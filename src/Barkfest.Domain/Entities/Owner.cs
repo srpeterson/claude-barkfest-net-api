@@ -70,6 +70,9 @@ public class Owner
         Email = trimmed;
     }
 
+    public void SetPhoneNumber(string? phoneNumber) =>
+        PhoneNumber = phoneNumber?.Trim();
+
     public void SetProfileImage(string blobName, string contentType) =>
         ProfileImage = ProfileImage.Create(blobName, contentType);
 
