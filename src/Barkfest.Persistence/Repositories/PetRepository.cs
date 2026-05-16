@@ -9,19 +9,19 @@ public class PetRepository(AppDbContext context) : IPetRepository
     public async Task<Pet?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.Pets
             .Include(p => p.Breed)
-            .Include("_images")
+            .Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
     public async Task<IEnumerable<Pet>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await context.Pets
             .Include(p => p.Breed)
-            .Include("_images")
+            .Include(p => p.Images)
             .ToListAsync(cancellationToken);
 
     public async Task<IEnumerable<Pet>> GetByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default) =>
         await context.Pets
             .Include(p => p.Breed)
-            .Include("_images")
+            .Include(p => p.Images)
             .Where(p => p.OwnerId == ownerId)
             .ToListAsync(cancellationToken);
 
