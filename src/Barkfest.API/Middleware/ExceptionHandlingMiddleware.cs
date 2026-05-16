@@ -1,4 +1,5 @@
 using Barkfest.Application.Common.Exceptions;
+using Barkfest.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,11 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         {
             logger.LogWarning(ex, "Resource not found");
             await WriteProblem(context, StatusCodes.Status404NotFound, "Not Found", ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            logger.LogWarning(ex, "Domain rule violated");
+            await WriteProblem(context, StatusCodes.Status400BadRequest, "Bad Request", ex.Message);
         }
         catch (ValidationException ex)
         {
