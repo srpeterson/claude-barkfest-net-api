@@ -16,6 +16,7 @@
   <!-- Infrastructure -->
   <ItemGroup>
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.28.0" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.3.3" />
   </ItemGroup>
 
   <!--
@@ -30,6 +31,7 @@
     stays on the same version and is updated together.
   -->
   <ItemGroup>
+    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.3" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7" />

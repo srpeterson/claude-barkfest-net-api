@@ -9,10 +9,12 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Barkfest.API/Barkfest.API.csproj" />
+    <Project Path="src/Barkfest.AppHost/Barkfest.AppHost.csproj" />
     <Project Path="src/Barkfest.Application/Barkfest.Application.csproj" />
     <Project Path="src/Barkfest.Domain/Barkfest.Domain.csproj" />
     <Project Path="src/Barkfest.Infrastructure/Barkfest.Infrastructure.csproj" />
     <Project Path="src/Barkfest.Persistence/Barkfest.Persistence.csproj" />
+    <Project Path="src/Barkfest.ServiceDefaults/Barkfest.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Barkfest.API.Tests/Barkfest.API.Tests.csproj" />

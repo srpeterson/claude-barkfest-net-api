@@ -167,14 +167,16 @@ Each `src` project has its own `DependencyInjection.cs` with a self-registering
 extension method. The API wires everything together in `Program.cs`:
 
 ```csharp
-builder.AddServiceDefaults();       // Aspire — telemetry, health checks
+builder.AddServiceDefaults();                           // Aspire — telemetry, health checks
 builder.Services.AddApplication();
-builder.AddPersistence();           // Aspire-aware — reads "barkfest-db"
-builder.AddInfrastructure();        // Aspire-aware — reads "barkfest-blobs"
+builder.Services.AddPersistence(builder.Configuration); // standard EF Core, key "barkfest-sql"
+builder.AddInfrastructure();                            // Aspire-aware — reads "barkfest-blobs"
 ```
 
-`AddPersistence` and `AddInfrastructure` take `IHostApplicationBuilder` (not
-`IConfiguration`) to use Aspire-aware registrations.
+`AddPersistence` takes `IServiceCollection` + `IConfiguration` (standard EF Core registration).
+`AddInfrastructure` takes `IHostApplicationBuilder` (Aspire-aware `AddAzureBlobServiceClient`).
+See DECISIONS.md — `AddSqlServerDbContext` was tried but dropped due to `WebApplicationFactory`
+configuration injection limitations in .NET 10's minimal hosting model.
 
 Never register services from one layer inside another layer's `DependencyInjection.cs`.
 
@@ -309,8 +311,8 @@ validators, tests, EF Core configuration.
 - Connection strings are **never** committed to source control
 - For local development, connection strings are injected automatically by .NET Aspire
   when running via `dotnet run --project src/Barkfest.AppHost`
-- `appsettings.json` contains the keys with empty values as placeholders:
-  `ConnectionStrings:barkfest-db` and `ConnectionStrings:barkfest-blobs`
+- `appsettings.json` has **no** `ConnectionStrings` section — Aspire injects the connection
+  strings at runtime and there are no placeholder empty values to override
 - In production or CI, populate these via environment variables or a secrets manager
 - User Secrets are **not used** — Aspire replaces them entirely
 
@@ -321,9 +323,10 @@ validators, tests, EF Core configuration.
 - Run the solution locally via: `dotnet run --project src/Barkfest.AppHost`
 - Aspire spins up SQL Server and Azurite containers automatically on first run
 - Containers are persistent (`ContainerLifetime.Persistent`) with named volumes
-  (`barkfest-db-data`, `barkfest-blobs-data`) — data survives restarts
+  (`barkfest-sql-data`, `barkfest-blobs-data`) — data survives restarts
 - Do not modify container or volume names — they are project-scoped to prevent
   collisions with other Aspire solutions on the same machine
+- Docker container names will have a short hash suffix appended by Aspire (e.g. `barkfest-sql-090bc107`) — this is expected and stable per machine; volume names are not hashed
 - `Barkfest.Domain.Tests`, `Barkfest.Application.Tests` — no Aspire dependency, no containers
 - `Barkfest.Persistence.Tests`, `Barkfest.Infrastructure.Tests`, `Barkfest.API.Tests` — no Aspire dependency, manage their own containers via Testcontainers
 - `Barkfest.Integration.Tests` — requires the app to be running; start it first via `dotnet run --project src/Barkfest.AppHost` before running integration tests

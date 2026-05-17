@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <UserSecretsId>dbccc218-c3b5-41d4-b3b1-a7cda7a1dd17</UserSecretsId>
+    <UserSecretsId>d76152fc-63a2-48dd-ba6a-3adefeccfef2</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Barkfest.Application\Barkfest.Application.csproj" />
     <ProjectReference Include="..\Barkfest.Persistence\Barkfest.Persistence.csproj" />
     <ProjectReference Include="..\Barkfest.Infrastructure\Barkfest.Infrastructure.csproj" />
+    <ProjectReference Include="..\Barkfest.ServiceDefaults\Barkfest.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>

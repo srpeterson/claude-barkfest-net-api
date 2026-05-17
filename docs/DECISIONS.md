@@ -300,7 +300,7 @@ or Azure deployment is included.
 **Reason:** Any developer can clone the repo and run `dotnet run --project src/Barkfest.AppHost`
 to have a fully working local environment in under 2 minutes. Aspire handles container creation,
 connection string injection, telemetry, and health checks automatically. Persistent containers
-(`ContainerLifetime.Persistent`) with explicit named volumes (`barkfest-db-data`,
+(`ContainerLifetime.Persistent`) with explicit named volumes (`barkfest-sql-data`,
 `barkfest-blobs-data`) mean data survives AppHost restarts and `docker rm`. Names are
 project-scoped to prevent collisions when a developer has multiple Aspire solutions running
 simultaneously. User Secrets are not used — Aspire injects all connection strings at runtime.
@@ -431,6 +431,34 @@ the address. This is by design in FluentValidation. Adding a custom regex to rej
 was considered but rejected as over-engineering for a dev learning project. If stricter
 email validation is needed in future, replace `EmailAddress()` with
 `Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")` or a dedicated email validation library.
+
+---
+
+### Decision: Use `AddDbContext` (not `AddSqlServerDbContext`) in Persistence
+**Choice:** `Barkfest.Persistence/DependencyInjection.cs` uses standard EF Core `AddDbContext<AppDbContext>` with
+`configuration.GetConnectionString("barkfest-sql")`. The Aspire integration package
+`Aspire.Microsoft.EntityFrameworkCore.SqlServer` is kept in the project file for future health-check use
+but `AddSqlServerDbContext` is not called at startup.
+
+**Reason:** Two interlocking problems made `AddSqlServerDbContext` untestable with `WebApplicationFactory`:
+
+1. **`ConfigureAppConfiguration` priority order** — in .NET 10's minimal hosting model
+(`WebApplicationBuilder`), callbacks registered via `IWebHostBuilder.ConfigureAppConfiguration` in
+`WebApplicationFactory.ConfigureWebHost` are added *before* the default configuration sources
+(including `appsettings.json`). Any key present in `appsettings.json` therefore silently overwrites
+the in-memory test values. The injection appears to work but the test value never reaches `IConfiguration`.
+
+2. **Environment variable race condition** — using `Environment.SetEnvironmentVariable` before host
+build works in isolation but fails when xUnit runs test classes in parallel (the default): two
+`BarkfestApiFactory` instances race to set the same global env var names and one factory's host is
+built with the other factory's container connection strings.
+
+Standard `AddDbContext` avoids both issues because the factory can replace
+`DbContextOptions<AppDbContext>` directly via `services.RemoveAll<T>()` — this is entirely
+in-process, per-instance, and unaffected by configuration source priority or global state.
+In production, the Aspire AppHost injects `ConnectionStrings__barkfest-sql` as an environment
+variable which ASP.NET Core's built-in env-var provider picks up at startup — no Aspire-specific
+extension method is required for that to work.
 
 ---
 

@@ -1,21 +1,18 @@
-using Azure.Storage.Blobs;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Infrastructure.Storage;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Barkfest.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
     {
-        var connectionString = configuration.GetConnectionString("AzureBlobStorage")
-            ?? throw new InvalidOperationException("Connection string 'AzureBlobStorage' is missing.");
+        builder.AddAzureBlobServiceClient("barkfest-blobs");
 
-        services.AddSingleton(_ => new BlobServiceClient(connectionString));
-        services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
+        builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
 
-        return services;
+        return builder;
     }
 }

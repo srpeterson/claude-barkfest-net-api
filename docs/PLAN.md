@@ -435,11 +435,12 @@ Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
 ### 4.5 Dependency Injection
 
 - [ ] Create `Barkfest.Persistence/DependencyInjection.cs`
-  - `AddPersistence(IHostApplicationBuilder)` extension method
-  - Registers `AppDbContext` with SQL Server using `builder.AddSqlServerDbContext<AppDbContext>("barkfest-db")`
+  - `AddPersistence(IServiceCollection, IConfiguration)` extension method
+  - Registers `AppDbContext` with SQL Server using `services.AddDbContext<AppDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("barkfest-sql")))`
   - Registers `IOwnerRepository` → `OwnerRepository`
   - Registers `IPetRepository` → `PetRepository`
   - Registers `IUnitOfWork` → `UnitOfWork`
+  - Note: standard EF Core `AddDbContext` used instead of Aspire's `AddSqlServerDbContext` for `WebApplicationFactory` test compatibility — see DECISIONS.md
 
 ---
 
@@ -531,7 +532,7 @@ Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
   ```json
   {
     "ConnectionStrings": {
-      "barkfest-db": "",
+      "barkfest-sql": "",
       "barkfest-blobs": ""
     },
     "_readme": "Connection strings are injected by Aspire when running locally. In production or CI populate these via environment variables or a secrets manager."
@@ -735,9 +736,9 @@ solutions running simultaneously.
 ```csharp
 var builder = DistributedApplication.CreateBuilder(args);
 
-var sql = builder.AddSqlServer("barkfest-db")
+var sql = builder.AddSqlServer("barkfest-sql")
                  .WithLifetime(ContainerLifetime.Persistent)
-                 .WithDataVolume("barkfest-db-data");
+                 .WithDataVolume("barkfest-sql-data");
 
 var blobs = builder.AddAzureStorage("barkfest-storage")
                    .RunAsEmulator(e => e
@@ -753,14 +754,14 @@ builder.Build().Run();
 ```
 
 **First `dotnet run`:** Aspire checks Docker — containers do not exist, creates them with stable
-names `barkfest-db` and `barkfest-storage`. The API starts, `MigrateAsync()` runs, schema is
+names `barkfest-sql` and `barkfest-storage`. The API starts, `MigrateAsync()` runs, schema is
 created. Ready.
 
 **Subsequent runs:** Aspire finds existing containers, starts them if stopped. All data is
 intact. No manual steps.
 
 **Stopping the AppHost:** containers remain in Docker with data preserved. Volumes
-`barkfest-db-data` and `barkfest-blobs-data` survive even a `docker rm`.
+`barkfest-sql-data` and `barkfest-blobs-data` survive even a `docker rm`.
 
 ### 8.3 ServiceDefaults — `Extensions.cs`
 
@@ -782,19 +783,23 @@ builder.AddServiceDefaults();
 Remove the `if (IsDevelopment) builder.Configuration.AddUserSecrets<Program>()` call —
 User Secrets are no longer used.
 
-**`Barkfest.Persistence/DependencyInjection.cs`** — switch to Aspire-aware registration:
+**`Barkfest.Persistence/DependencyInjection.cs`** — update connection string key name only:
 
 ```csharp
-// Before:
+// Before (DefaultConnection key):
 services.AddDbContext<AppDbContext>(opts =>
     opts.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
-// After:
-builder.AddSqlServerDbContext<AppDbContext>("barkfest-db");
+// After (barkfest-sql key, standard EF Core AddDbContext):
+services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlServer(config.GetConnectionString("barkfest-sql")));
 ```
 
-`AddSqlServerDbContext` reads the Aspire-injected connection string and adds health checks,
-telemetry, and retry resilience automatically.
+Standard `AddDbContext` is intentionally used instead of Aspire's `AddSqlServerDbContext`.
+`WebApplicationFactory.ConfigureAppConfiguration` cannot reliably inject configuration with
+the correct priority in .NET 10's minimal hosting model — see DECISIONS.md for details.
+The Aspire AppHost still injects `ConnectionStrings__barkfest-sql` at runtime; no Aspire
+extension method is required for that injection to work.
 
 **`Barkfest.Infrastructure/DependencyInjection.cs`** — switch to Aspire-aware registration:
 
@@ -804,16 +809,16 @@ services.AddSingleton(new BlobServiceClient(
     config.GetConnectionString("AzureBlobStorage")));
 
 // After:
-builder.AddAzureBlobClient("barkfest-blobs");
+builder.AddAzureBlobServiceClient("barkfest-blobs");
 ```
 
-`AddAzureBlobClient` reads the Aspire-injected connection string and registers `BlobServiceClient`
-with health checks and telemetry automatically.
+`AddAzureBlobServiceClient` reads the Aspire-injected connection string and registers
+`BlobServiceClient` with health checks and telemetry automatically.
 
-> **Non-Aspire environments:** `appsettings.json` retains `ConnectionStrings:barkfest-db` and
-> `ConnectionStrings:barkfest-blobs` as empty placeholders with a `_readme` note. In production
-> or CI these are populated via environment variables or secrets manager — Aspire is the local
-> dev orchestrator only.
+> **`appsettings.json`** has no `ConnectionStrings` section. Aspire injects everything at
+> runtime via environment variables. In production or CI, populate
+> `ConnectionStrings__barkfest-sql` and `ConnectionStrings__barkfest-blobs` via environment
+> variables or a secrets manager.
 
 ### 8.5 User Secrets
 

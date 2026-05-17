@@ -7,7 +7,7 @@
 - All project references wired per Clean Architecture rules
 - All NuGet packages installed per PLAN.md
 - `.gitignore` created
-- `appsettings.json` configured with Aspire connection string keys
+- `appsettings.json` configured (no placeholder connection strings — Aspire injects at runtime)
 - `README.md` at repo root (renders on GitHub landing page)
 - `docs/` folder created with SPEC.md, PLAN.md, DECISIONS.md
 
@@ -44,14 +44,14 @@
 - TPH discriminator on `Breed` table (`BreedType` column, `"Dog"` / `"Cat"` values)
 - `OwnerRepository`, `PetRepository`, `UnitOfWork`
 - `InitialCreate` migration generated and verified
-- `DependencyInjection.cs` using Aspire-aware `AddSqlServerDbContext<AppDbContext>("barkfest-db")`
+- `DependencyInjection.cs` using `AddDbContext<AppDbContext>` with Aspire connection string key `"barkfest-sql"`
 
 ---
 
 ## Phase 5 — Infrastructure Layer ✅ Complete
 
 - `AzureBlobStorageService` implementing `IBlobStorageService`
-- `DependencyInjection.cs` using Aspire-aware `AddAzureBlobClient("barkfest-blobs")`
+- `DependencyInjection.cs` using Aspire-aware `AddAzureBlobServiceClient("barkfest-blobs")`
 
 ---
 
@@ -60,7 +60,7 @@
 - `OwnersController` — 7 endpoints
 - `PetsController` — 10 endpoints
 - `ExceptionHandlingMiddleware` — maps `NotFoundException` → 404, `DomainException` → 400, unhandled → 500
-- `Program.cs` with `AddServiceDefaults()`, migrations on startup via `MigrateAsync()`
+- `Program.cs` with `AddServiceDefaults()`, migrations on startup via `MigrateAsync()` (skipped in Testing)
 - Scalar API documentation
 
 ---
@@ -87,17 +87,39 @@
 
 ---
 
-## Phase 8 — .NET Aspire (Local Dev Orchestration) 🔲 Not Started
+## Phase 8 — .NET Aspire (Local Dev Orchestration) ✅ Complete
+
+- `Barkfest.AppHost` project — orchestrates SQL Server and Azurite with persistent named volumes
+- `Barkfest.ServiceDefaults` project — OpenTelemetry, health checks, service discovery defaults
+- `AppHost.cs` — `ContainerLifetime.Persistent`, volumes `barkfest-sql-data` and `barkfest-blobs-data`
+- API `Program.cs` — `builder.AddServiceDefaults()`, `app.MapDefaultEndpoints()`, `MigrateAsync()` on startup
+- Infrastructure DI — `AddAzureBlobServiceClient("barkfest-blobs")` (Aspire-aware)
+- Persistence DI — `AddDbContext<AppDbContext>` with key `"barkfest-sql"` (Aspire injects connection string via env var; standard EF Core registration used for test compatibility — see DECISIONS.md)
+- `appsettings.json` — no placeholder connection strings; Aspire injects everything at runtime
+- `BarkfestApiFactory` — updated for Aspire: injects connection strings via `DbContextOptions` replacement; BlobServiceClient version-pinned for Azurite compatibility
+- All 409 tests pass with the updated setup
+
+---
+
+## Post-Completion Changes
+
+### Naming
+- Renamed Aspire SQL Server resource from `"barkfest-db"` → `"barkfest-sql"` and volume from `"barkfest-db-data"` → `"barkfest-sql-data"` across `AppHost.cs`, `Persistence/DependencyInjection.cs`, `appsettings.json`, `CLAUDE.md`, `DECISIONS.md`, `PLAN.md`
+
+### README
+- Added Git and EF Core CLI tools (`dotnet ef` — minimum version `10.0.7`, via `dotnet tool restore`) to Prerequisites
+- Added `(Highly Recommended)` heading to Docker image pre-pull section
+- Added `docker images` verification step and IPv6 fix note (Windows network adapter level)
+- Added Visual Studio 2026 note to .NET 10 SDK prerequisite
+
+### API
+- `launchSettings.json` — both `http` and `https` profiles updated: `"launchBrowser": true`, `"launchUrl": "scalar/v1"`
+
+### Verified
+- Aspire ran successfully for the first time locally — SQL Server and Azurite containers started, migration applied, Scalar UI opened
 
 ---
 
 ## Next
 
-**Phase 8 — .NET Aspire**
-
-1. Create `Barkfest.AppHost` and `Barkfest.ServiceDefaults` projects
-2. Add project references and NuGet packages per PLAN.md
-3. Implement `AppHost/Program.cs` with persistent containers and named volumes
-4. Wire `AddServiceDefaults()` into API `Program.cs`
-5. Update `AddPersistence` and `AddInfrastructure` to Aspire-aware registrations
-6. Remove User Secrets from API
+All phases complete.

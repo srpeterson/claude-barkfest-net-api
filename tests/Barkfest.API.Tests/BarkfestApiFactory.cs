@@ -31,10 +31,9 @@ public class BarkfestApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(_sqlContainer.GetConnectionString()));
 
-            // Replace the real BlobServiceClient with the Azurite container.
-            // Service version is pinned to V2024_11_04 — Azurite 3.35.0 does not
-            // yet support the 2025-05-05 version that Azure.Storage.Blobs 12.28.0
-            // uses by default.
+            // Replace the Aspire-registered BlobServiceClient with a version-pinned one.
+            // Azurite 3.35.0 does not yet support the 2025-05-05 service version that
+            // Azure.Storage.Blobs 12.28.0 uses by default.
             services.RemoveAll<BlobServiceClient>();
             services.AddSingleton(_ =>
             {
