@@ -13,25 +13,25 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
         new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
     // -----------------------------------------------------------------------
-    // GET /api/owners
+    // GET /v1/owners
     // -----------------------------------------------------------------------
 
     [Fact]
     public async Task GetAll_ReturnsOk()
     {
-        var response = await _client.GetAsync("/api/owners");
+        var response = await _client.GetAsync("/v1/owners");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     // -----------------------------------------------------------------------
-    // POST /api/owners
+    // POST /v1/owners
     // -----------------------------------------------------------------------
 
     [Fact]
     public async Task Create_ValidRequest_Returns201WithLocationHeader()
     {
-        var response = await _client.PostAsJsonAsync("/api/owners", new
+        var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
             firstName = "John",
             lastName = "Doe",
@@ -41,13 +41,13 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldNotBeNull();
-        response.Headers.Location!.ToString().ShouldContain("/api/owners/");
+        response.Headers.Location!.ToString().ShouldContain("/v1/owners/");
     }
 
     [Fact]
     public async Task Create_MissingEmail_Returns400ValidationProblem()
     {
-        var response = await _client.PostAsJsonAsync("/api/owners", new
+        var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
             firstName = "Jane",
             lastName = "Smith",
@@ -61,7 +61,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // GET /api/owners/{id}
+    // GET /v1/owners/{id}
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -69,7 +69,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     {
         var id = await CreateOwner("Alice", "Adams", "alice@example.com");
 
-        var response = await _client.GetAsync($"/api/owners/{id}");
+        var response = await _client.GetAsync($"/v1/owners/{id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -81,7 +81,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetById_UnknownId_Returns404ProblemDetails()
     {
-        var response = await _client.GetAsync($"/api/owners/{Guid.NewGuid()}");
+        var response = await _client.GetAsync($"/v1/owners/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
@@ -90,7 +90,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // PUT /api/owners/{id}
+    // PUT /v1/owners/{id}
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -98,7 +98,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     {
         var id = await CreateOwner("Bob", "Baker", "bob@example.com");
 
-        var response = await _client.PutAsJsonAsync($"/api/owners/{id}", new
+        var response = await _client.PutAsJsonAsync($"/v1/owners/{id}", new
         {
             firstName = "Robert",
             lastName = "Baker",
@@ -112,7 +112,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Update_UnknownId_Returns404()
     {
-        var response = await _client.PutAsJsonAsync($"/api/owners/{Guid.NewGuid()}", new
+        var response = await _client.PutAsJsonAsync($"/v1/owners/{Guid.NewGuid()}", new
         {
             firstName = "Ghost",
             lastName = "User",
@@ -124,7 +124,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // DELETE /api/owners/{id}
+    // DELETE /v1/owners/{id}
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -132,7 +132,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     {
         var id = await CreateOwner("Carol", "Clark", "carol@example.com");
 
-        var response = await _client.DeleteAsync($"/api/owners/{id}");
+        var response = await _client.DeleteAsync($"/v1/owners/{id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -140,13 +140,13 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Delete_UnknownId_Returns404()
     {
-        var response = await _client.DeleteAsync($"/api/owners/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"/v1/owners/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     // -----------------------------------------------------------------------
-    // GET /api/owners/{id}/pets
+    // GET /v1/owners/{id}/pets
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -154,7 +154,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     {
         var id = await CreateOwner("Dave", "Davis", "dave@example.com");
 
-        var response = await _client.GetAsync($"/api/owners/{id}/pets");
+        var response = await _client.GetAsync($"/v1/owners/{id}/pets");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -165,7 +165,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
 
     private async Task<Guid> CreateOwner(string firstName, string lastName, string email)
     {
-        var response = await _client.PostAsJsonAsync("/api/owners", new
+        var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
             firstName,
             lastName,
@@ -175,7 +175,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
 
         response.EnsureSuccessStatusCode();
 
-        // Extract the id from the Location header: /api/owners/{id}
+        // Extract the id from the Location header: /v1/owners/{id}
         var location = response.Headers.Location!.ToString();
         return Guid.Parse(location.Split('/').Last());
     }

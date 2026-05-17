@@ -16,7 +16,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     public async Task OwnerCrudLifecycle_CreateUpdateGetDelete_Succeeds()
     {
         // Create
-        var createResponse = await _client.PostAsJsonAsync("/api/owners", new
+        var createResponse = await _client.PostAsJsonAsync("/v1/owners", new
         {
             firstName = "Integration",
             lastName = "Tester",
@@ -27,13 +27,13 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         var id = ExtractIdFromLocation(createResponse);
 
         // Get
-        var getResponse = await _client.GetAsync($"/api/owners/{id}");
+        var getResponse = await _client.GetAsync($"/v1/owners/{id}");
         getResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await getResponse.Content.ReadAsStringAsync();
         body.ShouldContain("Integration");
 
         // Update
-        var updateResponse = await _client.PutAsJsonAsync($"/api/owners/{id}", new
+        var updateResponse = await _client.PutAsJsonAsync($"/v1/owners/{id}", new
         {
             firstName = "Updated",
             lastName = "Tester",
@@ -43,16 +43,16 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         updateResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify update
-        var getAfterUpdate = await _client.GetAsync($"/api/owners/{id}");
+        var getAfterUpdate = await _client.GetAsync($"/v1/owners/{id}");
         var updatedBody = await getAfterUpdate.Content.ReadAsStringAsync();
         updatedBody.ShouldContain("Updated");
 
         // Delete
-        var deleteResponse = await _client.DeleteAsync($"/api/owners/{id}");
+        var deleteResponse = await _client.DeleteAsync($"/v1/owners/{id}");
         deleteResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify gone
-        var getAfterDelete = await _client.GetAsync($"/api/owners/{id}");
+        var getAfterDelete = await _client.GetAsync($"/v1/owners/{id}");
         getAfterDelete.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -66,7 +66,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         var id = await CreateOwner();
 
         var response = await _client.PostAsync(
-            $"/api/owners/{id}/profile-image",
+            $"/v1/owners/{id}/profile-image",
             BuildImageFormData("profile.jpg", "image/jpeg"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -78,7 +78,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         var id = await CreateOwner();
 
         var response = await _client.PostAsync(
-            $"/api/owners/{id}/profile-image",
+            $"/v1/owners/{id}/profile-image",
             BuildImageFormData("profile.png", "image/png"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -88,7 +88,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     public async Task UploadProfileImage_UnknownOwner_Returns404()
     {
         var response = await _client.PostAsync(
-            $"/api/owners/{Guid.NewGuid()}/profile-image",
+            $"/v1/owners/{Guid.NewGuid()}/profile-image",
             BuildImageFormData("profile.jpg", "image/jpeg"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -100,11 +100,11 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         var id = await CreateOwner();
 
         var uploadResponse = await _client.PostAsync(
-            $"/api/owners/{id}/profile-image",
+            $"/v1/owners/{id}/profile-image",
             BuildImageFormData("profile.jpg", "image/jpeg"));
         uploadResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var removeResponse = await _client.DeleteAsync($"/api/owners/{id}/profile-image");
+        var removeResponse = await _client.DeleteAsync($"/v1/owners/{id}/profile-image");
         removeResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
@@ -115,13 +115,13 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
 
         // First upload
         var first = await _client.PostAsync(
-            $"/api/owners/{id}/profile-image",
+            $"/v1/owners/{id}/profile-image",
             BuildImageFormData("first.jpg", "image/jpeg"));
         first.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Second upload — replaces first
         var second = await _client.PostAsync(
-            $"/api/owners/{id}/profile-image",
+            $"/v1/owners/{id}/profile-image",
             BuildImageFormData("second.jpg", "image/jpeg"));
         second.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -133,7 +133,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
 
         // The handler is idempotent — removing a non-existent profile image is a no-op
         // that still returns 204 NoContent, not 404.
-        var response = await _client.DeleteAsync($"/api/owners/{id}/profile-image");
+        var response = await _client.DeleteAsync($"/v1/owners/{id}/profile-image");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -148,7 +148,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         var ownerId = await CreateOwner();
 
         // Create two pets
-        await _client.PostAsJsonAsync("/api/pets", new
+        await _client.PostAsJsonAsync("/v1/pets", new
         {
             ownerId,
             name = "Fido",
@@ -156,7 +156,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
             dateOfBirth = (string?)null,
             petType = "Dog"
         });
-        await _client.PostAsJsonAsync("/api/pets", new
+        await _client.PostAsJsonAsync("/v1/pets", new
         {
             ownerId,
             name = "Whiskers",
@@ -165,7 +165,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
             petType = "Cat"
         });
 
-        var response = await _client.GetAsync($"/api/owners/{ownerId}/pets");
+        var response = await _client.GetAsync($"/v1/owners/{ownerId}/pets");
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync();
@@ -179,7 +179,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
 
     private async Task<Guid> CreateOwner()
     {
-        var response = await _client.PostAsJsonAsync("/api/owners", new
+        var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
             firstName = "Test",
             lastName = "Owner",

@@ -12,8 +12,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Barkfest.API.Controllers;
 
 [ApiController]
-[Route("api/owners")]
-public class OwnersController(IMediator mediator) : ControllerBase
+[Route("v1/owners")]
+public class OwnerController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)

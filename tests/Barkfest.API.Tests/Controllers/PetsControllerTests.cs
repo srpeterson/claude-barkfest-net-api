@@ -9,19 +9,19 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     private readonly HttpClient _client = factory.CreateClient();
 
     // -----------------------------------------------------------------------
-    // GET /api/pets
+    // GET /v1/pets
     // -----------------------------------------------------------------------
 
     [Fact]
     public async Task GetAll_ReturnsOk()
     {
-        var response = await _client.GetAsync("/api/pets");
+        var response = await _client.GetAsync("/v1/pets");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     // -----------------------------------------------------------------------
-    // POST /api/pets
+    // POST /v1/pets
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -29,7 +29,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     {
         var ownerId = await CreateOwner();
 
-        var response = await _client.PostAsJsonAsync("/api/pets", new
+        var response = await _client.PostAsJsonAsync("/v1/pets", new
         {
             ownerId,
             name = "Buddy",
@@ -40,13 +40,13 @@ public class PetsControllerTests(BarkfestApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldNotBeNull();
-        response.Headers.Location!.ToString().ShouldContain("/api/pets/");
+        response.Headers.Location!.ToString().ShouldContain("/v1/pets/");
     }
 
     [Fact]
     public async Task Create_UnknownOwnerId_Returns404()
     {
-        var response = await _client.PostAsJsonAsync("/api/pets", new
+        var response = await _client.PostAsJsonAsync("/v1/pets", new
         {
             ownerId = Guid.NewGuid(),
             name = "Ghost",
@@ -63,7 +63,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     {
         var ownerId = await CreateOwner();
 
-        var response = await _client.PostAsJsonAsync("/api/pets", new
+        var response = await _client.PostAsJsonAsync("/v1/pets", new
         {
             ownerId,
             name = "",
@@ -79,7 +79,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // GET /api/pets/{id}
+    // GET /v1/pets/{id}
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -88,7 +88,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Luna", "Cat");
 
-        var response = await _client.GetAsync($"/api/pets/{petId}");
+        var response = await _client.GetAsync($"/v1/pets/{petId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -99,7 +99,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetById_UnknownId_Returns404ProblemDetails()
     {
-        var response = await _client.GetAsync($"/api/pets/{Guid.NewGuid()}");
+        var response = await _client.GetAsync($"/v1/pets/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
@@ -108,7 +108,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // PUT /api/pets/{id}
+    // PUT /v1/pets/{id}
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -117,7 +117,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Max", "Dog");
 
-        var response = await _client.PutAsJsonAsync($"/api/pets/{petId}", new
+        var response = await _client.PutAsJsonAsync($"/v1/pets/{petId}", new
         {
             name = "Maxwell",
             description = "Very good boy",
@@ -131,7 +131,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Update_UnknownId_Returns404()
     {
-        var response = await _client.PutAsJsonAsync($"/api/pets/{Guid.NewGuid()}", new
+        var response = await _client.PutAsJsonAsync($"/v1/pets/{Guid.NewGuid()}", new
         {
             name = "Ghost",
             description = (string?)null,
@@ -143,7 +143,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // DELETE /api/pets/{id}
+    // DELETE /v1/pets/{id}
     // -----------------------------------------------------------------------
 
     [Fact]
@@ -152,7 +152,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Rex", "Dog");
 
-        var response = await _client.DeleteAsync($"/api/pets/{petId}");
+        var response = await _client.DeleteAsync($"/v1/pets/{petId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -160,7 +160,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Delete_UnknownId_Returns404()
     {
-        var response = await _client.DeleteAsync($"/api/pets/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"/v1/pets/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -171,7 +171,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
 
     private async Task<Guid> CreateOwner()
     {
-        var response = await _client.PostAsJsonAsync("/api/owners", new
+        var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
             firstName = "Test",
             lastName = "Owner",
@@ -186,7 +186,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
 
     private async Task<Guid> CreatePet(Guid ownerId, string name, string petType)
     {
-        var response = await _client.PostAsJsonAsync("/api/pets", new
+        var response = await _client.PostAsJsonAsync("/v1/pets", new
         {
             ownerId,
             name,

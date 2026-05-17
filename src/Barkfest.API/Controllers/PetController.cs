@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Barkfest.API.Controllers;
 
 [ApiController]
-[Route("api/pets")]
-public class PetsController(IMediator mediator) : ControllerBase
+[Route("v1/pets")]
+public class PetController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)

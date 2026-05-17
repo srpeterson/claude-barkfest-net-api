@@ -101,6 +101,17 @@
 
 ---
 
+## Phase 9 — API Refinements ✅ Complete
+
+- `OwnersController.cs` → `OwnerController.cs` (singular class name, .NET convention)
+- `PetsController.cs` → `PetController.cs` (singular class name, .NET convention)
+- Route prefix changed from `api/` → `v1/` on both controllers — more meaningful, signals versioning intent
+- Routes remain plural (`v1/owners`, `v1/pets`) — REST convention; HTTP verb + ID conveys single vs collection
+- All URL strings updated in `Barkfest.API.Tests` and `Barkfest.Integration.Tests`
+- All 409 tests passing
+
+---
+
 ## Post-Completion Changes
 
 ### Naming

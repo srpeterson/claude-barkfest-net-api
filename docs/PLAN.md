@@ -847,6 +847,22 @@ traces, and health for all resources. The API URL is listed there.
 
 ---
 
+## Phase 9 — API Refinements
+
+### 9.1 Route Prefix
+- **Decision:** Use `v1/` prefix — meaningful, signals versioning intent, forward-thinking
+- [x] `OwnersController`: `[Route("api/owners")]` → `[Route("v1/owners")]`
+- [x] `PetsController`: `[Route("api/pets")]` → `[Route("v1/pets")]` and `[Route("api/owners/{ownerId:guid}/pets")]` → `[Route("v1/owners/{ownerId:guid}/pets")]`
+- [x] Update all URL strings in `Barkfest.API.Tests` and `Barkfest.Integration.Tests`
+
+### 9.2 Controller Class Names
+- **Decision:** Singular — class name represents the resource type, not the collection; plural belongs in the route
+- [x] Rename `OwnersController.cs` → `OwnerController.cs`
+- [x] Rename `PetsController.cs` → `PetController.cs`
+- [x] Update all references in `Barkfest.API.Tests`
+
+---
+
 ## General Rules — Always Follow These
 
 - Target framework: `.NET 10`
