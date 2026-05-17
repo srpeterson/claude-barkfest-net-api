@@ -292,6 +292,21 @@ with no such concerns.
 
 ---
 
+### Decision: .NET Aspire for local dev orchestration
+**Choice:** `Barkfest.AppHost` and `Barkfest.ServiceDefaults` projects added to the solution.
+Aspire orchestrates SQL Server and Azurite containers with persistent named volumes. No `azd`
+or Azure deployment is included.
+
+**Reason:** Any developer can clone the repo and run `dotnet run --project src/Barkfest.AppHost`
+to have a fully working local environment in under 2 minutes. Aspire handles container creation,
+connection string injection, telemetry, and health checks automatically. Persistent containers
+(`ContainerLifetime.Persistent`) with explicit named volumes (`barkfest-db-data`,
+`barkfest-blobs-data`) mean data survives AppHost restarts and `docker rm`. Names are
+project-scoped to prevent collisions when a developer has multiple Aspire solutions running
+simultaneously. User Secrets are not used — Aspire injects all connection strings at runtime.
+
+---
+
 ### Decision: Testcontainers for all integration tests
 **Choice:** `Testcontainers.MsSql` for SQL Server and `Testcontainers.Azurite`
 for Azure Blob Storage in all integration and API tests.
@@ -349,6 +364,73 @@ validators).
 the domain or Blob Storage, returning a clean 400 response. Domain validation
 is the safety net — the entity can never be put into an invalid state regardless
 of how it is called (e.g. directly in tests or a future CLI tool).
+
+---
+
+## Implementation Discoveries
+
+### Decision: `PetRepository.UpdateAsync` — disable `AutoDetectChanges` around state snapshot
+**Choice:** `AutoDetectChangesEnabled` is set to `false` before inspecting entity state and
+restored to `true` in a `finally` block. New `PetImage` entities are identified as detached
+before calling `context.Pets.Update(pet)`, then their state is explicitly set to `Added`.
+
+**Reason:** EF Core's `AutoDetectChanges` fires automatically when `context.ChangeTracker.Entries<T>()`
+or `context.Entry(entity)` is called. This caused new `PetImage` entities (created with
+`Guid.CreateVersion7()`) to be snapshotted and tracked as `Modified` before the state check
+could run. Because their GUID keys are non-empty, EF Core treated them as existing rows and
+issued an `UPDATE` instead of an `INSERT`, throwing `DbUpdateConcurrencyException`. Disabling
+`AutoDetectChanges` during the critical section prevents the premature snapshot, allowing the
+`Detached` → `Added` state assignment to work correctly.
+
+---
+
+### Decision: EF Core configuration tests use a shared `ModelHelper`
+**Choice:** A static `ModelHelper` class builds the EF Core model once using the SQL Server
+provider and caches it in a `Lazy<IModel>`. All configuration test classes read from this
+shared model.
+
+**Reason:** Building the model is expensive and requires a valid provider (SQL Server, not
+in-memory) to reflect real column names, types, and constraints. No live database connection
+is needed — `OnModelCreating` runs entirely during model construction. A shared `Lazy<IModel>`
+means the model is built once per test run regardless of how many test classes use it. Using
+the in-memory provider would silently hide SQL Server-specific configuration (e.g. `nvarchar`
+lengths, `newsequentialid()` defaults).
+
+---
+
+### Decision: Validator tests use concrete `AbstractValidator<T>` subclasses, not mocks
+**Choice:** Test-specific validator classes that extend `AbstractValidator<T>` are defined
+directly in the test file. `IValidator<T>` is never mocked with NSubstitute.
+
+**Reason:** FluentValidation is strong-named. Castle DynamicProxy (used by NSubstitute
+internally) cannot proxy `IValidator<T>` when `T` is a private or nested type against a
+strong-named assembly — it throws a `TypeLoadException` at runtime. Using concrete
+`AbstractValidator<T>` subclasses sidesteps this entirely and produces clearer tests since
+the validation rules being tested are explicit in the test file.
+
+---
+
+### Decision: `ValidationBehavior` tests use real delegates, not NSubstitute substitutes
+**Choice:** `RequestHandlerDelegate<TResponse>` is implemented as a real lambda with a
+closure-based call counter rather than being mocked with NSubstitute.
+
+**Reason:** NSubstitute cannot mock delegate types — it only proxies interfaces and virtual
+class members. Attempting to `Substitute.For<RequestHandlerDelegate<TResponse>>()` throws
+at runtime. A real lambda (`() => { callCount++; return Task.FromResult(response); }`)
+is simpler, more readable, and does not require any workaround.
+
+---
+
+### Decision: FluentValidation `EmailAddress()` does not reject spaces in the local part
+**Choice:** The test case `"space in@example.com"` is not included in the invalid email
+theory data for validator tests.
+
+**Reason:** FluentValidation's built-in `EmailAddress()` validator only checks for the
+presence of `@` and a dot in the domain — it does not reject spaces in the local part of
+the address. This is by design in FluentValidation. Adding a custom regex to reject spaces
+was considered but rejected as over-engineering for a dev learning project. If stricter
+email validation is needed in future, replace `EmailAddress()` with
+`Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")` or a dedicated email validation library.
 
 ---
 

@@ -1,4 +1,12 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="CLAUDE.md" />
+    <File Path="docs/DECISIONS.md" />
+    <File Path="docs/PLAN.md" />
+    <File Path="README.md" />
+    <File Path="docs/SPEC.md" />
+    <File Path="PROGRESS.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Barkfest.API/Barkfest.API.csproj" />
     <Project Path="src/Barkfest.Application/Barkfest.Application.csproj" />

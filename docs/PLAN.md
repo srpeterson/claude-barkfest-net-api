@@ -3,7 +3,7 @@
 ## Overview
 
 Build a .NET 10 Clean Architecture solution called `Barkfest`. It is a pet management
-application allowing owners to register themselves and show off thier pets. The solution uses
+application allowing owners to register themselves and show off their pets. The solution uses
 SQL Server via EF Core for relational data, and Azure Blob Storage for all images.
 
 ---
@@ -12,8 +12,9 @@ SQL Server via EF Core for relational data, and Azure Blob Storage for all image
 
 ```
 Barkfest.sln
-├── docs
 ├── src/
+│   ├── Barkfest.AppHost
+│   ├── Barkfest.ServiceDefaults
 │   ├── Barkfest.Domain
 │   ├── Barkfest.Application
 │   ├── Barkfest.Persistence
@@ -33,20 +34,22 @@ Barkfest.sln
 ## Phase 1 — Solution Scaffold
 
 - [ ] Create solution file `Barkfest.sln`
-- [ ] Create all 11 projects with correct project types and target framework `net10.0`
+- [ ] Create all 13 projects with correct project types and target framework `net10.0`
 - [ ] Add all project references as defined below
 - [ ] Add all NuGet packages as defined below
-- [ ] Initialise User Secrets on `Barkfest.API`
-- [ ] Add placeholder User Secrets for `ConnectionStrings:DefaultConnection` and `ConnectionStrings:AzureBlobStorage`
 - [ ] Create `.gitignore` appropriate for a .NET solution
 
 ### Project References
 
 ```
+Barkfest.AppHost
+  └── Barkfest.API
+
 Barkfest.API
   ├── Barkfest.Application
   ├── Barkfest.Persistence
-  └── Barkfest.Infrastructure
+  ├── Barkfest.Infrastructure
+  └── Barkfest.ServiceDefaults
 
 Barkfest.Application
   └── Barkfest.Domain
@@ -59,22 +62,24 @@ Barkfest.Infrastructure
   ├── Barkfest.Domain
   └── Barkfest.Application
 
-Barkfest.Domain.Tests        → Barkfest.Domain
-Barkfest.Application.Tests   → Barkfest.Application
-Barkfest.Persistence.Tests   → Barkfest.Persistence
+Barkfest.Domain.Tests         → Barkfest.Domain
+Barkfest.Application.Tests    → Barkfest.Application
+Barkfest.Persistence.Tests    → Barkfest.Persistence
 Barkfest.Infrastructure.Tests → Barkfest.Infrastructure
-Barkfest.API.Tests           → Barkfest.API
-Barkfest.Integration.Tests   → (none — talks to running app over HTTP)
+Barkfest.API.Tests            → Barkfest.API
+Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
 ```
 
 ### NuGet Packages
 
 | Project | Packages |
 |---|---|
+| `Barkfest.AppHost` | `Aspire.Hosting.AppHost`, `Aspire.Hosting.SqlServer`, `Aspire.Hosting.Azure.Storage` |
+| `Barkfest.ServiceDefaults` | `Microsoft.Extensions.ServiceDiscovery`, `OpenTelemetry.Exporter.OpenTelemetryProtocol`, `OpenTelemetry.Extensions.Hosting`, `OpenTelemetry.Instrumentation.AspNetCore`, `OpenTelemetry.Instrumentation.Http`, `OpenTelemetry.Instrumentation.Runtime` |
 | `Barkfest.Domain` | `Ardalis.SmartEnum` |
 | `Barkfest.Application` | `MediatR`, `FluentValidation` |
-| `Barkfest.Persistence` | `Microsoft.EntityFrameworkCore.SqlServer`, `Microsoft.EntityFrameworkCore.Tools` |
-| `Barkfest.Infrastructure` | `Azure.Storage.Blobs` |
+| `Barkfest.Persistence` | `Microsoft.EntityFrameworkCore.SqlServer`, `Microsoft.EntityFrameworkCore.Tools`, `Aspire.Microsoft.EntityFrameworkCore.SqlServer` |
+| `Barkfest.Infrastructure` | `Azure.Storage.Blobs`, `Aspire.Azure.Storage.Blobs` |
 | `Barkfest.API` | `Scalar.AspNetCore`, `Serilog.AspNetCore` |
 | `*.Tests` (unit) | `xunit`, `Shouldly`, `NSubstitute` |
 | `*.Tests` (integration) | above + `Testcontainers.MsSql`, `Testcontainers.Azurite` |
@@ -430,8 +435,8 @@ Barkfest.Integration.Tests   → (none — talks to running app over HTTP)
 ### 4.5 Dependency Injection
 
 - [ ] Create `Barkfest.Persistence/DependencyInjection.cs`
-  - `AddPersistence(IConfiguration)` extension method
-  - Registers `AppDbContext` with SQL Server using `config.GetConnectionString("DefaultConnection")`
+  - `AddPersistence(IHostApplicationBuilder)` extension method
+  - Registers `AppDbContext` with SQL Server using `builder.AddSqlServerDbContext<AppDbContext>("barkfest-db")`
   - Registers `IOwnerRepository` → `OwnerRepository`
   - Registers `IPetRepository` → `PetRepository`
   - Registers `IUnitOfWork` → `UnitOfWork`
@@ -446,8 +451,8 @@ Barkfest.Integration.Tests   → (none — talks to running app over HTTP)
 - [ ] Create `Barkfest.Infrastructure/Messaging/EmailService.cs`
 
 - [ ] Create `Barkfest.Infrastructure/DependencyInjection.cs`
-  - `AddInfrastructure(IConfiguration)` extension method
-  - Registers `BlobServiceClient` using `config.GetConnectionString("AzureBlobStorage")`
+  - `AddInfrastructure(IHostApplicationBuilder)` extension method
+  - Registers `BlobServiceClient` using `builder.AddAzureBlobClient("barkfest-blobs")`
   - Registers `IBlobStorageService` → `AzureBlobStorageService`
 
 ---
@@ -488,13 +493,11 @@ Barkfest.Integration.Tests   → (none — talks to running app over HTTP)
 
 - [ ] Configure `Program.cs`:
   ```csharp
-  builder.Services
-      .AddApplication()
-      .AddPersistence(builder.Configuration)
-      .AddInfrastructure(builder.Configuration);
+  builder.AddServiceDefaults();
 
-  if (builder.Environment.IsDevelopment())
-      builder.Configuration.AddUserSecrets<Program>();
+  builder.Services.AddApplication();
+  builder.AddPersistence();
+  builder.AddInfrastructure();
 
   builder.Services.AddControllers();
   builder.Services.AddOpenApi();
@@ -528,10 +531,10 @@ Barkfest.Integration.Tests   → (none — talks to running app over HTTP)
   ```json
   {
     "ConnectionStrings": {
-      "DefaultConnection": "",
-      "AzureBlobStorage": ""
+      "barkfest-db": "",
+      "barkfest-blobs": ""
     },
-    "_readme": "Connection strings are stored in User Secrets. Run 'dotnet user-secrets list --project src/Barkfest.API' to verify."
+    "_readme": "Connection strings are injected by Aspire when running locally. In production or CI populate these via environment variables or a secrets manager."
   }
   ```
 
@@ -709,6 +712,136 @@ No project references — communicates with running app over HTTP.
 
 ---
 
+## Phase 8 — .NET Aspire (Local Dev Orchestration)
+
+Scope: local development orchestration only. No deployment (`azd`, Azure Container Apps, or
+Bicep) is included in this phase. Goal: any dev can clone the repo and be fully running in under
+2 minutes (Docker and EF Core tools are documented prerequisites in the README).
+
+### 8.1 Create Projects
+
+- [ ] Create `src/Barkfest.AppHost` — Aspire host project (`Microsoft.NET.Sdk`)
+- [ ] Create `src/Barkfest.ServiceDefaults` — Aspire defaults project (`Microsoft.NET.Sdk`)
+- [ ] Add `Barkfest.AppHost` → `Barkfest.API` project reference
+- [ ] Add `Barkfest.API` → `Barkfest.ServiceDefaults` project reference
+- [ ] Add NuGet packages per Phase 1 NuGet table
+
+### 8.2 AppHost — `Program.cs`
+
+Containers are **persistent** with **explicit named volumes**. Resource names and volume names
+are hardcoded and project-scoped to prevent collisions when a developer has multiple Aspire
+solutions running simultaneously.
+
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+var sql = builder.AddSqlServer("barkfest-db")
+                 .WithLifetime(ContainerLifetime.Persistent)
+                 .WithDataVolume("barkfest-db-data");
+
+var blobs = builder.AddAzureStorage("barkfest-storage")
+                   .RunAsEmulator(e => e
+                       .WithLifetime(ContainerLifetime.Persistent)
+                       .WithDataVolume("barkfest-blobs-data"))
+                   .AddBlobs("barkfest-blobs");
+
+builder.AddProject<Projects.Barkfest_API>("barkfest-api")
+       .WithReference(sql)
+       .WithReference(blobs);
+
+builder.Build().Run();
+```
+
+**First `dotnet run`:** Aspire checks Docker — containers do not exist, creates them with stable
+names `barkfest-db` and `barkfest-storage`. The API starts, `MigrateAsync()` runs, schema is
+created. Ready.
+
+**Subsequent runs:** Aspire finds existing containers, starts them if stopped. All data is
+intact. No manual steps.
+
+**Stopping the AppHost:** containers remain in Docker with data preserved. Volumes
+`barkfest-db-data` and `barkfest-blobs-data` survive even a `docker rm`.
+
+### 8.3 ServiceDefaults — `Extensions.cs`
+
+Aspire scaffolds this file with an `AddServiceDefaults()` extension method providing:
+- OpenTelemetry tracing and metrics (ASP.NET Core, HttpClient, runtime)
+- Health check endpoints (`/health`, `/alive`)
+- Service discovery
+
+No custom code is added to this file — it is Aspire-generated boilerplate.
+
+### 8.4 API Wiring Changes
+
+**`Program.cs`** — add as the first line before `builder.Services` registrations:
+
+```csharp
+builder.AddServiceDefaults();
+```
+
+Remove the `if (IsDevelopment) builder.Configuration.AddUserSecrets<Program>()` call —
+User Secrets are no longer used.
+
+**`Barkfest.Persistence/DependencyInjection.cs`** — switch to Aspire-aware registration:
+
+```csharp
+// Before:
+services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlServer(config.GetConnectionString("DefaultConnection")));
+
+// After:
+builder.AddSqlServerDbContext<AppDbContext>("barkfest-db");
+```
+
+`AddSqlServerDbContext` reads the Aspire-injected connection string and adds health checks,
+telemetry, and retry resilience automatically.
+
+**`Barkfest.Infrastructure/DependencyInjection.cs`** — switch to Aspire-aware registration:
+
+```csharp
+// Before:
+services.AddSingleton(new BlobServiceClient(
+    config.GetConnectionString("AzureBlobStorage")));
+
+// After:
+builder.AddAzureBlobClient("barkfest-blobs");
+```
+
+`AddAzureBlobClient` reads the Aspire-injected connection string and registers `BlobServiceClient`
+with health checks and telemetry automatically.
+
+> **Non-Aspire environments:** `appsettings.json` retains `ConnectionStrings:barkfest-db` and
+> `ConnectionStrings:barkfest-blobs` as empty placeholders with a `_readme` note. In production
+> or CI these are populated via environment variables or secrets manager — Aspire is the local
+> dev orchestrator only.
+
+### 8.5 User Secrets
+
+User Secrets are removed from `Barkfest.API`. Aspire injects all connection strings
+automatically when running through the AppHost. No manual secret configuration is required
+after cloning.
+
+### 8.6 Test Projects
+
+All six test projects remain **completely unchanged**. Aspire is not referenced by any test project:
+- Unit tests have no connection string dependency
+- `Barkfest.Persistence.Tests` uses `ModelHelper` (no live connection)
+- `Barkfest.Infrastructure.Tests` manages its own Azurite via Testcontainers
+- `Barkfest.API.Tests` manages its own SQL Server + Azurite via Testcontainers
+- `Barkfest.Integration.Tests` talks to a running app over HTTP
+
+### 8.7 Running Locally
+
+```bash
+# Clone and run — that's it
+dotnet run --project src/Barkfest.AppHost
+```
+
+Aspire dashboard opens automatically (typically `https://localhost:15888`) showing live logs,
+traces, and health for all resources. The API URL is listed there.
+
+---
+
 ## General Rules — Always Follow These
 
 - Target framework: `.NET 10`
@@ -730,7 +863,7 @@ No project references — communicates with running app over HTTP.
 - `Pet.MaxImages` constant used in all image limit tests — never hardcode the number `5`
 - `Owner.FirstNameMaxLength`, `Owner.LastNameMaxLength`, `Owner.EmailMaxLength`, `Pet.NameMaxLength` constants used in all length-related tests — never hardcode the numbers
 - Each `src` project has its own `DependencyInjection.cs` with a self-registering extension method
-- Connection strings stored in User Secrets — never committed to source control
+- Connection strings injected by Aspire for local dev; populated via environment variables or secrets manager in production and CI — never committed to source control
 - Testcontainers used for all integration tests — both SQL Server (`Testcontainers.MsSql`) and Azure Blob Storage (`Testcontainers.Azurite`) run in containers, no real external services in any test project
 - `Age` is computed from `DateOfBirth` at runtime — never stored in the database
 - Cascade deletes: `Owner` → `Pets`, `Pet` → `PetImages`, `Pet` → `Breeds`
