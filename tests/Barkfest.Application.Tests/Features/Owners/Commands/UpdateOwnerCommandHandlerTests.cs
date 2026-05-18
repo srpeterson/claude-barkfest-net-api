@@ -18,10 +18,10 @@ public class UpdateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ExistingOwner_UpdatesAndSaves()
+    public async Task Handle_When_OwnerExists_Updates_AndSaves()
     {
         var ownerId = Guid.NewGuid();
-        var owner = BuildOwner();
+        var owner = new OwnerBuilder().WithFirstName("Original").WithLastName("Owner").WithEmail("original@example.com").Build();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
         var command = new UpdateOwnerCommand(ownerId, "Updated", "Name", "updated@example.com", null);
@@ -35,7 +35,7 @@ public class UpdateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
@@ -45,12 +45,4 @@ public class UpdateOwnerCommandHandlerTests
         await Should.ThrowAsync<NotFoundException>(() => _sut.Handle(command, CancellationToken.None));
     }
 
-    private static Owner BuildOwner()
-    {
-        var owner = new Owner();
-        owner.SetFirstName("Original");
-        owner.SetLastName("Owner");
-        owner.SetEmail("original@example.com");
-        return owner;
-    }
 }

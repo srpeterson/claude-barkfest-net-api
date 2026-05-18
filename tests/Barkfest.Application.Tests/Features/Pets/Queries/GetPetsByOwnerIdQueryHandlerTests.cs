@@ -16,10 +16,14 @@ public class GetPetsByOwnerIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ReturnsPetsForOwnerMappedToDtos()
+    public async Task Handle_When_OwnerHasPets_Returns_PetsMappedToDtos()
     {
         var ownerId = Guid.NewGuid();
-        var pets = new[] { BuildPet(ownerId, "Max"), BuildPet(ownerId, "Daisy") };
+        var pets = new[]
+        {
+            new PetBuilder().WithOwnerId(ownerId).WithName("Max").Build(),
+            new PetBuilder().WithOwnerId(ownerId).WithName("Daisy").Build()
+        };
         _petRepository.GetByOwnerIdAsync(ownerId, CancellationToken.None).Returns(pets);
 
         var result = await _sut.Handle(new GetPetsByOwnerIdQuery(ownerId), CancellationToken.None);
@@ -30,7 +34,7 @@ public class GetPetsByOwnerIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerHasNoPets_ReturnsEmptyCollection()
+    public async Task Handle_When_OwnerHasNoPets_Returns_EmptyCollection()
     {
         var ownerId = Guid.NewGuid();
         _petRepository.GetByOwnerIdAsync(ownerId, CancellationToken.None).Returns([]);
@@ -40,11 +44,4 @@ public class GetPetsByOwnerIdQueryHandlerTests
         result.ShouldBeEmpty();
     }
 
-    private static Pet BuildPet(Guid ownerId, string name)
-    {
-        var pet = new Pet(ownerId);
-        pet.SetName(name);
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

@@ -20,10 +20,11 @@ public class RemovePetImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ExistingPetAndImage_DeletesBlobAndRemovesFromPet()
+    public async Task Handle_When_PetAndImageExist_Deletes_BlobAndRemovesFromPet()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPetWithImage(out var petImage);
+        var petImage = new PetImageBuilder().Build();
+        var pet = new PetBuilder().WithImage(petImage).Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
         var command = new RemovePetImageCommand(petId, petImage.Id);
@@ -37,7 +38,7 @@ public class RemovePetImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
@@ -47,10 +48,10 @@ public class RemovePetImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ImageNotFoundOnPet_ThrowsNotFoundException()
+    public async Task Handle_When_ImageNotFoundOnPet_Throws_NotFoundException()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet();
+        var pet = new PetBuilder().Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
         var command = new RemovePetImageCommand(petId, Guid.NewGuid());
@@ -58,21 +59,4 @@ public class RemovePetImageCommandHandlerTests
         await Should.ThrowAsync<NotFoundException>(() => _sut.Handle(command, CancellationToken.None));
     }
 
-    private static Pet BuildPetWithImage(out PetImage image)
-    {
-        var pet = BuildPet();
-        image = new PetImage();
-        image.SetImage("pets/abc/gallery/photo.jpg", "image/jpeg");
-        image.SetDisplayOrder(0);
-        pet.AddImage(image);
-        return pet;
-    }
-
-    private static Pet BuildPet()
-    {
-        var pet = new Pet(Guid.NewGuid());
-        pet.SetName("Buddy");
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

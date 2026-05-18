@@ -17,10 +17,10 @@ public class GetOwnerByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ExistingOwner_ReturnsMappedDto()
+    public async Task Handle_When_OwnerExists_Returns_MappedDto()
     {
         var ownerId = Guid.NewGuid();
-        var owner = BuildOwner();
+        var owner = new OwnerBuilder().WithFirstName("John").WithLastName("Doe").WithEmail("john@example.com").Build();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
         var result = await _sut.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
@@ -31,7 +31,7 @@ public class GetOwnerByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
@@ -40,12 +40,4 @@ public class GetOwnerByIdQueryHandlerTests
             () => _sut.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None));
     }
 
-    private static Owner BuildOwner()
-    {
-        var owner = new Owner();
-        owner.SetFirstName("John");
-        owner.SetLastName("Doe");
-        owner.SetEmail("john@example.com");
-        return owner;
-    }
 }

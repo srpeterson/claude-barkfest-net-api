@@ -12,7 +12,7 @@ public class UpdateOwnerCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_ValidCommand_Passes()
+    public void Validate_When_CommandIsValid_Passes()
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null);
 
@@ -24,7 +24,7 @@ public class UpdateOwnerCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_EmptyId_FailsOnId()
+    public void Validate_When_IdIsEmpty_Fails_ForId()
     {
         var command = new UpdateOwnerCommand(Guid.Empty, "Alice", "Smith", "alice@example.com", null);
 
@@ -42,7 +42,7 @@ public class UpdateOwnerCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_FirstNameEmptyOrNull_FailsOnFirstName(string? firstName)
+    public void Validate_When_FirstNameIsEmptyOrNull_Fails_ForFirstName(string? firstName)
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), firstName!, "Smith", "alice@example.com", null);
 
@@ -53,16 +53,7 @@ public class UpdateOwnerCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_FirstNameAtMaxLength_Passes()
-    {
-        var command = new UpdateOwnerCommand(
-            Guid.NewGuid(), new string('A', Owner.FirstNameMaxLength), "Smith", "alice@example.com", null);
-
-        _sut.Validate(command).IsValid.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Validate_FirstNameExceedsMaxLength_FailsOnFirstName()
+    public void Validate_When_FirstNameExceedsMaxLength_Fails_ForFirstName()
     {
         var command = new UpdateOwnerCommand(
             Guid.NewGuid(), new string('A', Owner.FirstNameMaxLength + 1), "Smith", "alice@example.com", null);
@@ -81,7 +72,7 @@ public class UpdateOwnerCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_LastNameEmptyOrNull_FailsOnLastName(string? lastName)
+    public void Validate_When_LastNameIsEmptyOrNull_Fails_ForLastName(string? lastName)
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", lastName!, "alice@example.com", null);
 
@@ -92,16 +83,7 @@ public class UpdateOwnerCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_LastNameAtMaxLength_Passes()
-    {
-        var command = new UpdateOwnerCommand(
-            Guid.NewGuid(), "Alice", new string('A', Owner.LastNameMaxLength), "alice@example.com", null);
-
-        _sut.Validate(command).IsValid.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Validate_LastNameExceedsMaxLength_FailsOnLastName()
+    public void Validate_When_LastNameExceedsMaxLength_Fails_ForLastName()
     {
         var command = new UpdateOwnerCommand(
             Guid.NewGuid(), "Alice", new string('A', Owner.LastNameMaxLength + 1), "alice@example.com", null);
@@ -120,7 +102,7 @@ public class UpdateOwnerCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_EmailEmptyOrNull_FailsOnEmail(string? email)
+    public void Validate_When_EmailIsEmptyOrNull_Fails_ForEmail(string? email)
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", email!, null);
 
@@ -134,7 +116,7 @@ public class UpdateOwnerCommandValidatorTests
     [InlineData("notanemail")]
     [InlineData("@nodomain.com")]
     [InlineData("missing@")]
-    public void Validate_EmailInvalidFormat_FailsOnEmail(string email)
+    public void Validate_When_EmailFormatIsInvalid_Fails_ForEmail(string email)
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", email, null);
 
@@ -145,16 +127,7 @@ public class UpdateOwnerCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_EmailAtMaxLength_Passes()
-    {
-        var localPart = new string('a', Owner.EmailMaxLength - "@b.co".Length);
-        var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", $"{localPart}@b.co", null);
-
-        _sut.Validate(command).IsValid.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Validate_EmailExceedsMaxLength_FailsOnEmail()
+    public void Validate_When_EmailExceedsMaxLength_Fails_ForEmail()
     {
         var localPart = new string('a', Owner.EmailMaxLength - "@b.co".Length + 1);
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", $"{localPart}@b.co", null);

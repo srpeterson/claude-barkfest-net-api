@@ -20,10 +20,10 @@ public class RemovePetProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetWithImage_DeletesBlobAndClearsImage()
+    public async Task Handle_When_PetHasImage_Deletes_BlobAndClearsImage()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet();
+        var pet = new PetBuilder().Build();
         pet.SetProfileImage("pets/abc/photo.jpg", "image/jpeg");
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
@@ -36,10 +36,10 @@ public class RemovePetProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetWithoutImage_SkipsBlobDeleteAndSaves()
+    public async Task Handle_When_PetHasNoImage_Skips_BlobDeleteAndSaves()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet();
+        var pet = new PetBuilder().Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
         await _sut.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None);
@@ -50,7 +50,7 @@ public class RemovePetProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
@@ -59,11 +59,4 @@ public class RemovePetProfileImageCommandHandlerTests
             () => _sut.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None));
     }
 
-    private static Pet BuildPet()
-    {
-        var pet = new Pet(Guid.NewGuid());
-        pet.SetName("Buddy");
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

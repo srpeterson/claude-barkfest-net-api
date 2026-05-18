@@ -61,7 +61,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task UploadProfileImage_ValidJpeg_Returns204()
+    public async Task UploadProfileImage_When_JpegProvided_Returns_NoContent()
     {
         var id = await CreateOwner();
 
@@ -73,7 +73,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadProfileImage_ValidPng_Returns204()
+    public async Task UploadProfileImage_When_PngProvided_Returns_NoContent()
     {
         var id = await CreateOwner();
 
@@ -85,7 +85,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadProfileImage_UnknownOwner_Returns404()
+    public async Task UploadProfileImage_When_OwnerNotFound_Returns_NotFound()
     {
         var response = await _client.PostAsync(
             $"/v1/owners/{Guid.NewGuid()}/profile-image",
@@ -95,7 +95,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadThenRemoveProfileImage_Returns204BothTimes()
+    public async Task RemoveProfileImage_When_PreviouslyUploaded_Returns_NoContent()
     {
         var id = await CreateOwner();
 
@@ -109,7 +109,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadProfileImage_ReplacesExistingImage()
+    public async Task UploadProfileImage_When_ImageAlreadyExists_Replaces_Image()
     {
         var id = await CreateOwner();
 
@@ -127,7 +127,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task RemoveProfileImage_WhenNoImageSet_Returns204()
+    public async Task RemoveProfileImage_When_NoImageSet_Returns_NoContent()
     {
         var id = await CreateOwner();
 
@@ -143,7 +143,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetPets_AfterCreatingPets_ReturnsPets()
+    public async Task GetPets_When_PetsExist_Returns_Pets()
     {
         var ownerId = await CreateOwner();
 
@@ -202,8 +202,10 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
         var content = new ByteArrayContent(fakeImageBytes);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
 
-        var form = new MultipartFormDataContent();
-        form.Add(content, "file", fileName);
+        var form = new MultipartFormDataContent
+        {
+            { content, "file", fileName }
+        };
         return form;
     }
 }

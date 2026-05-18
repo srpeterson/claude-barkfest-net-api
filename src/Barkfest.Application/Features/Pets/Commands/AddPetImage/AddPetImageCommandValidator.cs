@@ -9,12 +9,12 @@ public class AddPetImageCommandValidator : AbstractValidator<AddPetImageCommand>
     {
         RuleFor(x => x.ContentType)
             .NotEmpty()
-            .Must(SupportedImageType.IsAllowedContentType)
+            .Must(SupportedImageType.IsContentTypeSupported)
             .WithMessage($"Content type is not supported. Allowed types: {string.Join(", ", SupportedImageType.AllowedContentTypes)}.");
 
         RuleFor(x => x.FileName)
             .NotEmpty()
-            .Must(SupportedImageType.IsAllowedExtension)
+            .Must(SupportedImageType.IsFileExtensionSupported)
             .WithMessage($"File extension is not supported. Allowed extensions: {string.Join(", ", SupportedImageType.AllowedExtensions)}.");
     }
 }

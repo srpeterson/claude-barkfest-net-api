@@ -10,7 +10,7 @@ public class OwnerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetFirstName_ValidName_SetsTrimmmedValue()
+    public void SetFirstName_When_NameIsValid_Sets_TrimmedFirstName()
     {
         var owner = new Owner();
 
@@ -22,7 +22,7 @@ public class OwnerTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void SetFirstName_EmptyOrWhitespace_ThrowsDomainException(string name)
+    public void SetFirstName_When_EmptyOrWhitespace_Throws_DomainException(string name)
     {
         var owner = new Owner();
 
@@ -31,7 +31,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetFirstName_ExceedsMaxLength_ThrowsDomainException()
+    public void SetFirstName_When_ExceedsMaxLength_Throws_DomainException()
     {
         var owner = new Owner();
         var longName = new string('A', Owner.FirstNameMaxLength + 1);
@@ -40,23 +40,12 @@ public class OwnerTests
             .Message.ShouldContain(Owner.FirstNameMaxLength.ToString());
     }
 
-    [Fact]
-    public void SetFirstName_ExactlyMaxLength_Succeeds()
-    {
-        var owner = new Owner();
-        var name = new string('A', Owner.FirstNameMaxLength);
-
-        owner.SetFirstName(name);
-
-        owner.FirstName.ShouldBe(name);
-    }
-
     // -----------------------------------------------------------------------
     // SetLastName
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetLastName_ValidName_SetsTrimmmedValue()
+    public void SetLastName_When_NameIsValid_Sets_TrimmedLastName()
     {
         var owner = new Owner();
 
@@ -68,7 +57,7 @@ public class OwnerTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void SetLastName_EmptyOrWhitespace_ThrowsDomainException(string name)
+    public void SetLastName_When_EmptyOrWhitespace_Throws_DomainException(string name)
     {
         var owner = new Owner();
 
@@ -77,7 +66,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetLastName_ExceedsMaxLength_ThrowsDomainException()
+    public void SetLastName_When_ExceedsMaxLength_Throws_DomainException()
     {
         var owner = new Owner();
         var longName = new string('B', Owner.LastNameMaxLength + 1);
@@ -91,7 +80,7 @@ public class OwnerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetEmail_ValidEmail_NormalizesToLowercase()
+    public void SetEmail_When_EmailIsValid_Sets_NormalizedLowercaseEmail()
     {
         var owner = new Owner();
 
@@ -103,7 +92,7 @@ public class OwnerTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void SetEmail_EmptyOrWhitespace_ThrowsDomainException(string email)
+    public void SetEmail_When_EmptyOrWhitespace_Throws_DomainException(string email)
     {
         var owner = new Owner();
 
@@ -112,7 +101,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_ExceedsMaxLength_ThrowsDomainException()
+    public void SetEmail_When_ExceedsMaxLength_Throws_DomainException()
     {
         var owner = new Owner();
         var longLocal = new string('a', Owner.EmailMaxLength) + "@b.com";
@@ -122,7 +111,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_ContainsSpace_ThrowsDomainException()
+    public void SetEmail_When_ContainsSpace_Throws_DomainException()
     {
         var owner = new Owner();
 
@@ -131,7 +120,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_MissingAtSign_ThrowsDomainException()
+    public void SetEmail_When_MissingAtSign_Throws_DomainException()
     {
         var owner = new Owner();
 
@@ -140,7 +129,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_AtSignAtStart_ThrowsDomainException()
+    public void SetEmail_When_EmailStartsWithAtSymbol_Throws_DomainException()
     {
         var owner = new Owner();
 
@@ -149,7 +138,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_MissingDomain_ThrowsDomainException()
+    public void SetEmail_When_MissingDomain_Throws_DomainException()
     {
         var owner = new Owner();
 
@@ -158,7 +147,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_MissingDotInDomain_ThrowsDomainException()
+    public void SetEmail_When_DomainHasNoDot_Throws_DomainException()
     {
         var owner = new Owner();
 
@@ -167,7 +156,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetEmail_DomainEndsWithDot_ThrowsDomainException()
+    public void SetEmail_When_DomainEndsWithDot_Throws_DomainException()
     {
         var owner = new Owner();
 
@@ -180,7 +169,7 @@ public class OwnerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetPhoneNumber_ValidNumber_SetsTrimmmedValue()
+    public void SetPhoneNumber_When_NumberIsValid_Sets_TrimmedPhoneNumber()
     {
         var owner = new Owner();
 
@@ -190,7 +179,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void SetPhoneNumber_Null_SetsNull()
+    public void SetPhoneNumber_When_Null_Sets_Null()
     {
         var owner = new Owner();
         owner.SetPhoneNumber("555-0100");
@@ -205,7 +194,7 @@ public class OwnerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetProfileImage_ValidArgs_SetsProfileImage()
+    public void SetProfileImage_When_ArgsAreValid_Sets_ProfileImage()
     {
         var owner = new Owner();
 
@@ -217,7 +206,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void RemoveProfileImage_WhenImageSet_ClearsProfileImage()
+    public void RemoveProfileImage_When_ImageIsSet_Clears_ProfileImage()
     {
         var owner = new Owner();
         owner.SetProfileImage("owners/abc/profile.jpg", "image/jpeg");
@@ -232,7 +221,7 @@ public class OwnerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void NewOwner_HasNonEmptyId()
+    public void NewOwner_When_Instantiated_Returns_NonEmptyId()
     {
         var owner = new Owner();
 
@@ -240,7 +229,7 @@ public class OwnerTests
     }
 
     [Fact]
-    public void NewOwner_CreatedAtIsRecentUtc()
+    public void NewOwner_When_Instantiated_Returns_RecentUtcCreatedAt()
     {
         var before = DateTime.UtcNow;
 

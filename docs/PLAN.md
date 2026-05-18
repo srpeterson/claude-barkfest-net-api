@@ -21,6 +21,7 @@ Barkfest.sln
 │   ├── Barkfest.Infrastructure
 │   └── Barkfest.API
 └── tests/
+    ├── Barkfest.Tests.Common        ← shared test helpers and builders
     ├── Barkfest.Domain.Tests
     ├── Barkfest.Application.Tests
     ├── Barkfest.Persistence.Tests
@@ -62,8 +63,9 @@ Barkfest.Infrastructure
   ├── Barkfest.Domain
   └── Barkfest.Application
 
-Barkfest.Domain.Tests         → Barkfest.Domain
-Barkfest.Application.Tests    → Barkfest.Application
+Barkfest.Tests.Common         → Barkfest.Domain
+Barkfest.Domain.Tests         → Barkfest.Domain, Barkfest.Tests.Common
+Barkfest.Application.Tests    → Barkfest.Application, Barkfest.Tests.Common
 Barkfest.Persistence.Tests    → Barkfest.Persistence
 Barkfest.Infrastructure.Tests → Barkfest.Infrastructure
 Barkfest.API.Tests            → Barkfest.API
@@ -108,8 +110,8 @@ Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
 - [ ] Create `Barkfest.Domain/ValueObjects/SupportedImageType.cs`
   - `AllowedContentTypes`: `image/jpeg`, `image/jpg`, `image/png`
   - `AllowedExtensions`: `.jpeg`, `.jpg`, `.png`
-  - `IsAllowedContentType(string contentType)` — case insensitive
-  - `IsAllowedExtension(string fileName)` — case insensitive
+  - `IsContentTypeSupported(string contentType)` — case insensitive
+  - `IsFileExtensionSupported(string fileName)` — case insensitive
 
 ### 2.4 SmartEnums — extend `SmartEnum<T>`
 
@@ -286,8 +288,8 @@ Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
 - [ ] `UploadOwnerProfileImage/UploadOwnerProfileImageCommand.cs` (record)
 - [ ] `UploadOwnerProfileImage/UploadOwnerProfileImageCommandHandler.cs` (class)
 - [ ] `UploadOwnerProfileImage/UploadOwnerProfileImageCommandValidator.cs` (class)
-  - `ContentType`: must pass `SupportedImageType.IsAllowedContentType()`
-  - `FileName`: must pass `SupportedImageType.IsAllowedExtension()`
+  - `ContentType`: must pass `SupportedImageType.IsContentTypeSupported()`
+  - `FileName`: must pass `SupportedImageType.IsFileExtensionSupported()`
 
 - [ ] `RemoveOwnerProfileImage/RemoveOwnerProfileImageCommand.cs` (record)
 - [ ] `RemoveOwnerProfileImage/RemoveOwnerProfileImageCommandHandler.cs` (class)
@@ -579,8 +581,8 @@ Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
   - `SetCatBreed`: valid, null throws
 
 - [ ] `SupportedImageTypeTests.cs`
-  - `IsAllowedContentType`: jpeg true, jpg true, png true, unsupported false, case insensitive
-  - `IsAllowedExtension`: .jpeg true, .jpg true, .png true, unsupported false, case insensitive
+  - `IsContentTypeSupported`: jpeg true, jpg true, png true, unsupported false, case insensitive
+  - `IsFileExtensionSupported`: .jpeg true, .jpg true, .png true, unsupported false, case insensitive
 
 - [ ] `PetTypeTests.cs`
   - Has Dog, Cat, Other values
@@ -860,6 +862,56 @@ traces, and health for all resources. The API URL is listed there.
 - [x] Rename `OwnersController.cs` → `OwnerController.cs`
 - [x] Rename `PetsController.cs` → `PetController.cs`
 - [x] Update all references in `Barkfest.API.Tests`
+
+---
+
+## Phase 10 — Test Refinements
+
+### 10.1 Test Naming Convention
+
+**Pattern:**
+- Happy path / response tests: `[Method]_When_[Condition]_Returns_[Result]`
+- Exception tests: `[Method]_When_[Condition]_Throws_[ExceptionType]`
+
+**Rules:**
+- Use descriptive words for HTTP status codes — never raw numbers:
+  - `200` → `Ok`
+  - `201` → `Created`
+  - `204` → `NoContent`
+  - `400` → `BadRequest`
+  - `404` → `NotFound`
+  - `500` → `InternalServerError`
+- `When_` is required — no skipping the condition clause
+- Result must describe behaviour, not implementation detail (e.g. `Returns_NotFound` not `Returns404`)
+
+**Applies to all six test projects:**
+- [x] `Barkfest.Domain.Tests`
+- [x] `Barkfest.Application.Tests`
+- [x] `Barkfest.Infrastructure.Tests`
+- [x] `Barkfest.Persistence.Tests`
+- [x] `Barkfest.API.Tests`
+- [x] `Barkfest.Integration.Tests`
+
+### 10.2 Test Data Builder Pattern
+
+- [x] Create `tests/Barkfest.Tests.Common/Barkfest.Tests.Common.csproj`
+  - References `Barkfest.Domain` only
+  - Inherits `tests/Directory.Build.props` (net10.0, ImplicitUsings, Nullable)
+- [x] Create `tests/Barkfest.Tests.Common/Builders/OwnerBuilder.cs`
+  - Defaults: `FirstName="Test"`, `LastName="Owner"`, unique guid-based email
+  - Fluent methods: `WithFirstName`, `WithLastName`, `WithEmail`, `WithPhoneNumber`, `WithProfileImage`
+- [x] Create `tests/Barkfest.Tests.Common/Builders/PetBuilder.cs`
+  - Defaults: `OwnerId=NewGuid`, `Name="Buddy"`, `PetType=Dog`
+  - Fluent methods: `WithOwnerId`, `WithName`, `WithDescription`, `WithDateOfBirth`, `WithPetType`, `WithProfileImage`, `WithImage`
+- [x] Create `tests/Barkfest.Tests.Common/Builders/PetImageBuilder.cs`
+  - Defaults: `BlobName="pets/test/gallery/photo.jpg"`, `ContentType="image/jpeg"`, `DisplayOrder=0`
+  - Fluent methods: `WithBlobName`, `WithContentType`, `WithDisplayOrder`
+- [x] Add `Barkfest.Tests.Common` project reference to `Barkfest.Domain.Tests`
+- [x] Add `Barkfest.Tests.Common` project reference to `Barkfest.Application.Tests`
+- [x] Add `GlobalUsings.cs` to `Barkfest.Domain.Tests` and `Barkfest.Application.Tests`
+  — `global using Barkfest.Tests.Common.Builders;`
+- [x] Replace all private `BuildXxx()` helpers in `Domain.Tests` and `Application.Tests`
+  with builder calls
 
 ---
 

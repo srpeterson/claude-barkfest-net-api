@@ -16,9 +16,13 @@ public class GetAllPetsQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ReturnAllPetsMappedToDtos()
+    public async Task Handle_When_PetsExist_Returns_AllPetsMappedToDtos()
     {
-        var pets = new[] { BuildPet("Buddy"), BuildPet("Luna") };
+        var pets = new[]
+        {
+            new PetBuilder().WithName("Buddy").Build(),
+            new PetBuilder().WithName("Luna").Build()
+        };
         _petRepository.GetAllAsync(CancellationToken.None).Returns(pets);
 
         var result = await _sut.Handle(new GetAllPetsQuery(), CancellationToken.None);
@@ -30,7 +34,7 @@ public class GetAllPetsQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_NoPets_ReturnsEmptyCollection()
+    public async Task Handle_When_NoPets_Returns_EmptyCollection()
     {
         _petRepository.GetAllAsync(CancellationToken.None).Returns([]);
 
@@ -39,11 +43,4 @@ public class GetAllPetsQueryHandlerTests
         result.ShouldBeEmpty();
     }
 
-    private static Pet BuildPet(string name)
-    {
-        var pet = new Pet(Guid.NewGuid());
-        pet.SetName(name);
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

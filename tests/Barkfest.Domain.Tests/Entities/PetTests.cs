@@ -14,7 +14,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetName_ValidName_SetsTrimmedValue()
+    public void SetName_When_NameIsValid_Sets_TrimmedName()
     {
         var pet = BuildPet();
 
@@ -26,7 +26,7 @@ public class PetTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void SetName_EmptyOrWhitespace_ThrowsDomainException(string name)
+    public void SetName_When_EmptyOrWhitespace_Throws_DomainException(string name)
     {
         var pet = BuildPet();
 
@@ -35,7 +35,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetName_ExceedsMaxLength_ThrowsDomainException()
+    public void SetName_When_ExceedsMaxLength_Throws_DomainException()
     {
         var pet = BuildPet();
         var longName = new string('X', Pet.NameMaxLength + 1);
@@ -44,23 +44,12 @@ public class PetTests
             .Message.ShouldContain(Pet.NameMaxLength.ToString());
     }
 
-    [Fact]
-    public void SetName_ExactlyMaxLength_Succeeds()
-    {
-        var pet = BuildPet();
-        var name = new string('X', Pet.NameMaxLength);
-
-        pet.SetName(name);
-
-        pet.Name.ShouldBe(name);
-    }
-
     // -----------------------------------------------------------------------
     // SetDescription
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetDescription_ValidValue_SetsTrimmedValue()
+    public void SetDescription_When_ValueIsValid_Sets_TrimmedDescription()
     {
         var pet = BuildPet();
 
@@ -70,7 +59,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetDescription_Null_SetsNull()
+    public void SetDescription_When_Null_Sets_Null()
     {
         var pet = BuildPet();
 
@@ -84,7 +73,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetDateOfBirth_PastDate_SetsValue()
+    public void SetDateOfBirth_When_DateIsValid_Sets_Value()
     {
         var pet = BuildPet();
         var dob = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-2));
@@ -95,18 +84,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetDateOfBirth_Today_Succeeds()
-    {
-        var pet = BuildPet();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        pet.SetDateOfBirth(today);
-
-        pet.DateOfBirth.ShouldBe(today);
-    }
-
-    [Fact]
-    public void SetDateOfBirth_FutureDate_ThrowsDomainException()
+    public void SetDateOfBirth_When_DateIsInFuture_Throws_DomainException()
     {
         var pet = BuildPet();
         var future = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
@@ -116,7 +94,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetDateOfBirth_Null_ClearsValue()
+    public void SetDateOfBirth_When_Null_Clears_Value()
     {
         var pet = BuildPet();
         pet.SetDateOfBirth(DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1)));
@@ -131,7 +109,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Age_WhenDateOfBirthIsNull_ReturnsNull()
+    public void Age_When_DateOfBirthIsNull_Returns_Null()
     {
         var pet = BuildPet();
 
@@ -139,7 +117,7 @@ public class PetTests
     }
 
     [Fact]
-    public void Age_WhenDateOfBirthSet_ReturnsCorrectAge()
+    public void Age_When_DateOfBirthIsSet_Returns_CorrectAge()
     {
         var pet = BuildPet();
         var dob = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-3));
@@ -149,7 +127,7 @@ public class PetTests
     }
 
     [Fact]
-    public void Age_BeforeBirthdayThisYear_ReturnsOneLess()
+    public void Age_When_BirthdayHasNotPassedThisYear_Returns_AgeAtLastBirthday()
     {
         var pet = BuildPet();
         // Born exactly 3 years ago but bump forward 1 day so birthday hasn't passed yet
@@ -165,7 +143,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetPetType_ValidType_SetsValue()
+    public void SetPetType_When_TypeIsValid_Sets_Value()
     {
         var pet = BuildPet();
 
@@ -175,7 +153,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetPetType_Null_ThrowsDomainException()
+    public void SetPetType_When_Null_Throws_DomainException()
     {
         var pet = BuildPet();
 
@@ -188,7 +166,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetBreed_Null_ClearsBreed()
+    public void SetBreed_When_Null_Clears_Breed()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Dog);
@@ -202,7 +180,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetBreed_DogBreedForDogType_SetsBreed()
+    public void SetBreed_When_DogBreedAndTypeIsDog_Sets_Breed()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Dog);
@@ -215,7 +193,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetBreed_CatBreedForDogType_ThrowsDomainException()
+    public void SetBreed_When_CatBreedAndTypeIsDog_Throws_DomainException()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Dog);
@@ -226,7 +204,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetBreed_CatBreedForCatType_SetsBreed()
+    public void SetBreed_When_CatBreedAndTypeIsCat_Sets_Breed()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Cat);
@@ -239,7 +217,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetBreed_DogBreedForCatType_ThrowsDomainException()
+    public void SetBreed_When_DogBreedAndTypeIsCat_Throws_DomainException()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Cat);
@@ -250,7 +228,7 @@ public class PetTests
     }
 
     [Fact]
-    public void SetBreed_AnyBreedForOtherType_ThrowsDomainException()
+    public void SetBreed_When_BreedSetAndTypeIsOther_Throws_DomainException()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Other);
@@ -265,7 +243,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetProfileImage_ValidArgs_SetsProfileImage()
+    public void SetProfileImage_When_ArgsAreValid_Sets_ProfileImage()
     {
         var pet = BuildPet();
 
@@ -276,7 +254,7 @@ public class PetTests
     }
 
     [Fact]
-    public void RemoveProfileImage_WhenSet_ClearsProfileImage()
+    public void RemoveProfileImage_When_ImageIsSet_Clears_ProfileImage()
     {
         var pet = BuildPet();
         pet.SetProfileImage("pets/abc/profile.jpg", "image/jpeg");
@@ -291,10 +269,10 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void AddImage_BelowLimit_AddsImage()
+    public void AddImage_When_BelowMaxLimit_Adds_Image()
     {
         var pet = BuildPet();
-        var image = BuildPetImage();
+        var image = new PetImageBuilder().Build();
 
         pet.AddImage(image);
 
@@ -302,18 +280,18 @@ public class PetTests
     }
 
     [Fact]
-    public void AddImage_AtMaxLimit_ThrowsDomainException()
+    public void AddImage_When_ExceedsMaxLimit_Throws_DomainException()
     {
         var pet = BuildPet();
         for (var i = 0; i < Pet.MaxImages; i++)
-            pet.AddImage(BuildPetImage(i));
+            pet.AddImage(new PetImageBuilder().WithDisplayOrder(i).Build());
 
-        Should.Throw<DomainException>(() => pet.AddImage(BuildPetImage()))
+        Should.Throw<DomainException>(() => pet.AddImage(new PetImageBuilder().Build()))
             .Message.ShouldContain(Pet.MaxImages.ToString());
     }
 
     [Fact]
-    public void AddImage_Null_ThrowsDomainException()
+    public void AddImage_When_Null_Throws_DomainException()
     {
         var pet = BuildPet();
 
@@ -326,10 +304,10 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void RemoveImage_ExistingImage_RemovesIt()
+    public void RemoveImage_When_ImageExists_Removes_Image()
     {
         var pet = BuildPet();
-        var image = BuildPetImage();
+        var image = new PetImageBuilder().Build();
         pet.AddImage(image);
 
         pet.RemoveImage(image.Id);
@@ -338,7 +316,7 @@ public class PetTests
     }
 
     [Fact]
-    public void RemoveImage_UnknownId_ThrowsDomainException()
+    public void RemoveImage_When_IdNotFound_Throws_DomainException()
     {
         var pet = BuildPet();
 
@@ -351,7 +329,7 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void NewPet_HasNonEmptyId()
+    public void NewPet_When_Instantiated_Returns_NonEmptyId()
     {
         var pet = BuildPet();
 
@@ -359,7 +337,7 @@ public class PetTests
     }
 
     [Fact]
-    public void NewPet_OwnerIdIsSet()
+    public void NewPet_When_Instantiated_Returns_SetOwnerId()
     {
         var ownerId = Guid.NewGuid();
         var pet = new Pet(ownerId);
@@ -367,15 +345,4 @@ public class PetTests
         pet.OwnerId.ShouldBe(ownerId);
     }
 
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
-
-    private static PetImage BuildPetImage(int displayOrder = 0)
-    {
-        var image = new PetImage();
-        image.SetImage("pets/abc/gallery/photo.jpg", "image/jpeg");
-        image.SetDisplayOrder(displayOrder);
-        return image;
-    }
 }

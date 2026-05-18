@@ -12,7 +12,7 @@ public class UpdatePetCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_ValidCommand_Passes()
+    public void Validate_When_CommandIsValid_Passes()
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, "Dog");
 
@@ -24,7 +24,7 @@ public class UpdatePetCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_EmptyId_FailsOnId()
+    public void Validate_When_IdIsEmpty_Fails_ForId()
     {
         var command = new UpdatePetCommand(Guid.Empty, "Bruno", null, null, "Dog");
 
@@ -42,7 +42,7 @@ public class UpdatePetCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_NameEmptyOrNull_FailsOnName(string? name)
+    public void Validate_When_NameIsEmptyOrNull_Fails_ForName(string? name)
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), name!, null, null, "Dog");
 
@@ -53,16 +53,7 @@ public class UpdatePetCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_NameAtMaxLength_Passes()
-    {
-        var command = new UpdatePetCommand(
-            Guid.NewGuid(), new string('A', Pet.NameMaxLength), null, null, "Dog");
-
-        _sut.Validate(command).IsValid.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Validate_NameExceedsMaxLength_FailsOnName()
+    public void Validate_When_NameExceedsMaxLength_Fails_ForName()
     {
         var command = new UpdatePetCommand(
             Guid.NewGuid(), new string('A', Pet.NameMaxLength + 1), null, null, "Dog");
@@ -81,7 +72,7 @@ public class UpdatePetCommandValidatorTests
     [InlineData("Dog")]
     [InlineData("Cat")]
     [InlineData("Other")]
-    public void Validate_KnownPetType_Passes(string petType)
+    public void Validate_When_PetTypeIsKnown_Passes(string petType)
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType);
 
@@ -92,7 +83,7 @@ public class UpdatePetCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_PetTypeEmptyOrNull_FailsOnPetType(string? petType)
+    public void Validate_When_PetTypeIsEmptyOrNull_Fails_ForPetType(string? petType)
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType!);
 

@@ -54,6 +54,7 @@ Barkfest.sln
 │   ├── Barkfest.Infrastructure
 │   └── Barkfest.API
 └── tests/
+    ├── Barkfest.Tests.Common
     ├── Barkfest.Domain.Tests
     ├── Barkfest.Application.Tests
     ├── Barkfest.Persistence.Tests
@@ -381,11 +382,49 @@ Never add try/catch blocks in handlers or controllers — let middleware handle 
   running via `dotnet run --project src/Barkfest.AppHost` before the tests are executed
 - All image limit tests reference `Pet.MaxImages` — never hardcode `5`
 - All length tests reference domain constants — never hardcode numbers
-- Test names describe **behaviour and intent**, never specific hardcoded values:
-  - ✅ `Should_Throw_When_FirstName_Exceeds_Max_Length`
+- Test names follow `[Method]_When_[Condition]_Returns_[Result]` (happy path) and
+  `[Method]_When_[Condition]_Throws_[ExceptionType]` (exception path):
+  - ✅ `SetFirstName_When_ExceedsMaxLength_Throws_DomainException`
   - ❌ `Should_Throw_When_FirstName_Exceeds_50_Characters`
-  - ✅ `Should_Fail_When_ContentType_Is_Not_Supported`
+  - ✅ `IsContentTypeSupported_When_TypeIsNotSupported_Returns_False`
   - ❌ `Should_Fail_When_ContentType_Is_Webp`
+- Validator failure tests use `Fails_For[Property]` — e.g. `Fails_ForFirstName_When_Empty`
+- HTTP status codes are written as words, never numbers:
+  - `200` → `Ok`, `201` → `Created`, `204` → `NoContent`
+  - `400` → `BadRequest`, `404` → `NotFound`, `500` → `InternalServerError`
+- `When_` is always required — never skip the condition clause
+- Scenario lifecycle tests (e.g. `OwnerCrudLifecycle_*`, `FullLifecycle_*`) are exempt from
+  the naming pattern — they describe an end-to-end flow, not a single method
+
+### Test Data Builders
+
+`Barkfest.Domain.Tests` and `Barkfest.Application.Tests` use the shared builders from
+`Barkfest.Tests.Common/Builders/`. These are referenced via `GlobalUsings.cs` so the
+builder classes are available without an explicit `using` in every test file.
+
+| Builder | Default state |
+|---|---|
+| `OwnerBuilder` | `FirstName="Test"`, `LastName="Owner"`, unique email |
+| `PetBuilder` | `OwnerId=NewGuid`, `Name="Buddy"`, `PetType=Dog` |
+| `PetImageBuilder` | `BlobName="pets/test/gallery/photo.jpg"`, `ContentType="image/jpeg"`, `DisplayOrder=0` |
+
+**Rules:**
+- Never write private `BuildXxx()` helper methods in test classes — use the shared builders
+- Override only the properties relevant to the test scenario:
+  ```csharp
+  // Good — only the property under test is non-default
+  var owner = new OwnerBuilder().WithEmail("bad-email").Build();
+
+  // Good — build a collection with specific names
+  var pets = new[]
+  {
+      new PetBuilder().WithOwnerId(ownerId).WithName("Max").Build(),
+      new PetBuilder().WithOwnerId(ownerId).WithName("Daisy").Build()
+  };
+  ```
+- Exception: `Domain.Tests` setter tests that need a bare entity (no defaults applied)
+  may still use `new Pet(Guid.NewGuid())` directly — builders set domain defaults which
+  can mask failures in property-setter tests
 
 ### Validator Tests — NSubstitute Limitations
 - Never mock `IValidator<T>` with NSubstitute — FluentValidation is strong-named and

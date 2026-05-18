@@ -23,7 +23,7 @@ public sealed record ProfileImage
 
         var normalizedContentType = contentType.Trim().ToLowerInvariant();
 
-        if (!SupportedImageType.IsAllowedContentType(normalizedContentType))
+        if (!SupportedImageType.IsContentTypeSupported(normalizedContentType))
             throw new DomainException($"Content type '{contentType}' is not supported.");
 
         return new ProfileImage(blobName.Trim(), normalizedContentType);

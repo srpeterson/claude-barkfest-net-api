@@ -18,10 +18,10 @@ public class DeletePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ExistingPet_DeletesAndSaves()
+    public async Task Handle_When_PetExists_Deletes_AndSaves()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet();
+        var pet = new PetBuilder().Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
         await _sut.Handle(new DeletePetCommand(petId), CancellationToken.None);
@@ -31,7 +31,7 @@ public class DeletePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
@@ -40,11 +40,4 @@ public class DeletePetCommandHandlerTests
             () => _sut.Handle(new DeletePetCommand(petId), CancellationToken.None));
     }
 
-    private static Pet BuildPet()
-    {
-        var pet = new Pet(Guid.NewGuid());
-        pet.SetName("Buddy");
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

@@ -7,7 +7,7 @@ namespace Barkfest.Domain.Tests;
 public class BreedTests
 {
     [Fact]
-    public void SetDogBreed_Should_Set_Breed_When_Valid()
+    public void SetDogBreed_When_BreedIsValid_Sets_Breed()
     {
         var breed = new DogBreedInfo();
 
@@ -17,7 +17,7 @@ public class BreedTests
     }
 
     [Fact]
-    public void SetDogBreed_Should_Throw_When_Null()
+    public void SetDogBreed_When_Null_Throws_DomainException()
     {
         var breed = new DogBreedInfo();
 
@@ -25,7 +25,7 @@ public class BreedTests
     }
 
     [Fact]
-    public void SetCatBreed_Should_Set_Breed_When_Valid()
+    public void SetCatBreed_When_BreedIsValid_Sets_Breed()
     {
         var breed = new CatBreedInfo();
 
@@ -35,7 +35,7 @@ public class BreedTests
     }
 
     [Fact]
-    public void SetCatBreed_Should_Throw_When_Null()
+    public void SetCatBreed_When_Null_Throws_DomainException()
     {
         var breed = new CatBreedInfo();
 

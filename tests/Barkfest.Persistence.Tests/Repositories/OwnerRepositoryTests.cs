@@ -26,7 +26,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task AddAsync_ThenGetByIdAsync_ReturnsSavedOwner()
+    public async Task AddAsync_When_OwnerAdded_Returns_SavedOwner()
     {
         var owner = BuildOwner("John", "Doe", "john@example.com");
         await _sut.AddAsync(owner);
@@ -41,7 +41,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetByIdAsync_OwnerNotFound_ReturnsNull()
+    public async Task GetByIdAsync_When_OwnerNotFound_Returns_Null()
     {
         var result = await _sut.GetByIdAsync(Guid.NewGuid());
 
@@ -49,7 +49,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsAllPersistedOwners()
+    public async Task GetAllAsync_When_Called_Returns_AllPersistedOwners()
     {
         await _sut.AddAsync(BuildOwner("Alice", "Adams", "alice@example.com"));
         await _sut.AddAsync(BuildOwner("Bob", "Baker", "bob@example.com"));
@@ -61,7 +61,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task UpdateAsync_PersistsChangesToDatabase()
+    public async Task UpdateAsync_When_OwnerUpdated_Persists_Changes()
     {
         var owner = BuildOwner("Jane", "Smith", "jane@example.com");
         await _sut.AddAsync(owner);
@@ -79,7 +79,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task DeleteAsync_RemovesOwnerFromDatabase()
+    public async Task DeleteAsync_When_OwnerExists_Removes_Owner()
     {
         var owner = BuildOwner("Mark", "Jones", "mark@example.com");
         await _sut.AddAsync(owner);
@@ -93,7 +93,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task AddAsync_OwnerWithProfileImage_PersistsImage()
+    public async Task AddAsync_When_OwnerHasProfileImage_Persists_Image()
     {
         var owner = BuildOwner("Sara", "Lee", "sara@example.com");
         owner.SetProfileImage("owners/abc/photo.jpg", "image/jpeg");

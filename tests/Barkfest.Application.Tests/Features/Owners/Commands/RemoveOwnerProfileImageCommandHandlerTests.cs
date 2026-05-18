@@ -20,10 +20,10 @@ public class RemoveOwnerProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerWithImage_DeletesBlobAndClearsImage()
+    public async Task Handle_When_OwnerHasImage_Deletes_BlobAndClearsImage()
     {
         var ownerId = Guid.NewGuid();
-        var owner = BuildOwner();
+        var owner = new OwnerBuilder().Build();
         owner.SetProfileImage("owners/abc/photo.jpg", "image/jpeg");
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
@@ -36,10 +36,10 @@ public class RemoveOwnerProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerWithoutImage_SkipsBlobDeleteAndSaves()
+    public async Task Handle_When_OwnerHasNoImage_Skips_BlobDeleteAndSaves()
     {
         var ownerId = Guid.NewGuid();
-        var owner = BuildOwner();
+        var owner = new OwnerBuilder().Build();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
         await _sut.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
@@ -50,7 +50,7 @@ public class RemoveOwnerProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
@@ -59,12 +59,4 @@ public class RemoveOwnerProfileImageCommandHandlerTests
             () => _sut.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None));
     }
 
-    private static Owner BuildOwner()
-    {
-        var owner = new Owner();
-        owner.SetFirstName("John");
-        owner.SetLastName("Doe");
-        owner.SetEmail("john@example.com");
-        return owner;
-    }
 }

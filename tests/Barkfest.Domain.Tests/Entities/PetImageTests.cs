@@ -10,7 +10,7 @@ public class PetImageTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetImage_ValidArgs_SetsBlobNameAndNormalisedContentType()
+    public void SetImage_When_ContentTypeHasMixedCase_Sets_NormalisedContentType()
     {
         var image = new PetImage();
 
@@ -24,7 +24,7 @@ public class PetImageTests
     [InlineData("image/jpeg")]
     [InlineData("image/jpg")]
     [InlineData("image/png")]
-    public void SetImage_AllowedContentTypes_Succeeds(string contentType)
+    public void SetImage_When_ContentTypeIsAllowed_Succeeds(string contentType)
     {
         var image = new PetImage();
 
@@ -34,7 +34,7 @@ public class PetImageTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void SetImage_EmptyBlobName_ThrowsDomainException(string blobName)
+    public void SetImage_When_BlobNameIsEmptyOrWhitespace_Throws_DomainException(string blobName)
     {
         var image = new PetImage();
 
@@ -45,7 +45,7 @@ public class PetImageTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void SetImage_EmptyContentType_ThrowsDomainException(string contentType)
+    public void SetImage_When_ContentTypeIsEmptyOrWhitespace_Throws_DomainException(string contentType)
     {
         var image = new PetImage();
 
@@ -54,7 +54,7 @@ public class PetImageTests
     }
 
     [Fact]
-    public void SetImage_UnsupportedContentType_ThrowsDomainException()
+    public void SetImage_When_ContentTypeIsNotSupported_Throws_DomainException()
     {
         var image = new PetImage();
 
@@ -67,7 +67,7 @@ public class PetImageTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetDisplayOrder_Zero_SetsValue()
+    public void SetDisplayOrder_When_ValueIsZero_Sets_Value()
     {
         var image = new PetImage();
 
@@ -77,7 +77,7 @@ public class PetImageTests
     }
 
     [Fact]
-    public void SetDisplayOrder_PositiveValue_SetsValue()
+    public void SetDisplayOrder_When_ValueIsPositive_Sets_Value()
     {
         var image = new PetImage();
 
@@ -87,7 +87,7 @@ public class PetImageTests
     }
 
     [Fact]
-    public void SetDisplayOrder_NegativeValue_ThrowsDomainException()
+    public void SetDisplayOrder_When_ValueIsNegative_Throws_DomainException()
     {
         var image = new PetImage();
 
@@ -100,7 +100,7 @@ public class PetImageTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void NewPetImage_HasNonEmptyId()
+    public void NewPetImage_When_Instantiated_Returns_ValidGuid()
     {
         var image = new PetImage();
 

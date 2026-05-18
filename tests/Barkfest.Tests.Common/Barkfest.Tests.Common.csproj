@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Barkfest.Domain\Barkfest.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

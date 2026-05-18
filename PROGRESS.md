@@ -131,6 +131,28 @@
 
 ---
 
+## Phase 10 — Test Refinements ✅ Complete
+
+**378 tests across 5 runnable projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 142 |
+| `Barkfest.Application.Tests` | 137 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 71 |
+| `Barkfest.API.Tests` | 20 |
+
+- All test names across all 6 projects renamed to follow `[Method]_When_[Condition]_Returns_[Result]` / `[Method]_When_[Condition]_Throws_[ExceptionType]`
+- HTTP status codes use words not numbers (`NoContent`, `NotFound`, `BadRequest`, `Created`)
+- `Fails_For[Property]` used consistently for validator failure tests
+- All `_AtMaxLength_Passes` boundary tests removed — only failure cases tested
+- EF Core configuration tests left unchanged — static model facts, no method/condition pattern applies
+- Scenario-style lifecycle tests (`OwnerCrudLifecycle_*`, `PetCrudLifecycle_*`, `FullLifecycle_*`) left unchanged
+- `SupportedImageType` methods renamed: `IsAllowedContentType` → `IsContentTypeSupported`, `IsAllowedExtension` → `IsFileExtensionSupported` — all call sites updated across Domain, Application, and PLAN.md
+
+---
+
 ## Next
 
 All phases complete.

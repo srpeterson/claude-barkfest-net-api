@@ -20,10 +20,10 @@ public class UploadPetProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetWithoutExistingImage_UploadsAndSaves()
+    public async Task Handle_When_PetHasNoExistingImage_Uploads_AndSaves()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet(petId);
+        var pet = new PetBuilder().Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         var content = new MemoryStream([0x89, 0x50]);
 
@@ -43,10 +43,10 @@ public class UploadPetProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetWithExistingImage_DeletesOldThenUploadsNew()
+    public async Task Handle_When_PetHasExistingImage_Deletes_OldThenUploadsNew()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet(petId);
+        var pet = new PetBuilder().Build();
         pet.SetProfileImage("pets/old/photo.jpg", "image/jpeg");
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         var content = new MemoryStream([0x89, 0x50]);
@@ -66,7 +66,7 @@ public class UploadPetProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
@@ -76,11 +76,4 @@ public class UploadPetProfileImageCommandHandlerTests
         await Should.ThrowAsync<NotFoundException>(() => _sut.Handle(command, CancellationToken.None));
     }
 
-    private static Pet BuildPet(Guid petId)
-    {
-        var pet = new Pet(Guid.NewGuid());
-        pet.SetName("Buddy");
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

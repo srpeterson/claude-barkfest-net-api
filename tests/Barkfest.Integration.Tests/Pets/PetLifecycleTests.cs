@@ -68,7 +68,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task UploadProfileImage_ValidJpeg_Returns204()
+    public async Task UploadProfileImage_When_JpegProvided_Returns_NoContent()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Rex", "Dog");
@@ -81,7 +81,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadProfileImage_UnknownPet_Returns404()
+    public async Task UploadProfileImage_When_PetNotFound_Returns_NotFound()
     {
         var response = await _client.PostAsync(
             $"/v1/pets/{Guid.NewGuid()}/profile-image",
@@ -91,7 +91,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadThenRemoveProfileImage_Returns204BothTimes()
+    public async Task RemoveProfileImage_When_PreviouslyUploaded_Returns_NoContent()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Bella", "Cat");
@@ -106,7 +106,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task UploadProfileImage_ReplacesExistingImage()
+    public async Task UploadProfileImage_When_ImageAlreadyExists_Replaces_Image()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Max", "Dog");
@@ -127,7 +127,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task AddImage_ValidFile_Returns201WithImageId()
+    public async Task AddImage_When_FileIsValid_Returns_Created()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Luna", "Cat");
@@ -143,7 +143,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task AddImage_UnknownPet_Returns404()
+    public async Task AddImage_When_PetNotFound_Returns_NotFound()
     {
         var response = await _client.PostAsync(
             $"/v1/pets/{Guid.NewGuid()}/images",
@@ -153,7 +153,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task AddThenRemoveImage_Returns204OnRemove()
+    public async Task RemoveImage_When_ImageExists_Returns_NoContent()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Charlie", "Dog");
@@ -170,7 +170,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task RemoveImage_UnknownImageId_Returns404()
+    public async Task RemoveImage_When_ImageNotFound_Returns_NotFound()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Daisy", "Dog");
@@ -181,7 +181,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task AddMultipleImages_UpToMaxLimit_AllSucceed()
+    public async Task AddImage_When_UpToMaxLimit_AllSucceed()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Archie", "Dog");
@@ -198,7 +198,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     [Fact]
-    public async Task AddImage_ExceedsMaxLimit_Returns400()
+    public async Task AddImage_When_ExceedsMaxLimit_Returns_BadRequest()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Milo", "Dog");

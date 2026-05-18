@@ -17,7 +17,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetAll_ReturnsOk()
+    public async Task GetAll_When_Called_Returns_Ok()
     {
         var response = await _client.GetAsync("/v1/owners");
 
@@ -29,7 +29,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Create_ValidRequest_Returns201WithLocationHeader()
+    public async Task Create_When_RequestIsValid_Returns_Created()
     {
         var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
@@ -45,7 +45,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Create_MissingEmail_Returns400ValidationProblem()
+    public async Task Create_When_EmailIsMissing_Returns_BadRequest()
     {
         var response = await _client.PostAsJsonAsync("/v1/owners", new
         {
@@ -65,7 +65,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetById_ExistingOwner_ReturnsOwnerData()
+    public async Task GetById_When_OwnerExists_Returns_Owner()
     {
         var id = await CreateOwner("Alice", "Adams", "alice@example.com");
 
@@ -79,7 +79,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task GetById_UnknownId_Returns404ProblemDetails()
+    public async Task GetById_When_OwnerNotFound_Returns_NotFound()
     {
         var response = await _client.GetAsync($"/v1/owners/{Guid.NewGuid()}");
 
@@ -94,7 +94,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Update_ExistingOwner_Returns204()
+    public async Task Update_When_OwnerExists_Returns_NoContent()
     {
         var id = await CreateOwner("Bob", "Baker", "bob@example.com");
 
@@ -110,7 +110,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Update_UnknownId_Returns404()
+    public async Task Update_When_OwnerNotFound_Returns_NotFound()
     {
         var response = await _client.PutAsJsonAsync($"/v1/owners/{Guid.NewGuid()}", new
         {
@@ -128,7 +128,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Delete_ExistingOwner_Returns204()
+    public async Task Delete_When_OwnerExists_Returns_NoContent()
     {
         var id = await CreateOwner("Carol", "Clark", "carol@example.com");
 
@@ -138,7 +138,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Delete_UnknownId_Returns404()
+    public async Task Delete_When_OwnerNotFound_Returns_NotFound()
     {
         var response = await _client.DeleteAsync($"/v1/owners/{Guid.NewGuid()}");
 
@@ -150,7 +150,7 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetPets_ExistingOwner_ReturnsOk()
+    public async Task GetPets_When_OwnerExists_Returns_Ok()
     {
         var id = await CreateOwner("Dave", "Davis", "dave@example.com");
 

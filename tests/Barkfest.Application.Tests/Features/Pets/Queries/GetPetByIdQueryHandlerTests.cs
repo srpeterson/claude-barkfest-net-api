@@ -17,10 +17,10 @@ public class GetPetByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ExistingPet_ReturnsMappedDto()
+    public async Task Handle_When_PetExists_Returns_MappedDto()
     {
         var petId = Guid.NewGuid();
-        var pet = BuildPet();
+        var pet = new PetBuilder().Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
         var result = await _sut.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
@@ -30,7 +30,7 @@ public class GetPetByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PetNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
@@ -39,11 +39,4 @@ public class GetPetByIdQueryHandlerTests
             () => _sut.Handle(new GetPetByIdQuery(petId), CancellationToken.None));
     }
 
-    private static Pet BuildPet()
-    {
-        var pet = new Pet(Guid.NewGuid());
-        pet.SetName("Buddy");
-        pet.SetPetType(Barkfest.Domain.Enums.PetType.Dog);
-        return pet;
-    }
 }

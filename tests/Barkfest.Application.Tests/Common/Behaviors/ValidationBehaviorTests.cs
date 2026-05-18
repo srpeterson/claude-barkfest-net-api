@@ -32,7 +32,7 @@ public class ValidationBehaviorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_NoValidators_CallsNext()
+    public async Task Handle_When_NoValidatorsRegistered_Calls_Next()
     {
         var (next, callCount) = MakeNext();
         var sut = new ValidationBehavior<TestRequest, string>([]);
@@ -43,7 +43,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_NoValidators_ReturnsNextResult()
+    public async Task Handle_When_NoValidatorsRegistered_Returns_NextResult()
     {
         var (next, _) = MakeNext("expected");
         var sut = new ValidationBehavior<TestRequest, string>([]);
@@ -58,7 +58,7 @@ public class ValidationBehaviorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_ValidatorPasses_CallsNext()
+    public async Task Handle_When_ValidatorPasses_Calls_Next()
     {
         var (next, callCount) = MakeNext();
         var sut = new ValidationBehavior<TestRequest, string>([new TestRequestAlwaysPassValidator()]);
@@ -69,7 +69,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_ValidatorPasses_ReturnsNextResult()
+    public async Task Handle_When_ValidatorPasses_Returns_NextResult()
     {
         var (next, _) = MakeNext("result");
         var sut = new ValidationBehavior<TestRequest, string>([new TestRequestAlwaysPassValidator()]);
@@ -84,7 +84,7 @@ public class ValidationBehaviorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_ValidatorFails_ThrowsValidationException()
+    public async Task Handle_When_ValidatorFails_Throws_ValidationException()
     {
         var (next, _) = MakeNext();
         var sut = new ValidationBehavior<TestRequest, string>([new TestRequestAlwaysFailValidator()]);
@@ -94,7 +94,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_ValidatorFails_DoesNotCallNext()
+    public async Task Handle_When_ValidatorFails_DoesNotCall_Next()
     {
         var (next, callCount) = MakeNext();
         var sut = new ValidationBehavior<TestRequest, string>([new TestRequestAlwaysFailValidator()]);
@@ -106,7 +106,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_MultipleValidatorsFail_ExceptionContainsAllErrors()
+    public async Task Handle_When_MultipleValidatorsFail_Throws_ValidationExceptionContainingAllErrors()
     {
         var (next, _) = MakeNext();
         var sut = new ValidationBehavior<TestRequest, string>([

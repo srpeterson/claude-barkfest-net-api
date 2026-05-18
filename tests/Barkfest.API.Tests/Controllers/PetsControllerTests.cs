@@ -13,7 +13,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetAll_ReturnsOk()
+    public async Task GetAll_When_Called_Returns_Ok()
     {
         var response = await _client.GetAsync("/v1/pets");
 
@@ -25,7 +25,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Create_ValidRequest_Returns201WithLocationHeader()
+    public async Task Create_When_RequestIsValid_Returns_Created()
     {
         var ownerId = await CreateOwner();
 
@@ -44,7 +44,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Create_UnknownOwnerId_Returns404()
+    public async Task Create_When_OwnerNotFound_Returns_NotFound()
     {
         var response = await _client.PostAsJsonAsync("/v1/pets", new
         {
@@ -59,7 +59,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Create_MissingName_Returns400ValidationProblem()
+    public async Task Create_When_NameIsMissing_Returns_BadRequest()
     {
         var ownerId = await CreateOwner();
 
@@ -83,7 +83,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetById_ExistingPet_ReturnsPetData()
+    public async Task GetById_When_PetExists_Returns_Pet()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Luna", "Cat");
@@ -97,7 +97,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task GetById_UnknownId_Returns404ProblemDetails()
+    public async Task GetById_When_PetNotFound_Returns_NotFound()
     {
         var response = await _client.GetAsync($"/v1/pets/{Guid.NewGuid()}");
 
@@ -112,7 +112,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Update_ExistingPet_Returns204()
+    public async Task Update_When_PetExists_Returns_NoContent()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Max", "Dog");
@@ -129,7 +129,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Update_UnknownId_Returns404()
+    public async Task Update_When_PetNotFound_Returns_NotFound()
     {
         var response = await _client.PutAsJsonAsync($"/v1/pets/{Guid.NewGuid()}", new
         {
@@ -147,7 +147,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Delete_ExistingPet_Returns204()
+    public async Task Delete_When_PetExists_Returns_NoContent()
     {
         var ownerId = await CreateOwner();
         var petId = await CreatePet(ownerId, "Rex", "Dog");
@@ -158,7 +158,7 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Delete_UnknownId_Returns404()
+    public async Task Delete_When_PetNotFound_Returns_NotFound()
     {
         var response = await _client.DeleteAsync($"/v1/pets/{Guid.NewGuid()}");
 

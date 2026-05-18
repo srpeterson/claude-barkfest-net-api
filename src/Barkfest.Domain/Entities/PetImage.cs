@@ -24,7 +24,7 @@ public class PetImage
         if (string.IsNullOrWhiteSpace(contentType))
             throw new DomainException("Content type is required.");
 
-        if (!SupportedImageType.IsAllowedContentType(contentType))
+        if (!SupportedImageType.IsContentTypeSupported(contentType))
             throw new DomainException($"Content type '{contentType}' is not supported.");
 
         BlobName = blobName.Trim();

@@ -5,43 +5,43 @@ namespace Barkfest.Domain.Tests;
 public class DogBreedTests
 {
     [Fact]
-    public void DogBreed_Should_Have_Exactly_30_Values()
+    public void DogBreed_List_Contains_AllDefinedBreeds()
     {
         DogBreed.List.Count.ShouldBe(30);
     }
 
     [Fact]
-    public void DogBreed_Should_Include_Labradoodle()
+    public void DogBreed_List_Includes_Labradoodle()
     {
         DogBreed.List.ShouldContain(b => b.Name == "Labradoodle");
     }
 
     [Fact]
-    public void DogBreed_Should_Include_Goldendoodle()
+    public void DogBreed_List_Includes_Goldendoodle()
     {
         DogBreed.List.ShouldContain(b => b.Name == "Goldendoodle");
     }
 
     [Fact]
-    public void DogBreed_Should_Include_Cockapoo()
+    public void DogBreed_List_Includes_Cockapoo()
     {
         DogBreed.List.ShouldContain(b => b.Name == "Cockapoo");
     }
 
     [Fact]
-    public void DogBreed_Should_Include_Mixed()
+    public void DogBreed_List_Includes_Mixed()
     {
         DogBreed.List.ShouldContain(b => b.Name == "Mixed");
     }
 
     [Fact]
-    public void DogBreed_Should_Include_Other()
+    public void DogBreed_List_Includes_Other()
     {
         DogBreed.List.ShouldContain(b => b.Name == "Other");
     }
 
     [Fact]
-    public void DogBreed_Should_Support_Lookup_By_Name()
+    public void FromName_When_NameIsValid_Returns_DogBreed()
     {
         var result = DogBreed.FromName("French Bulldog");
 
@@ -50,7 +50,7 @@ public class DogBreedTests
     }
 
     [Fact]
-    public void DogBreed_Should_Support_Lookup_By_Value()
+    public void FromValue_When_ValueIsValid_Returns_DogBreed()
     {
         var result = DogBreed.FromValue(1);
 
@@ -59,19 +59,19 @@ public class DogBreedTests
     }
 
     [Fact]
-    public void DogBreed_Should_Throw_When_Looking_Up_Invalid_Name()
+    public void FromName_When_NameIsInvalid_Throws_Exception()
     {
         Should.Throw<Exception>(() => DogBreed.FromName("Invalid Breed"));
     }
 
     [Fact]
-    public void DogBreed_Should_Throw_When_Looking_Up_Invalid_Value()
+    public void FromValue_When_ValueIsInvalid_Throws_Exception()
     {
         Should.Throw<Exception>(() => DogBreed.FromValue(99));
     }
 
     [Fact]
-    public void DogBreed_Values_Should_Be_Unique()
+    public void DogBreed_Values_Are_Unique()
     {
         var values = DogBreed.List.Select(b => b.Value).ToList();
 
@@ -79,7 +79,7 @@ public class DogBreedTests
     }
 
     [Fact]
-    public void DogBreed_Names_Should_Be_Unique()
+    public void DogBreed_Names_Are_Unique()
     {
         var names = DogBreed.List.Select(b => b.Name).ToList();
 

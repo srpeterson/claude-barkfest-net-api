@@ -5,25 +5,25 @@ namespace Barkfest.Domain.Tests.ValueObjects;
 public class SupportedImageTypeTests
 {
     // -----------------------------------------------------------------------
-    // IsAllowedContentType
+    // IsContentTypeSupported
     // -----------------------------------------------------------------------
 
     [Theory]
     [InlineData("image/jpeg")]
     [InlineData("image/jpg")]
     [InlineData("image/png")]
-    public void IsAllowedContentType_AllowedTypes_ReturnsTrue(string contentType)
+    public void IsContentTypeSupported_When_ContentTypeIsAllowed_Returns_True(string contentType)
     {
-        SupportedImageType.IsAllowedContentType(contentType).ShouldBeTrue();
+        SupportedImageType.IsContentTypeSupported(contentType).ShouldBeTrue();
     }
 
     [Theory]
     [InlineData("IMAGE/JPEG")]
     [InlineData("Image/Png")]
     [InlineData("image/JPG")]
-    public void IsAllowedContentType_AllowedTypesUppercase_ReturnsTrueAfterNormalisation(string contentType)
+    public void IsContentTypeSupported_When_ContentTypeIsAllowedButUppercase_Returns_True(string contentType)
     {
-        SupportedImageType.IsAllowedContentType(contentType).ShouldBeTrue();
+        SupportedImageType.IsContentTypeSupported(contentType).ShouldBeTrue();
     }
 
     [Theory]
@@ -32,31 +32,31 @@ public class SupportedImageTypeTests
     [InlineData("image/bmp")]
     [InlineData("application/octet-stream")]
     [InlineData("")]
-    public void IsAllowedContentType_DisallowedTypes_ReturnsFalse(string contentType)
+    public void IsContentTypeSupported_When_ContentTypeIsNotAllowed_Returns_False(string contentType)
     {
-        SupportedImageType.IsAllowedContentType(contentType).ShouldBeFalse();
+        SupportedImageType.IsContentTypeSupported(contentType).ShouldBeFalse();
     }
 
     // -----------------------------------------------------------------------
-    // IsAllowedExtension
+    // IsFileExtensionSupported
     // -----------------------------------------------------------------------
 
     [Theory]
     [InlineData("photo.jpg")]
     [InlineData("photo.jpeg")]
     [InlineData("photo.png")]
-    public void IsAllowedExtension_AllowedFileNames_ReturnsTrue(string fileName)
+    public void IsFileExtensionSupported_When_ExtensionIsAllowed_Returns_True(string fileName)
     {
-        SupportedImageType.IsAllowedExtension(fileName).ShouldBeTrue();
+        SupportedImageType.IsFileExtensionSupported(fileName).ShouldBeTrue();
     }
 
     [Theory]
     [InlineData("photo.JPG")]
     [InlineData("photo.JPEG")]
     [InlineData("photo.PNG")]
-    public void IsAllowedExtension_AllowedFileNamesUppercase_ReturnsTrueAfterNormalisation(string fileName)
+    public void IsFileExtensionSupported_When_ExtensionIsAllowedButUppercase_Returns_True(string fileName)
     {
-        SupportedImageType.IsAllowedExtension(fileName).ShouldBeTrue();
+        SupportedImageType.IsFileExtensionSupported(fileName).ShouldBeTrue();
     }
 
     [Theory]
@@ -65,9 +65,9 @@ public class SupportedImageTypeTests
     [InlineData("photo.bmp")]
     [InlineData("photo.tiff")]
     [InlineData("photo")]
-    public void IsAllowedExtension_DisallowedFileNames_ReturnsFalse(string fileName)
+    public void IsFileExtensionSupported_When_ExtensionIsNotAllowed_Returns_False(string fileName)
     {
-        SupportedImageType.IsAllowedExtension(fileName).ShouldBeFalse();
+        SupportedImageType.IsFileExtensionSupported(fileName).ShouldBeFalse();
     }
 
     // -----------------------------------------------------------------------

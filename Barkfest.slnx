@@ -23,5 +23,6 @@
     <Project Path="tests/Barkfest.Infrastructure.Tests/Barkfest.Infrastructure.Tests.csproj" />
     <Project Path="tests/Barkfest.Integration.Tests/Barkfest.Integration.Tests.csproj" />
     <Project Path="tests/Barkfest.Persistence.Tests/Barkfest.Persistence.Tests.csproj" />
+    <Project Path="tests/Barkfest.Tests.Common/Barkfest.Tests.Common.csproj" />
   </Folder>
 </Solution>

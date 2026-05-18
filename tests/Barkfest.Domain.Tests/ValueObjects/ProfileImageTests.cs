@@ -10,7 +10,7 @@ public class ProfileImageTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Create_ValidArgs_ReturnProfileImageWithNormalisedValues()
+    public void Create_When_ContentTypeHasMixedCase_Sets_NormalisedContentType()
     {
         var image = ProfileImage.Create("owners/abc/profile.jpg", "image/JPEG");
 
@@ -22,7 +22,7 @@ public class ProfileImageTests
     [InlineData("image/jpeg")]
     [InlineData("image/jpg")]
     [InlineData("image/png")]
-    public void Create_AllAllowedContentTypes_Succeeds(string contentType)
+    public void Create_When_ContentTypeIsAllowed_Succeeds(string contentType)
     {
         Should.NotThrow(() => ProfileImage.Create("owners/abc/photo", contentType));
     }
@@ -34,7 +34,7 @@ public class ProfileImageTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Create_EmptyBlobName_ThrowsDomainException(string blobName)
+    public void Create_When_BlobNameIsEmptyOrWhitespace_Throws_DomainException(string blobName)
     {
         Should.Throw<DomainException>(() => ProfileImage.Create(blobName, "image/jpeg"))
             .Message.ShouldBe("Blob name is required.");
@@ -43,14 +43,14 @@ public class ProfileImageTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Create_EmptyContentType_ThrowsDomainException(string contentType)
+    public void Create_When_ContentTypeIsEmptyOrWhitespace_Throws_DomainException(string contentType)
     {
         Should.Throw<DomainException>(() => ProfileImage.Create("owners/abc/photo.jpg", contentType))
             .Message.ShouldBe("Content type is required.");
     }
 
     [Fact]
-    public void Create_UnsupportedContentType_ThrowsDomainException()
+    public void Create_When_ContentTypeIsNotSupported_Throws_DomainException()
     {
         Should.Throw<DomainException>(() => ProfileImage.Create("owners/abc/photo.gif", "image/gif"))
             .Message.ShouldContain("image/gif");
@@ -61,7 +61,7 @@ public class ProfileImageTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void TwoProfileImages_SameBlobNameAndContentType_AreEqual()
+    public void Equals_When_BlobNameAndContentTypeMatch_Returns_True()
     {
         var a = ProfileImage.Create("owners/abc/profile.jpg", "image/jpeg");
         var b = ProfileImage.Create("owners/abc/profile.jpg", "image/jpeg");
@@ -70,7 +70,7 @@ public class ProfileImageTests
     }
 
     [Fact]
-    public void TwoProfileImages_DifferentBlobName_AreNotEqual()
+    public void Equals_When_BlobNameDiffers_Returns_False()
     {
         var a = ProfileImage.Create("owners/abc/profile.jpg", "image/jpeg");
         var b = ProfileImage.Create("owners/xyz/profile.jpg", "image/jpeg");
@@ -79,7 +79,7 @@ public class ProfileImageTests
     }
 
     [Fact]
-    public void TwoProfileImages_DifferentContentType_AreNotEqual()
+    public void Equals_When_ContentTypeDiffers_Returns_False()
     {
         var a = ProfileImage.Create("owners/abc/profile.jpg", "image/jpeg");
         var b = ProfileImage.Create("owners/abc/profile.png", "image/png");
@@ -92,7 +92,7 @@ public class ProfileImageTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Create_BlobNameWithWhitespace_IsTrimmed()
+    public void Create_When_BlobNameHasWhitespace_Sets_TrimmedBlobName()
     {
         var image = ProfileImage.Create("  owners/abc/profile.jpg  ", "image/jpeg");
 

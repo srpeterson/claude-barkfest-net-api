@@ -27,7 +27,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task AddAsync_ThenGetByIdAsync_ReturnsSavedPet()
+    public async Task AddAsync_When_PetAdded_Returns_SavedPet()
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Buddy", PetType.Dog);
@@ -43,7 +43,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetByIdAsync_PetNotFound_ReturnsNull()
+    public async Task GetByIdAsync_When_PetNotFound_Returns_Null()
     {
         var result = await _sut.GetByIdAsync(Guid.NewGuid());
 
@@ -51,7 +51,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsAllPersistedPets()
+    public async Task GetAllAsync_When_Called_Returns_AllPersistedPets()
     {
         var (owner, _) = await SeedOwner();
         await _sut.AddAsync(BuildPet(owner.Id, "Max", PetType.Dog));
@@ -64,7 +64,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetByOwnerIdAsync_ReturnsOnlyPetsForThatOwner()
+    public async Task GetByOwnerIdAsync_When_Called_Returns_OnlyPetsForThatOwner()
     {
         var (owner1, _) = await SeedOwner("alice@example.com");
         var (owner2, _) = await SeedOwner("bob@example.com");
@@ -81,7 +81,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task UpdateAsync_PersistsChangesToDatabase()
+    public async Task UpdateAsync_When_PetUpdated_Persists_Changes()
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Max", PetType.Dog);
@@ -100,7 +100,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task DeleteAsync_RemovesPetFromDatabase()
+    public async Task DeleteAsync_When_PetExists_Removes_Pet()
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Rex", PetType.Dog);
@@ -115,7 +115,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetByIdAsync_PetWithImages_IncludesImages()
+    public async Task GetByIdAsync_When_PetHasImages_Returns_PetWithImages()
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Daisy", PetType.Dog);
@@ -133,7 +133,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task AddAsync_PetWithProfileImage_PersistsImage()
+    public async Task AddAsync_When_PetHasProfileImage_Persists_Image()
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Coco", PetType.Cat);

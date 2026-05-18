@@ -17,7 +17,7 @@ public class CreateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_ReturnsNonEmptyGuid()
+    public async Task Handle_When_CommandIsValid_Returns_ValidGuid()
     {
         var command = new CreateOwnerCommand("John", "Doe", "john@example.com", null);
 
@@ -27,7 +27,7 @@ public class CreateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_AddsOwnerToRepository()
+    public async Task Handle_When_CommandIsValid_Adds_OwnerToRepository()
     {
         var command = new CreateOwnerCommand("Jane", "Smith", "jane@example.com", "555-0100");
 
@@ -42,7 +42,7 @@ public class CreateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_SavesChanges()
+    public async Task Handle_When_CommandIsValid_Saves_Changes()
     {
         var command = new CreateOwnerCommand("John", "Doe", "john@example.com", null);
 

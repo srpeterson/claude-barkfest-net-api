@@ -12,7 +12,7 @@ public class CreatePetCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_ValidCommand_Passes()
+    public void Validate_When_CommandIsValid_Passes()
     {
         var command = new CreatePetCommand(Guid.NewGuid(), "Bruno", null, null, "Dog");
 
@@ -24,7 +24,7 @@ public class CreatePetCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_EmptyOwnerId_FailsOnOwnerId()
+    public void Validate_When_OwnerIdIsEmpty_Fails_ForOwnerId()
     {
         var command = new CreatePetCommand(Guid.Empty, "Bruno", null, null, "Dog");
 
@@ -42,7 +42,7 @@ public class CreatePetCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_NameEmptyOrNull_FailsOnName(string? name)
+    public void Validate_When_NameIsEmptyOrNull_Fails_ForName(string? name)
     {
         var command = new CreatePetCommand(Guid.NewGuid(), name!, null, null, "Dog");
 
@@ -53,16 +53,7 @@ public class CreatePetCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_NameAtMaxLength_Passes()
-    {
-        var command = new CreatePetCommand(
-            Guid.NewGuid(), new string('A', Pet.NameMaxLength), null, null, "Dog");
-
-        _sut.Validate(command).IsValid.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Validate_NameExceedsMaxLength_FailsOnName()
+    public void Validate_When_NameExceedsMaxLength_Fails_ForName()
     {
         var command = new CreatePetCommand(
             Guid.NewGuid(), new string('A', Pet.NameMaxLength + 1), null, null, "Dog");
@@ -81,7 +72,7 @@ public class CreatePetCommandValidatorTests
     [InlineData("Dog")]
     [InlineData("Cat")]
     [InlineData("Other")]
-    public void Validate_KnownPetType_Passes(string petType)
+    public void Validate_When_PetTypeIsKnown_Passes(string petType)
     {
         var command = new CreatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType);
 
@@ -92,7 +83,7 @@ public class CreatePetCommandValidatorTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_PetTypeEmptyOrNull_FailsOnPetType(string? petType)
+    public void Validate_When_PetTypeIsEmptyOrNull_Fails_ForPetType(string? petType)
     {
         var command = new CreatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType!);
 

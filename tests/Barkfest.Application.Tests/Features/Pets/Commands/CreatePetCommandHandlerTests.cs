@@ -19,10 +19,10 @@ public class CreatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_ReturnsNonEmptyGuid()
+    public async Task Handle_When_CommandIsValid_Returns_ValidGuid()
     {
         var ownerId = Guid.NewGuid();
-        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(BuildOwner());
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(new OwnerBuilder().Build());
 
         var command = new CreatePetCommand(ownerId, "Buddy", null, null, "Dog");
 
@@ -32,10 +32,10 @@ public class CreatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidCommand_AddsPetAndSaves()
+    public async Task Handle_When_CommandIsValid_Adds_PetAndSaves()
     {
         var ownerId = Guid.NewGuid();
-        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(BuildOwner());
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(new OwnerBuilder().Build());
 
         var dob = new DateOnly(2020, 6, 15);
         var command = new CreatePetCommand(ownerId, "Max", "A good boy", dob, "Dog");
@@ -53,7 +53,7 @@ public class CreatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OwnerNotFound_ThrowsNotFoundException()
+    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
@@ -63,12 +63,4 @@ public class CreatePetCommandHandlerTests
         await Should.ThrowAsync<NotFoundException>(() => _sut.Handle(command, CancellationToken.None));
     }
 
-    private static Owner BuildOwner()
-    {
-        var owner = new Owner();
-        owner.SetFirstName("John");
-        owner.SetLastName("Doe");
-        owner.SetEmail("john@example.com");
-        return owner;
-    }
 }

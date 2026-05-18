@@ -18,7 +18,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task UploadAsync_CreatesContainerAutomatically()
+    public async Task UploadAsync_When_ContainerDoesNotExist_Creates_Container()
     {
         var sut = CreateSut();
         var container = UniqueContainer();
@@ -30,7 +30,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     }
 
     [Fact]
-    public async Task UploadAsync_OverwritesExistingBlob()
+    public async Task UploadAsync_When_BlobAlreadyExists_Overwrites_Blob()
     {
         var sut = CreateSut();
         var container = UniqueContainer();
@@ -49,7 +49,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task DownloadAsync_ReturnsOriginalContent()
+    public async Task DownloadAsync_When_BlobExists_Returns_OriginalContent()
     {
         var sut = CreateSut();
         var container = UniqueContainer();
@@ -65,7 +65,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     }
 
     [Fact]
-    public async Task DownloadAsync_PreservesContentType()
+    public async Task DownloadAsync_When_BlobUploaded_Preserves_ContentType()
     {
         var sut = CreateSut();
         var container = UniqueContainer();
@@ -87,7 +87,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task ExistsAsync_BlobExists_ReturnsTrue()
+    public async Task ExistsAsync_When_BlobExists_Returns_True()
     {
         var sut = CreateSut();
         var container = UniqueContainer();
@@ -99,7 +99,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     }
 
     [Fact]
-    public async Task ExistsAsync_BlobDoesNotExist_ReturnsFalse()
+    public async Task ExistsAsync_When_BlobDoesNotExist_Returns_False()
     {
         var sut = CreateSut();
 
@@ -113,7 +113,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task DeleteAsync_ExistingBlob_BlobNoLongerExists()
+    public async Task DeleteAsync_When_BlobExists_Removes_Blob()
     {
         var sut = CreateSut();
         var container = UniqueContainer();
@@ -127,7 +127,7 @@ public class AzureBlobStorageServiceTests(AzuriteFixture fixture)
     }
 
     [Fact]
-    public async Task DeleteAsync_NonExistentBlob_DoesNotThrow()
+    public async Task DeleteAsync_When_BlobDoesNotExist_Succeeds()
     {
         var sut = CreateSut();
 

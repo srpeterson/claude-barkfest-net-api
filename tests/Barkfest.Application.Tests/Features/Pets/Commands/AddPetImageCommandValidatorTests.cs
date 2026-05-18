@@ -20,7 +20,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("photo.jpeg", "image/jpeg")]
     [InlineData("photo.png", "image/png")]
     [InlineData("photo.jpg", "image/jpg")]
-    public void Validate_SupportedFileAndContentType_Passes(string fileName, string contentType)
+    public void Validate_When_FileAndContentTypeAreSupported_Passes(string fileName, string contentType)
     {
         var result = _sut.Validate(ValidCommand(fileName, contentType));
 
@@ -34,7 +34,7 @@ public class AddPetImageCommandValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Validate_ContentTypeEmptyOrWhitespace_FailsOnContentType(string contentType)
+    public void Validate_When_ContentTypeIsEmptyOrWhitespace_Fails_ForContentType(string contentType)
     {
         var result = _sut.Validate(ValidCommand(contentType: contentType));
 
@@ -46,7 +46,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("image/webp")]
     [InlineData("image/gif")]
     [InlineData("application/octet-stream")]
-    public void Validate_UnsupportedContentType_FailsOnContentType(string contentType)
+    public void Validate_When_ContentTypeIsNotSupported_Fails_ForContentType(string contentType)
     {
         var result = _sut.Validate(ValidCommand(contentType: contentType));
 
@@ -61,7 +61,7 @@ public class AddPetImageCommandValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Validate_FileNameEmptyOrWhitespace_FailsOnFileName(string fileName)
+    public void Validate_When_FileNameIsEmptyOrWhitespace_Fails_ForFileName(string fileName)
     {
         var result = _sut.Validate(ValidCommand(fileName: fileName));
 
@@ -74,7 +74,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("photo.gif")]
     [InlineData("photo.bmp")]
     [InlineData("photo")]
-    public void Validate_UnsupportedFileExtension_FailsOnFileName(string fileName)
+    public void Validate_When_FileExtensionIsNotSupported_Fails_ForFileName(string fileName)
     {
         var result = _sut.Validate(ValidCommand(fileName: fileName));
 

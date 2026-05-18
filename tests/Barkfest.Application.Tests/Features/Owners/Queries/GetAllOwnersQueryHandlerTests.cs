@@ -16,9 +16,13 @@ public class GetAllOwnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ReturnsAllOwnersMappedToDtos()
+    public async Task Handle_When_OwnersExist_Returns_AllOwnersMappedToDtos()
     {
-        var owners = new[] { BuildOwner("Alice", "Adams"), BuildOwner("Bob", "Baker") };
+        var owners = new[]
+        {
+            new OwnerBuilder().WithFirstName("Alice").WithLastName("Adams").Build(),
+            new OwnerBuilder().WithFirstName("Bob").WithLastName("Baker").Build()
+        };
         _ownerRepository.GetAllAsync(CancellationToken.None).Returns(owners);
 
         var result = await _sut.Handle(new GetAllOwnersQuery(), CancellationToken.None);
@@ -30,7 +34,7 @@ public class GetAllOwnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_NoOwners_ReturnsEmptyCollection()
+    public async Task Handle_When_NoOwners_Returns_EmptyCollection()
     {
         _ownerRepository.GetAllAsync(CancellationToken.None).Returns([]);
 
@@ -39,12 +43,4 @@ public class GetAllOwnersQueryHandlerTests
         result.ShouldBeEmpty();
     }
 
-    private static Owner BuildOwner(string firstName, string lastName)
-    {
-        var owner = new Owner();
-        owner.SetFirstName(firstName);
-        owner.SetLastName(lastName);
-        owner.SetEmail($"{firstName.ToLower()}@example.com");
-        return owner;
-    }
 }
