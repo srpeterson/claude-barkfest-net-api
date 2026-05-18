@@ -474,16 +474,6 @@ for all changes regardless of author.
 
 ---
 
-### Decision: `claude/` prefix for all Claude Code branches
-**Choice:** All branches created by Claude Code use the prefix `claude/` —
-e.g. `claude/feature/initial-build`, `claude/fix/email-validation`.
-
-**Reason:** Immediately identifiable in GitHub's branch list and PR view.
-Distinguishes Claude Code initiated branches from branches created by human
-developers at a glance.
-
----
-
 ### Decision: Never use `git add .` or `git add -A`
 **Choice:** All staging must name specific files explicitly. Claude Code must
 show the user which files will be staged and wait for approval before staging.
@@ -491,6 +481,41 @@ show the user which files will be staged and wait for approval before staging.
 **Reason:** `git add .` silently stages unintended files — secrets, build
 artifacts, temporary files. Explicit staging with user approval ensures only
 intended files enter the commit. This is a non-negotiable safety rule.
+
+---
+
+## Testing
+
+### Decision: Shared test data builders in `Barkfest.Tests.Common`
+**Choice:** Fluent builder classes (`OwnerBuilder`, `PetBuilder`, `PetImageBuilder`) live in a
+shared `Barkfest.Tests.Common` project referenced by `Barkfest.Domain.Tests` and
+`Barkfest.Application.Tests`. Builders are available globally via `GlobalUsings.cs` in each
+test project. Private `BuildXxx()` helper methods in individual test classes are banned.
+
+**Reason:** `Domain.Tests` and `Application.Tests` both build the same domain entities. Without
+a shared project, `OwnerBuilder` and `PetBuilder` would be duplicated — any change to a domain
+entity would require updating builders in two places. A single shared project eliminates that
+duplication. Banning private helpers enforces consistency — every test file uses the same
+defaults and the same fluent API, making tests easier to read and maintain. The one exception
+is bare entity construction (`new Pet(Guid.NewGuid())`) in `Domain.Tests` setter tests where
+builder defaults would mask the behaviour under test.
+
+---
+
+### Decision: Test naming convention — `[Method]_When_[Condition]_Returns/Throws_[Result]`
+**Choice:** All test methods follow a structured naming pattern:
+- Happy path / response tests: `[Method]_When_[Condition]_Returns_[Result]`
+- Exception tests: `[Method]_When_[Condition]_Throws_[ExceptionType]`
+- Validator failure tests: `Fails_For[Property]_When_[Condition]`
+- HTTP status codes written as words: `Ok`, `Created`, `NoContent`, `BadRequest`, `NotFound`, `InternalServerError`
+- Scenario lifecycle tests (e.g. `OwnerCrudLifecycle_*`) are exempt — they describe an end-to-end flow, not a single method
+
+**Reason:** Consistent naming makes the intent of every test immediately clear without reading
+the body. The `When_` clause is required — it forces the author to articulate the condition
+being tested rather than writing vague names like `Should_ReturnOwner`. Writing HTTP status
+codes as words (`NotFound` not `404`) keeps test names readable and decoupled from
+implementation details. The pattern applies uniformly across all six test projects so any
+developer can navigate the test suite without learning different conventions per layer.
 
 ---
 

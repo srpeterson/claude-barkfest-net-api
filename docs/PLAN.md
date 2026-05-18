@@ -69,7 +69,7 @@ Barkfest.Application.Tests    → Barkfest.Application, Barkfest.Tests.Common
 Barkfest.Persistence.Tests    → Barkfest.Persistence
 Barkfest.Infrastructure.Tests → Barkfest.Infrastructure
 Barkfest.API.Tests            → Barkfest.API
-Barkfest.Integration.Tests    → (none — talks to running app over HTTP)
+Barkfest.Integration.Tests    → Barkfest.API
 ```
 
 ### NuGet Packages
@@ -697,7 +697,7 @@ Use NSubstitute for all mocking. Use Shouldly for all assertions.
 
 ### 7.6 Barkfest.Integration.Tests
 
-No project references — communicates with running app over HTTP.
+References `Barkfest.API` — uses `WebApplicationFactory<Program>` with Testcontainers (SQL Server + Azurite). Fully self-contained; no running AppHost required.
 
 - [ ] `Config/IntegrationTestSettings.cs` — base URL and settings
 - [ ] `Flows/OwnerFlowTests.cs`
@@ -835,7 +835,7 @@ All six test projects remain **completely unchanged**. Aspire is not referenced 
 - `Barkfest.Persistence.Tests` uses `ModelHelper` (no live connection)
 - `Barkfest.Infrastructure.Tests` manages its own Azurite via Testcontainers
 - `Barkfest.API.Tests` manages its own SQL Server + Azurite via Testcontainers
-- `Barkfest.Integration.Tests` talks to a running app over HTTP
+- `Barkfest.Integration.Tests` uses `WebApplicationFactory<Program>` with its own Testcontainers
 
 ### 8.7 Running Locally
 

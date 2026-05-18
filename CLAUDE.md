@@ -330,7 +330,7 @@ validators, tests, EF Core configuration.
 - Docker container names will have a short hash suffix appended by Aspire (e.g. `barkfest-sql-090bc107`) — this is expected and stable per machine; volume names are not hashed
 - `Barkfest.Domain.Tests`, `Barkfest.Application.Tests` — no Aspire dependency, no containers
 - `Barkfest.Persistence.Tests`, `Barkfest.Infrastructure.Tests`, `Barkfest.API.Tests` — no Aspire dependency, manage their own containers via Testcontainers
-- `Barkfest.Integration.Tests` — requires the app to be running; start it first via `dotnet run --project src/Barkfest.AppHost` before running integration tests
+- `Barkfest.Integration.Tests` — uses `WebApplicationFactory<Program>` with Testcontainers; fully self-contained, no running AppHost required
 
 ---
 
@@ -373,13 +373,13 @@ Never add try/catch blocks in handlers or controllers — let middleware handle 
 - **Assertions:** Shouldly — never FluentAssertions
 - **Mocking:** NSubstitute — never Moq
 - **Containers (Persistence.Tests, Infrastructure.Tests, API.Tests):** Testcontainers.MsSql, Testcontainers.Azurite
-- **Integration.Tests:** no Testcontainers — communicates with running app over HTTP only
+- **Integration.Tests:** Testcontainers (SQL Server + Azurite) via `WebApplicationFactory<Program>` — fully self-contained
 
 ### Rules
 - `Domain.Tests`, `Application.Tests` — unit tests, no I/O, no containers, no external dependencies
 - `Persistence.Tests`, `Infrastructure.Tests`, `API.Tests` — Testcontainers only, no real external services
-- `Barkfest.Integration.Tests` — no project references, no Testcontainers; requires the full app
-  running via `dotnet run --project src/Barkfest.AppHost` before the tests are executed
+- `Barkfest.Integration.Tests` — references `Barkfest.API`; uses `WebApplicationFactory<Program>`
+  with Testcontainers (SQL Server + Azurite); fully self-contained, no running AppHost required
 - All image limit tests reference `Pet.MaxImages` — never hardcode `5`
 - All length tests reference domain constants — never hardcode numbers
 - Test names follow `[Method]_When_[Condition]_Returns_[Result]` (happy path) and

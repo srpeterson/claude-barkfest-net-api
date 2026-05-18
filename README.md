@@ -98,15 +98,5 @@ restarts — SQL Server and Azurite volumes survive `docker stop` and machine re
 dotnet test
 ```
 
-Most tests manage their own infrastructure via Testcontainers (SQL Server and Azurite containers
+All tests manage their own infrastructure via Testcontainers (SQL Server and Azurite containers
 are started and torn down automatically per test run). Docker Desktop must be running.
-
-Integration tests require the full app to be running first:
-
-```bash
-# Terminal 1 — start the app
-dotnet run --project src/Barkfest.AppHost
-
-# Terminal 2 — run integration tests only
-dotnet test tests/Barkfest.Integration.Tests
-```
