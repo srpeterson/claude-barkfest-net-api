@@ -18,6 +18,11 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             logger.LogWarning(ex, "Resource not found");
             await WriteProblem(context, StatusCodes.Status404NotFound, "Not Found", ex.Message);
         }
+        catch (ForbiddenException ex)
+        {
+            logger.LogWarning(ex, "Forbidden access attempt");
+            await WriteProblem(context, StatusCodes.Status403Forbidden, "Forbidden", ex.Message);
+        }
         catch (DomainException ex)
         {
             logger.LogWarning(ex, "Domain rule violated");

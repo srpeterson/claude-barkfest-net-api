@@ -5,24 +5,18 @@ using Barkfest.Application.Features.Pets.Commands.RemovePetImage;
 using Barkfest.Application.Features.Pets.Commands.RemovePetProfileImage;
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
 using Barkfest.Application.Features.Pets.Commands.UploadPetProfileImage;
-using Barkfest.Application.Features.Pets.Queries.GetAllPets;
 using Barkfest.Application.Features.Pets.Queries.GetPetById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Barkfest.API.Controllers;
 
 [ApiController]
 [Route("v1/pets")]
+[Authorize]
 public class PetController(IMediator mediator) : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
-    {
-        var pets = await mediator.Send(new GetAllPetsQuery(), cancellationToken);
-        return Ok(pets);
-    }
-
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -34,7 +28,7 @@ public class PetController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Create(CreatePetRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(
-            new CreatePetCommand(request.OwnerId, request.Name, request.Description, request.DateOfBirth, request.PetType),
+            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetType),
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, null);
@@ -96,5 +90,5 @@ public class PetController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreatePetRequest(Guid OwnerId, string Name, string? Description, DateOnly? DateOfBirth, string PetType);
+public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);
 public record UpdatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);

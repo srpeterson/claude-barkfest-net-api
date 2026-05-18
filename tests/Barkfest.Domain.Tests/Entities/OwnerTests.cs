@@ -217,6 +217,72 @@ public class OwnerTests
     }
 
     // -----------------------------------------------------------------------
+    // SetActive
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void SetActive_When_SetToFalse_Sets_ActiveFalse()
+    {
+        var owner = new Owner();
+
+        owner.SetActive(false);
+
+        owner.Active.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void SetActive_When_SetToTrue_Sets_ActiveTrue()
+    {
+        var owner = new Owner();
+        owner.SetActive(false);
+
+        owner.SetActive(true);
+
+        owner.Active.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void NewOwner_When_Instantiated_Returns_ActiveTrue()
+    {
+        var owner = new Owner();
+
+        owner.Active.ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // SetIsVisible
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void SetIsVisible_When_SetToFalse_Sets_IsVisibleFalse()
+    {
+        var owner = new Owner();
+
+        owner.SetIsVisible(false);
+
+        owner.IsVisible.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void SetIsVisible_When_SetToTrue_Sets_IsVisibleTrue()
+    {
+        var owner = new Owner();
+        owner.SetIsVisible(false);
+
+        owner.SetIsVisible(true);
+
+        owner.IsVisible.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void NewOwner_When_Instantiated_Returns_IsVisibleTrue()
+    {
+        var owner = new Owner();
+
+        owner.IsVisible.ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
     // Id / CreatedAt defaults
     // -----------------------------------------------------------------------
 

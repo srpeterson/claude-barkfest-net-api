@@ -1,4 +1,5 @@
 using Barkfest.Application.Common.Exceptions;
+using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
 using Barkfest.Domain.Interfaces;
@@ -7,7 +8,6 @@ using MediatR;
 namespace Barkfest.Application.Features.Pets.Commands.CreatePet;
 
 public record CreatePetCommand(
-    Guid OwnerId,
     string Name,
     string? Description,
     DateOnly? DateOfBirth,
@@ -16,19 +16,23 @@ public record CreatePetCommand(
 public class CreatePetCommandHandler(
     IOwnerRepository ownerRepository,
     IPetRepository petRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<CreatePetCommand, Guid>
 {
     public async Task<Guid> Handle(CreatePetCommand request, CancellationToken cancellationToken)
     {
-        var owner = await ownerRepository.GetByIdAsync(request.OwnerId, cancellationToken);
+        var ownerId = currentUserService.OwnerId
+            ?? throw new NotFoundException(nameof(Owner), "unknown");
+
+        var owner = await ownerRepository.GetByIdAsync(ownerId, cancellationToken);
 
         if (owner is null)
-            throw new NotFoundException(nameof(Owner), request.OwnerId);
+            throw new NotFoundException(nameof(Owner), ownerId);
 
         var petType = PetType.FromName(request.PetType);
 
-        var pet = new Pet(request.OwnerId);
+        var pet = new Pet(ownerId);
         pet.SetName(request.Name);
         pet.SetDescription(request.Description);
         pet.SetDateOfBirth(request.DateOfBirth);

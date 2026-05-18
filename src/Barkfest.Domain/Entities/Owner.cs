@@ -14,6 +14,9 @@ public class Owner
     public string LastName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public string? PhoneNumber { get; private set; }
+    public string PasswordHash { get; private set; } = string.Empty;
+    public bool Active { get; private set; } = true;
+    public bool IsVisible { get; private set; } = true;
     public ProfileImage? ProfileImage { get; private set; }
     public IReadOnlyCollection<Pet> Pets => _pets.AsReadOnly();
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
@@ -72,6 +75,18 @@ public class Owner
 
     public void SetPhoneNumber(string? phoneNumber) =>
         PhoneNumber = phoneNumber?.Trim();
+
+    public void SetPasswordHash(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+            throw new DomainException("Password hash is required.");
+
+        PasswordHash = hash;
+    }
+
+    public void SetActive(bool active) => Active = active;
+
+    public void SetIsVisible(bool isVisible) => IsVisible = isVisible;
 
     public void SetProfileImage(string blobName, string contentType) =>
         ProfileImage = ProfileImage.Create(blobName, contentType);

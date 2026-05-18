@@ -2,6 +2,7 @@ using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.AddPetImage;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -12,11 +13,12 @@ public class AddPetImageCommandHandlerTests
     private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
     private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly AddPetImageCommandHandler _sut;
+    private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
+    private readonly AddPetImageCommandHandler _addPetImageCommandHandler;
 
     public AddPetImageCommandHandlerTests()
     {
-        _sut = new AddPetImageCommandHandler(_petRepository, _blobStorageService, _unitOfWork);
+        _addPetImageCommandHandler = new AddPetImageCommandHandler(_petRepository, _blobStorageService, _unitOfWork, _currentUserService);
     }
 
     [Fact]
@@ -24,12 +26,13 @@ public class AddPetImageCommandHandlerTests
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)pet.OwnerId);
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         var content = new MemoryStream([0x89, 0x50]);
 
         var command = new AddPetImageCommand(petId, "gallery.jpg", content, "image/jpeg");
 
-        var result = await _sut.Handle(command, CancellationToken.None);
+        var result = await _addPetImageCommandHandler.Handle(command, CancellationToken.None);
 
         result.ShouldNotBe(Guid.Empty);
     }
@@ -39,12 +42,13 @@ public class AddPetImageCommandHandlerTests
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)pet.OwnerId);
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         var content = new MemoryStream([0x89, 0x50]);
 
         var command = new AddPetImageCommand(petId, "gallery.png", content, "image/png");
 
-        await _sut.Handle(command, CancellationToken.None);
+        await _addPetImageCommandHandler.Handle(command, CancellationToken.None);
 
         await _blobStorageService.Received(1).UploadAsync(
             "pet-images",
@@ -64,7 +68,19 @@ public class AddPetImageCommandHandlerTests
 
         var command = new AddPetImageCommand(petId, "gallery.jpg", Stream.Null, "image/jpeg");
 
-        await Should.ThrowAsync<NotFoundException>(() => _sut.Handle(command, CancellationToken.None));
+        await Should.ThrowAsync<NotFoundException>(() => _addPetImageCommandHandler.Handle(command, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    {
+        var petId = Guid.NewGuid();
+        var pet = new PetBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
+        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
+
+        var command = new AddPetImageCommand(petId, "gallery.jpg", Stream.Null, "image/jpeg");
+
+        await Should.ThrowAsync<ForbiddenException>(() => _addPetImageCommandHandler.Handle(command, CancellationToken.None));
+    }
 }

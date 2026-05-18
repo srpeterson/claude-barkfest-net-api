@@ -7,9 +7,6 @@ public class CreatePetCommandValidator : AbstractValidator<CreatePetCommand>
 {
     public CreatePetCommandValidator()
     {
-        RuleFor(x => x.OwnerId)
-            .NotEmpty();
-
         RuleFor(x => x.Name)
             .NotEmpty()
             .MaximumLength(Pet.NameMaxLength);

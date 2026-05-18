@@ -10,13 +10,13 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
 {
     private AppDbContext _context = null!;
     private IDbContextTransaction _transaction = null!;
-    private OwnerRepository _sut = null!;
+    private OwnerRepository _ownerRepository = null!;
 
     public async Task InitializeAsync()
     {
         _context = fixture.CreateContext();
         _transaction = await _context.Database.BeginTransactionAsync();
-        _sut = new OwnerRepository(_context);
+        _ownerRepository = new OwnerRepository(_context);
     }
 
     public async Task DisposeAsync()
@@ -29,10 +29,10 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     public async Task AddAsync_When_OwnerAdded_Returns_SavedOwner()
     {
         var owner = BuildOwner("John", "Doe", "john@example.com");
-        await _sut.AddAsync(owner);
+        await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(owner.Id);
+        var result = await _ownerRepository.GetByIdAsync(owner.Id);
 
         result.ShouldNotBeNull();
         result.FirstName.ShouldBe("John");
@@ -43,7 +43,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetByIdAsync_When_OwnerNotFound_Returns_Null()
     {
-        var result = await _sut.GetByIdAsync(Guid.NewGuid());
+        var result = await _ownerRepository.GetByIdAsync(Guid.NewGuid());
 
         result.ShouldBeNull();
     }
@@ -51,11 +51,11 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetAllAsync_When_Called_Returns_AllPersistedOwners()
     {
-        await _sut.AddAsync(BuildOwner("Alice", "Adams", "alice@example.com"));
-        await _sut.AddAsync(BuildOwner("Bob", "Baker", "bob@example.com"));
+        await _ownerRepository.AddAsync(BuildOwner("Alice", "Adams", "alice@example.com"));
+        await _ownerRepository.AddAsync(BuildOwner("Bob", "Baker", "bob@example.com"));
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetAllAsync();
+        var result = await _ownerRepository.GetAllAsync();
 
         result.Count().ShouldBeGreaterThanOrEqualTo(2);
     }
@@ -64,12 +64,12 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     public async Task UpdateAsync_When_OwnerUpdated_Persists_Changes()
     {
         var owner = BuildOwner("Jane", "Smith", "jane@example.com");
-        await _sut.AddAsync(owner);
+        await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
         owner.SetFirstName("Janet");
         owner.SetEmail("janet@example.com");
-        await _sut.UpdateAsync(owner);
+        await _ownerRepository.UpdateAsync(owner);
         await _context.SaveChangesAsync();
 
         var updated = await _context.Owners.AsNoTracking()
@@ -82,13 +82,13 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     public async Task DeleteAsync_When_OwnerExists_Removes_Owner()
     {
         var owner = BuildOwner("Mark", "Jones", "mark@example.com");
-        await _sut.AddAsync(owner);
+        await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
-        await _sut.DeleteAsync(owner.Id);
+        await _ownerRepository.DeleteAsync(owner.Id);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(owner.Id);
+        var result = await _ownerRepository.GetByIdAsync(owner.Id);
         result.ShouldBeNull();
     }
 
@@ -97,10 +97,10 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     {
         var owner = BuildOwner("Sara", "Lee", "sara@example.com");
         owner.SetProfileImage("owners/abc/photo.jpg", "image/jpeg");
-        await _sut.AddAsync(owner);
+        await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(owner.Id);
+        var result = await _ownerRepository.GetByIdAsync(owner.Id);
 
         result!.ProfileImage.ShouldNotBeNull();
         result.ProfileImage.BlobName.ShouldBe("owners/abc/photo.jpg");

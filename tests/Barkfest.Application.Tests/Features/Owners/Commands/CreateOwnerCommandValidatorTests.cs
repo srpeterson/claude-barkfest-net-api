@@ -5,7 +5,7 @@ namespace Barkfest.Application.Tests.Features.Owners.Commands;
 
 public class CreateOwnerCommandValidatorTests
 {
-    private readonly CreateOwnerCommandValidator _sut = new();
+    private readonly CreateOwnerCommandValidator _createOwnerCommandValidator = new();
 
     // -----------------------------------------------------------------------
     // Valid command
@@ -16,7 +16,7 @@ public class CreateOwnerCommandValidatorTests
     {
         var command = new CreateOwnerCommand("Alice", "Smith", "alice@example.com", "555-0100");
 
-        _sut.Validate(command).IsValid.ShouldBeTrue();
+        _createOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public class CreateOwnerCommandValidatorTests
     {
         var command = new CreateOwnerCommand("Alice", "Smith", "alice@example.com", null);
 
-        _sut.Validate(command).IsValid.ShouldBeTrue();
+        _createOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     // -----------------------------------------------------------------------
@@ -39,7 +39,7 @@ public class CreateOwnerCommandValidatorTests
     {
         var command = new CreateOwnerCommand(firstName!, "Smith", "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.FirstName));
@@ -51,7 +51,7 @@ public class CreateOwnerCommandValidatorTests
         var command = new CreateOwnerCommand(
             new string('A', Owner.FirstNameMaxLength + 1), "Smith", "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.FirstName));
@@ -69,7 +69,7 @@ public class CreateOwnerCommandValidatorTests
     {
         var command = new CreateOwnerCommand("Alice", lastName!, "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.LastName));
@@ -81,7 +81,7 @@ public class CreateOwnerCommandValidatorTests
         var command = new CreateOwnerCommand(
             "Alice", new string('A', Owner.LastNameMaxLength + 1), "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.LastName));
@@ -99,7 +99,7 @@ public class CreateOwnerCommandValidatorTests
     {
         var command = new CreateOwnerCommand("Alice", "Smith", email!, null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
@@ -113,7 +113,7 @@ public class CreateOwnerCommandValidatorTests
     {
         var command = new CreateOwnerCommand("Alice", "Smith", email, null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
@@ -125,7 +125,7 @@ public class CreateOwnerCommandValidatorTests
         var localPart = new string('a', Owner.EmailMaxLength - "@b.co".Length + 1);
         var command = new CreateOwnerCommand("Alice", "Smith", $"{localPart}@b.co", null);
 
-        var result = _sut.Validate(command);
+        var result = _createOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));

@@ -1,10 +1,12 @@
 using Azure.Storage.Blobs;
 using Barkfest.Persistence;
+using Barkfest.Tests.Common.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Net.Http.Headers;
 using Testcontainers.Azurite;
 using Testcontainers.MsSql;
 
@@ -50,6 +52,22 @@ public class BarkfestApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
+    }
+
+    public HttpClient CreateAuthenticatedClient(Guid ownerId)
+    {
+        var client = CreateClient();
+        var token = JwtTestHelper.GenerateOwnerToken(ownerId);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client;
+    }
+
+    public HttpClient CreateAuthenticatedAdminClient(Guid adminId)
+    {
+        var client = CreateClient();
+        var token = JwtTestHelper.GenerateAdminToken(adminId);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client;
     }
 
     public new async Task DisposeAsync()

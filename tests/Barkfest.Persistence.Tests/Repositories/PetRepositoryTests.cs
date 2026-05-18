@@ -11,13 +11,13 @@ public class PetRepositoryTests(DatabaseFixture fixture)
 {
     private AppDbContext _context = null!;
     private IDbContextTransaction _transaction = null!;
-    private PetRepository _sut = null!;
+    private PetRepository _petRepository = null!;
 
     public async Task InitializeAsync()
     {
         _context = fixture.CreateContext();
         _transaction = await _context.Database.BeginTransactionAsync();
-        _sut = new PetRepository(_context);
+        _petRepository = new PetRepository(_context);
     }
 
     public async Task DisposeAsync()
@@ -31,10 +31,10 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Buddy", PetType.Dog);
-        await _sut.AddAsync(pet);
+        await _petRepository.AddAsync(pet);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(pet.Id);
+        var result = await _petRepository.GetByIdAsync(pet.Id);
 
         result.ShouldNotBeNull();
         result.Name.ShouldBe("Buddy");
@@ -45,7 +45,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetByIdAsync_When_PetNotFound_Returns_Null()
     {
-        var result = await _sut.GetByIdAsync(Guid.NewGuid());
+        var result = await _petRepository.GetByIdAsync(Guid.NewGuid());
 
         result.ShouldBeNull();
     }
@@ -54,11 +54,11 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     public async Task GetAllAsync_When_Called_Returns_AllPersistedPets()
     {
         var (owner, _) = await SeedOwner();
-        await _sut.AddAsync(BuildPet(owner.Id, "Max", PetType.Dog));
-        await _sut.AddAsync(BuildPet(owner.Id, "Luna", PetType.Cat));
+        await _petRepository.AddAsync(BuildPet(owner.Id, "Max", PetType.Dog));
+        await _petRepository.AddAsync(BuildPet(owner.Id, "Luna", PetType.Cat));
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetAllAsync();
+        var result = await _petRepository.GetAllAsync();
 
         result.Count().ShouldBeGreaterThanOrEqualTo(2);
     }
@@ -68,12 +68,12 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     {
         var (owner1, _) = await SeedOwner("alice@example.com");
         var (owner2, _) = await SeedOwner("bob@example.com");
-        await _sut.AddAsync(BuildPet(owner1.Id, "Buddy", PetType.Dog));
-        await _sut.AddAsync(BuildPet(owner1.Id, "Milo", PetType.Cat));
-        await _sut.AddAsync(BuildPet(owner2.Id, "Shadow", PetType.Other));
+        await _petRepository.AddAsync(BuildPet(owner1.Id, "Buddy", PetType.Dog));
+        await _petRepository.AddAsync(BuildPet(owner1.Id, "Milo", PetType.Cat));
+        await _petRepository.AddAsync(BuildPet(owner2.Id, "Shadow", PetType.Other));
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByOwnerIdAsync(owner1.Id);
+        var result = await _petRepository.GetByOwnerIdAsync(owner1.Id);
 
         var list = result.ToList();
         list.Count.ShouldBe(2);
@@ -85,12 +85,12 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Max", PetType.Dog);
-        await _sut.AddAsync(pet);
+        await _petRepository.AddAsync(pet);
         await _context.SaveChangesAsync();
 
         pet.SetName("Maxwell");
         pet.SetDescription("Very good boy");
-        await _sut.UpdateAsync(pet);
+        await _petRepository.UpdateAsync(pet);
         await _context.SaveChangesAsync();
 
         var updated = await _context.Pets.AsNoTracking()
@@ -104,13 +104,13 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     {
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Rex", PetType.Dog);
-        await _sut.AddAsync(pet);
+        await _petRepository.AddAsync(pet);
         await _context.SaveChangesAsync();
 
-        await _sut.DeleteAsync(pet.Id);
+        await _petRepository.DeleteAsync(pet.Id);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(pet.Id);
+        var result = await _petRepository.GetByIdAsync(pet.Id);
         result.ShouldBeNull();
     }
 
@@ -123,10 +123,10 @@ public class PetRepositoryTests(DatabaseFixture fixture)
         image.SetImage("pets/abc/gallery/photo.jpg", "image/jpeg");
         image.SetDisplayOrder(0);
         pet.AddImage(image);
-        await _sut.AddAsync(pet);
+        await _petRepository.AddAsync(pet);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(pet.Id);
+        var result = await _petRepository.GetByIdAsync(pet.Id);
 
         result!.Images.Count.ShouldBe(1);
         result.Images.First().BlobName.ShouldBe("pets/abc/gallery/photo.jpg");
@@ -138,10 +138,10 @@ public class PetRepositoryTests(DatabaseFixture fixture)
         var (owner, _) = await SeedOwner();
         var pet = BuildPet(owner.Id, "Coco", PetType.Cat);
         pet.SetProfileImage("pets/abc/profile/photo.png", "image/png");
-        await _sut.AddAsync(pet);
+        await _petRepository.AddAsync(pet);
         await _context.SaveChangesAsync();
 
-        var result = await _sut.GetByIdAsync(pet.Id);
+        var result = await _petRepository.GetByIdAsync(pet.Id);
 
         result!.ProfileImage.ShouldNotBeNull();
         result.ProfileImage.BlobName.ShouldBe("pets/abc/profile/photo.png");

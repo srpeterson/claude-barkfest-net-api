@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Barkfest.API\Barkfest.API.csproj" />
+    <ProjectReference Include="..\Barkfest.Tests.Common\Barkfest.Tests.Common.csproj" />
   </ItemGroup>
 
 </Project>

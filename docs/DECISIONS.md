@@ -526,3 +526,48 @@ for all tests to pass. Staging does not require tests to pass.
 **Reason:** Prevents broken code from ever landing in a commit — even locally.
 Staging is a work-in-progress operation and does not need a test gate. Committing
 is a statement that work is complete and verified — tests must confirm this.
+
+---
+
+## Authentication and Identity
+
+### Decision: Administrators and Owners are completely separate identities
+**Choice:** `Administrator` and `Owner` are distinct entity classes, stored in separate
+tables (`Administrators` and `Owners`), with separate repositories (`IAdministratorRepository`,
+`IOwnerRepository`), separate login endpoints (`/v1/auth/admin/login` and `/v1/auth/login`),
+and separate JWT claims (`account_type: "admin"` vs `account_type: "owner"`).
+
+**Reason:** Administrators manage the platform — they activate/deactivate owners and manage
+other admin accounts. Owners register pets and manage their own data. Conflating these two
+roles into a single identity (e.g. an `IsAdmin` flag on `Owner`) would create awkward coupling:
+admin-specific properties would appear on owner DTOs, ownership checks would need to handle
+admin edge cases everywhere, and an administrator logging in as an owner would have access to
+owner-specific endpoints in unexpected ways. Separate entities mean each identity has exactly
+the properties it needs, the JWT `sub` claim always refers to the correct entity, and the
+authorization logic in every handler is unambiguous. `ICurrentUserService` exposes `OwnerId`,
+`AdminId`, and `IsAdmin` — handlers read the correct property for their context.
+
+---
+
+### Decision: Administrator self-delete is forbidden
+**Choice:** `DeleteAdministratorCommandHandler` throws `ForbiddenException` when
+`request.Id == currentUserService.AdminId`. The check is unconditional — no override path exists.
+
+**Reason:** Preventing self-deletion ensures there is always at least one administrator account
+in the system. If an admin could delete themselves, a single-admin deployment could become
+permanently locked out with no recovery path short of direct database manipulation. Trust is
+the only other variable — any admin can delete any other admin — so the self-delete guard is
+the one hard rule that protects against accidental or malicious lockout.
+
+---
+
+### Decision: Administrator management trust model — any admin can manage any other admin
+**Choice:** Any authenticated administrator can create new administrators, update another
+administrator's password, and delete another administrator (but not themselves).
+
+**Reason:** A more restrictive model (e.g. super-admin role, owner hierarchy, approval workflow)
+adds complexity that is not warranted for a small trusted team. The self-delete guard is the
+only hard constraint. Production deployments should create a second administrator account
+immediately after first login so that access is never dependent on a single set of credentials.
+If an admin account is compromised, any other admin can delete it. This is an intentional
+design choice — trust is a prerequisite for the team using this system.

@@ -1,6 +1,7 @@
 using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
@@ -11,7 +12,8 @@ public record RemovePetImageCommand(Guid PetId, Guid ImageId) : IRequest;
 public class RemovePetImageCommandHandler(
     IPetRepository petRepository,
     IBlobStorageService blobStorageService,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<RemovePetImageCommand>
 {
     private const string ContainerName = "pet-images";
@@ -22,6 +24,9 @@ public class RemovePetImageCommandHandler(
 
         if (pet is null)
             throw new NotFoundException(nameof(Pet), request.PetId);
+
+        if (pet.OwnerId != currentUserService.OwnerId && !currentUserService.IsAdmin)
+            throw new ForbiddenException();
 
         var image = pet.Images.FirstOrDefault(i => i.Id == request.ImageId);
 

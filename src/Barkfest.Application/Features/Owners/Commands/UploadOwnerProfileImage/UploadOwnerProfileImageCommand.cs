@@ -1,6 +1,7 @@
 using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
@@ -15,7 +16,8 @@ public record UploadOwnerProfileImageCommand(
 public class UploadOwnerProfileImageCommandHandler(
     IOwnerRepository ownerRepository,
     IBlobStorageService blobStorageService,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<UploadOwnerProfileImageCommand>
 {
     private const string ContainerName = "owner-profile-images";
@@ -26,6 +28,9 @@ public class UploadOwnerProfileImageCommandHandler(
 
         if (owner is null)
             throw new NotFoundException(nameof(Owner), request.OwnerId);
+
+        if (owner.Id != currentUserService.OwnerId)
+            throw new ForbiddenException();
 
         if (owner.ProfileImage is not null)
             await blobStorageService.DeleteAsync(ContainerName, owner.ProfileImage.BlobName, cancellationToken);

@@ -12,6 +12,7 @@ public static class OwnerMappings
         owner.LastName,
         owner.Email,
         owner.PhoneNumber,
+        owner.IsVisible,
         owner.ProfileImage is null ? null : new ProfileImageDto(owner.ProfileImage.BlobName, owner.ProfileImage.ContentType),
         owner.CreatedAt);
 

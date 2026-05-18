@@ -9,6 +9,9 @@ public class OwnerRepository(AppDbContext context) : IOwnerRepository
     public async Task<Owner?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.Owners.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
+    public async Task<Owner?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+        await context.Owners.FirstOrDefaultAsync(o => o.Email == email.Trim().ToLowerInvariant(), cancellationToken);
+
     public async Task<IEnumerable<Owner>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await context.Owners.ToListAsync(cancellationToken);
 

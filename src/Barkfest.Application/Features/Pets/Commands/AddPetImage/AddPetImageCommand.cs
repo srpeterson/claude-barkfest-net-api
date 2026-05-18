@@ -1,6 +1,7 @@
 using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
@@ -15,7 +16,8 @@ public record AddPetImageCommand(
 public class AddPetImageCommandHandler(
     IPetRepository petRepository,
     IBlobStorageService blobStorageService,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<AddPetImageCommand, Guid>
 {
     private const string ContainerName = "pet-images";
@@ -26,6 +28,9 @@ public class AddPetImageCommandHandler(
 
         if (pet is null)
             throw new NotFoundException(nameof(Pet), request.PetId);
+
+        if (pet.OwnerId != currentUserService.OwnerId)
+            throw new ForbiddenException();
 
         var extension = Path.GetExtension(request.FileName);
         var blobName = $"pets/{request.PetId}/gallery/{Guid.CreateVersion7()}{extension}";

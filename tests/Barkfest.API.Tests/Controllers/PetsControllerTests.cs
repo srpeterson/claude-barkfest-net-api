@@ -6,32 +6,33 @@ namespace Barkfest.API.Tests.Controllers;
 public class PetsControllerTests(BarkfestApiFactory factory)
     : IClassFixture<BarkfestApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _unauthenticatedClient = factory.CreateClient();
 
     // -----------------------------------------------------------------------
-    // GET /v1/pets
+    // POST /v1/pets — auth
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetAll_When_Called_Returns_Ok()
+    public async Task Create_When_Unauthenticated_Returns_Unauthorized()
     {
-        var response = await _client.GetAsync("/v1/pets");
+        var response = await _unauthenticatedClient.PostAsJsonAsync("/v1/pets", new
+        {
+            name = "Buddy",
+            description = (string?)null,
+            dateOfBirth = (string?)null,
+            petType = "Dog"
+        });
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
-
-    // -----------------------------------------------------------------------
-    // POST /v1/pets
-    // -----------------------------------------------------------------------
 
     [Fact]
     public async Task Create_When_RequestIsValid_Returns_Created()
     {
-        var ownerId = await CreateOwner();
+        var (client, _) = await RegisterAndGetClient();
 
-        var response = await _client.PostAsJsonAsync("/v1/pets", new
+        var response = await client.PostAsJsonAsync("/v1/pets", new
         {
-            ownerId,
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
@@ -44,28 +45,12 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Create_When_OwnerNotFound_Returns_NotFound()
-    {
-        var response = await _client.PostAsJsonAsync("/v1/pets", new
-        {
-            ownerId = Guid.NewGuid(),
-            name = "Ghost",
-            description = (string?)null,
-            dateOfBirth = (string?)null,
-            petType = "Dog"
-        });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
     public async Task Create_When_NameIsMissing_Returns_BadRequest()
     {
-        var ownerId = await CreateOwner();
+        var (client, _) = await RegisterAndGetClient();
 
-        var response = await _client.PostAsJsonAsync("/v1/pets", new
+        var response = await client.PostAsJsonAsync("/v1/pets", new
         {
-            ownerId,
             name = "",
             description = (string?)null,
             dateOfBirth = (string?)null,
@@ -83,12 +68,20 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
+    public async Task GetById_When_Unauthenticated_Returns_Unauthorized()
+    {
+        var response = await _unauthenticatedClient.GetAsync($"/v1/pets/{Guid.NewGuid()}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetById_When_PetExists_Returns_Pet()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Luna", "Cat");
+        var (client, ownerId) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Luna");
 
-        var response = await _client.GetAsync($"/v1/pets/{petId}");
+        var response = await client.GetAsync($"/v1/pets/{petId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -99,12 +92,25 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetById_When_PetNotFound_Returns_NotFound()
     {
-        var response = await _client.GetAsync($"/v1/pets/{Guid.NewGuid()}");
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.GetAsync($"/v1/pets/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 
-        var body = await response.Content.ReadAsStringAsync();
-        body.ShouldContain("Not Found");
+    [Fact]
+    public async Task GetById_When_NotOwner_Returns_Ok()
+    {
+        var (ownerClient, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(ownerClient, "Buddy");
+
+        // A different authenticated owner can view any pet
+        var (otherClient, _) = await RegisterAndGetClient();
+
+        var response = await otherClient.GetAsync($"/v1/pets/{petId}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     // -----------------------------------------------------------------------
@@ -114,10 +120,10 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Update_When_PetExists_Returns_NoContent()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Max", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Max");
 
-        var response = await _client.PutAsJsonAsync($"/v1/pets/{petId}", new
+        var response = await client.PutAsJsonAsync($"/v1/pets/{petId}", new
         {
             name = "Maxwell",
             description = "Very good boy",
@@ -131,7 +137,9 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Update_When_PetNotFound_Returns_NotFound()
     {
-        var response = await _client.PutAsJsonAsync($"/v1/pets/{Guid.NewGuid()}", new
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.PutAsJsonAsync($"/v1/pets/{Guid.NewGuid()}", new
         {
             name = "Ghost",
             description = (string?)null,
@@ -149,10 +157,10 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Delete_When_PetExists_Returns_NoContent()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Rex", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Rex");
 
-        var response = await _client.DeleteAsync($"/v1/pets/{petId}");
+        var response = await client.DeleteAsync($"/v1/pets/{petId}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -160,7 +168,9 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Delete_When_PetNotFound_Returns_NotFound()
     {
-        var response = await _client.DeleteAsync($"/v1/pets/{Guid.NewGuid()}");
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.DeleteAsync($"/v1/pets/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -169,26 +179,30 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // Helpers
     // -----------------------------------------------------------------------
 
-    private async Task<Guid> CreateOwner()
+    private async Task<(HttpClient client, Guid ownerId)> RegisterAndGetClient()
     {
-        var response = await _client.PostAsJsonAsync("/v1/owners", new
+        var email = $"petowner-{Guid.NewGuid():N}@example.com";
+
+        var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
             firstName = "Test",
             lastName = "Owner",
-            email = $"owner-{Guid.NewGuid():N}@example.com",
-            phoneNumber = (string?)null
+            email,
+            phoneNumber = (string?)null,
+            password = "SecurePass1!"
         });
+        registerResponse.EnsureSuccessStatusCode();
 
-        response.EnsureSuccessStatusCode();
-        var location = response.Headers.Location!.ToString();
-        return Guid.Parse(location.Split('/').Last());
+        var location = registerResponse.Headers.Location!.ToString();
+        var ownerId = Guid.Parse(location.Split('/').Last());
+
+        return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 
-    private async Task<Guid> CreatePet(Guid ownerId, string name, string petType)
+    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog")
     {
-        var response = await _client.PostAsJsonAsync("/v1/pets", new
+        var response = await client.PostAsJsonAsync("/v1/pets", new
         {
-            ownerId,
             name,
             description = (string?)null,
             dateOfBirth = (string?)null,

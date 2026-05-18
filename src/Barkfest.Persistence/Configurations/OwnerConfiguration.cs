@@ -29,6 +29,20 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
 
         builder.Property(o => o.PhoneNumber);
 
+        builder.Property(o => o.PasswordHash)
+            .IsRequired();
+
+        builder.Property(o => o.Active)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.Property(o => o.IsVisible)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.HasIndex(o => o.Email)
+            .IsUnique();
+
         builder.OwnsOne(o => o.ProfileImage, pi =>
         {
             pi.Property(p => p.BlobName)

@@ -2,6 +2,7 @@ using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.RemovePetProfileImage;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -12,11 +13,12 @@ public class RemovePetProfileImageCommandHandlerTests
     private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
     private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly RemovePetProfileImageCommandHandler _sut;
+    private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
+    private readonly RemovePetProfileImageCommandHandler _removePetProfileImageCommandHandler;
 
     public RemovePetProfileImageCommandHandlerTests()
     {
-        _sut = new RemovePetProfileImageCommandHandler(_petRepository, _blobStorageService, _unitOfWork);
+        _removePetProfileImageCommandHandler = new RemovePetProfileImageCommandHandler(_petRepository, _blobStorageService, _unitOfWork, _currentUserService);
     }
 
     [Fact]
@@ -25,9 +27,10 @@ public class RemovePetProfileImageCommandHandlerTests
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
         pet.SetProfileImage("pets/abc/photo.jpg", "image/jpeg");
+        _currentUserService.OwnerId.Returns((Guid?)pet.OwnerId);
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
-        await _sut.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None);
+        await _removePetProfileImageCommandHandler.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None);
 
         await _blobStorageService.Received(1).DeleteAsync(
             "pet-profile-images", "pets/abc/photo.jpg", CancellationToken.None);
@@ -40,9 +43,10 @@ public class RemovePetProfileImageCommandHandlerTests
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)pet.OwnerId);
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
-        await _sut.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None);
+        await _removePetProfileImageCommandHandler.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None);
 
         await _blobStorageService.DidNotReceive().DeleteAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
@@ -56,7 +60,18 @@ public class RemovePetProfileImageCommandHandlerTests
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
 
         await Should.ThrowAsync<NotFoundException>(
-            () => _sut.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None));
+            () => _removePetProfileImageCommandHandler.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    {
+        var petId = Guid.NewGuid();
+        var pet = new PetBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
+        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
+
+        await Should.ThrowAsync<ForbiddenException>(
+            () => _removePetProfileImageCommandHandler.Handle(new RemovePetProfileImageCommand(petId), CancellationToken.None));
+    }
 }

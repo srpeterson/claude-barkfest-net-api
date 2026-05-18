@@ -92,6 +92,47 @@ restarts — SQL Server and Azurite volumes survive `docker stop` and machine re
 
 ---
 
+## First Login (Local Development Only)
+
+> **This section applies to local development only.** The credentials below are committed
+> to source control for developer convenience and are not suitable for any shared or
+> production environment.
+
+On startup, `SeedAdminAsync` checks whether an administrator account already exists and, if not,
+creates one using the credentials in `appsettings.Development.json`. No manual database setup is
+required.
+
+**Default dev credentials:**
+
+| Field | Value |
+|---|---|
+| Email | `admin@barkfest.dev` |
+| Password | `barkfest-dev-admin-password!` |
+
+Once the API is running, authenticate via Scalar or any HTTP client:
+
+```
+POST https://localhost:{port}/v1/auth/admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@barkfest.dev",
+  "password": "barkfest-dev-admin-password!"
+}
+```
+
+The response contains an `accessToken` (JWT). Pass it as a Bearer token on all subsequent requests:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+Once logged in, additional administrator accounts can be created via
+`POST /v1/admin/admins`. It is good practice to create a second administrator account
+immediately after first login so that access is never dependent on a single set of credentials.
+
+---
+
 ## Running Tests
 
 ```bash

@@ -8,5 +8,6 @@ public record OwnerDto(
     string LastName,
     string Email,
     string? PhoneNumber,
+    bool IsVisible,
     ProfileImageDto? ProfileImage,
     DateTime CreatedAt);

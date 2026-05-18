@@ -5,7 +5,7 @@ namespace Barkfest.Application.Tests.Features.Pets.Commands;
 
 public class UpdatePetCommandValidatorTests
 {
-    private readonly UpdatePetCommandValidator _sut = new();
+    private readonly UpdatePetCommandValidator _updatePetCommandValidator = new();
 
     // -----------------------------------------------------------------------
     // Valid command
@@ -16,7 +16,7 @@ public class UpdatePetCommandValidatorTests
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, "Dog");
 
-        _sut.Validate(command).IsValid.ShouldBeTrue();
+        _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     // -----------------------------------------------------------------------
@@ -28,7 +28,7 @@ public class UpdatePetCommandValidatorTests
     {
         var command = new UpdatePetCommand(Guid.Empty, "Bruno", null, null, "Dog");
 
-        var result = _sut.Validate(command);
+        var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Id));
@@ -46,7 +46,7 @@ public class UpdatePetCommandValidatorTests
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), name!, null, null, "Dog");
 
-        var result = _sut.Validate(command);
+        var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Name));
@@ -58,7 +58,7 @@ public class UpdatePetCommandValidatorTests
         var command = new UpdatePetCommand(
             Guid.NewGuid(), new string('A', Pet.NameMaxLength + 1), null, null, "Dog");
 
-        var result = _sut.Validate(command);
+        var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Name));
@@ -76,7 +76,7 @@ public class UpdatePetCommandValidatorTests
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType);
 
-        _sut.Validate(command).IsValid.ShouldBeTrue();
+        _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     [Theory]
@@ -87,7 +87,7 @@ public class UpdatePetCommandValidatorTests
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType!);
 
-        var result = _sut.Validate(command);
+        var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PetType));

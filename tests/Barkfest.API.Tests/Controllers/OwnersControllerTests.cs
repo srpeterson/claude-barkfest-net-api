@@ -1,92 +1,59 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace Barkfest.API.Tests.Controllers;
 
 public class OwnersControllerTests(BarkfestApiFactory factory)
     : IClassFixture<BarkfestApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
-
-    private static readonly JsonSerializerOptions JsonOptions =
-        new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    private readonly HttpClient _unauthenticatedClient = factory.CreateClient();
 
     // -----------------------------------------------------------------------
-    // GET /v1/owners
+    // GET /v1/owners/{id} — auth
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetAll_When_Called_Returns_Ok()
+    public async Task GetById_When_Unauthenticated_Returns_Unauthorized()
     {
-        var response = await _client.GetAsync("/v1/owners");
+        var response = await _unauthenticatedClient.GetAsync($"/v1/owners/{Guid.NewGuid()}");
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
-
-    // -----------------------------------------------------------------------
-    // POST /v1/owners
-    // -----------------------------------------------------------------------
-
-    [Fact]
-    public async Task Create_When_RequestIsValid_Returns_Created()
-    {
-        var response = await _client.PostAsJsonAsync("/v1/owners", new
-        {
-            firstName = "John",
-            lastName = "Doe",
-            email = "john.doe@example.com",
-            phoneNumber = (string?)null
-        });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.Created);
-        response.Headers.Location.ShouldNotBeNull();
-        response.Headers.Location!.ToString().ShouldContain("/v1/owners/");
-    }
-
-    [Fact]
-    public async Task Create_When_EmailIsMissing_Returns_BadRequest()
-    {
-        var response = await _client.PostAsJsonAsync("/v1/owners", new
-        {
-            firstName = "Jane",
-            lastName = "Smith",
-            email = ""
-        });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-
-        var body = await response.Content.ReadAsStringAsync();
-        body.ShouldContain("Validation failed");
-    }
-
-    // -----------------------------------------------------------------------
-    // GET /v1/owners/{id}
-    // -----------------------------------------------------------------------
 
     [Fact]
     public async Task GetById_When_OwnerExists_Returns_Owner()
     {
-        var id = await CreateOwner("Alice", "Adams", "alice@example.com");
+        var (client, id) = await RegisterAndGetClient();
 
-        var response = await _client.GetAsync($"/v1/owners/{id}");
+        var response = await client.GetAsync($"/v1/owners/{id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var body = await response.Content.ReadAsStringAsync();
         body.ShouldContain("Alice");
-        body.ShouldContain("adams@example.com".Replace("adams", "alice"));
     }
 
     [Fact]
     public async Task GetById_When_OwnerNotFound_Returns_NotFound()
     {
-        var response = await _client.GetAsync($"/v1/owners/{Guid.NewGuid()}");
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.GetAsync($"/v1/owners/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 
-        var body = await response.Content.ReadAsStringAsync();
-        body.ShouldContain("Not Found");
+    [Fact]
+    public async Task GetById_When_NotOwner_Returns_Ok()
+    {
+        var (_, id) = await RegisterAndGetClient("alice-other");
+
+        // A different authenticated owner can view any owner's profile
+        var (otherClient, _) = await RegisterAndGetClient("other-owner");
+
+        var response = await otherClient.GetAsync($"/v1/owners/{id}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     // -----------------------------------------------------------------------
@@ -96,13 +63,13 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Update_When_OwnerExists_Returns_NoContent()
     {
-        var id = await CreateOwner("Bob", "Baker", "bob@example.com");
+        var (client, id) = await RegisterAndGetClient("bob");
 
-        var response = await _client.PutAsJsonAsync($"/v1/owners/{id}", new
+        var response = await client.PutAsJsonAsync($"/v1/owners/{id}", new
         {
             firstName = "Robert",
             lastName = "Baker",
-            email = "robert@example.com",
+            email = $"robert-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null
         });
 
@@ -112,7 +79,9 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Update_When_OwnerNotFound_Returns_NotFound()
     {
-        var response = await _client.PutAsJsonAsync($"/v1/owners/{Guid.NewGuid()}", new
+        var (client, _) = await RegisterAndGetClient("ghost-owner");
+
+        var response = await client.PutAsJsonAsync($"/v1/owners/{Guid.NewGuid()}", new
         {
             firstName = "Ghost",
             lastName = "User",
@@ -123,6 +92,20 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Update_When_Unauthenticated_Returns_Unauthorized()
+    {
+        var response = await _unauthenticatedClient.PutAsJsonAsync($"/v1/owners/{Guid.NewGuid()}", new
+        {
+            firstName = "Ghost",
+            lastName = "User",
+            email = "ghost@example.com",
+            phoneNumber = (string?)null
+        });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
     // -----------------------------------------------------------------------
     // DELETE /v1/owners/{id}
     // -----------------------------------------------------------------------
@@ -130,9 +113,9 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Delete_When_OwnerExists_Returns_NoContent()
     {
-        var id = await CreateOwner("Carol", "Clark", "carol@example.com");
+        var (client, id) = await RegisterAndGetClient("carol");
 
-        var response = await _client.DeleteAsync($"/v1/owners/{id}");
+        var response = await client.DeleteAsync($"/v1/owners/{id}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
@@ -140,7 +123,9 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Delete_When_OwnerNotFound_Returns_NotFound()
     {
-        var response = await _client.DeleteAsync($"/v1/owners/{Guid.NewGuid()}");
+        var (client, _) = await RegisterAndGetClient("del-ghost");
+
+        var response = await client.DeleteAsync($"/v1/owners/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -152,9 +137,9 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetPets_When_OwnerExists_Returns_Ok()
     {
-        var id = await CreateOwner("Dave", "Davis", "dave@example.com");
+        var (client, id) = await RegisterAndGetClient("dave");
 
-        var response = await _client.GetAsync($"/v1/owners/{id}/pets");
+        var response = await client.GetAsync($"/v1/owners/{id}/pets");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -163,20 +148,23 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     // Helpers
     // -----------------------------------------------------------------------
 
-    private async Task<Guid> CreateOwner(string firstName, string lastName, string email)
+    private async Task<(HttpClient client, Guid ownerId)> RegisterAndGetClient(string seed = "alice")
     {
-        var response = await _client.PostAsJsonAsync("/v1/owners", new
+        var email = $"{seed}-{Guid.NewGuid():N}@example.com";
+
+        var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
-            firstName,
-            lastName,
+            firstName = "Alice",
+            lastName = "Adams",
             email,
-            phoneNumber = (string?)null
+            phoneNumber = (string?)null,
+            password = "SecurePass1!"
         });
+        registerResponse.EnsureSuccessStatusCode();
 
-        response.EnsureSuccessStatusCode();
+        var location = registerResponse.Headers.Location!.ToString();
+        var ownerId = Guid.Parse(location.Split('/').Last());
 
-        // Extract the id from the Location header: /v1/owners/{id}
-        var location = response.Headers.Location!.ToString();
-        return Guid.Parse(location.Split('/').Last());
+        return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 }

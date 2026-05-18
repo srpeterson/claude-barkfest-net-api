@@ -4,7 +4,7 @@ namespace Barkfest.Application.Tests.Features.Pets.Commands;
 
 public class AddPetImageCommandValidatorTests
 {
-    private readonly AddPetImageCommandValidator _sut = new();
+    private readonly AddPetImageCommandValidator _addPetImageCommandValidator = new();
 
     private static AddPetImageCommand ValidCommand(
         string fileName = "photo.jpg",
@@ -22,7 +22,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("photo.jpg", "image/jpg")]
     public void Validate_When_FileAndContentTypeAreSupported_Passes(string fileName, string contentType)
     {
-        var result = _sut.Validate(ValidCommand(fileName, contentType));
+        var result = _addPetImageCommandValidator.Validate(ValidCommand(fileName, contentType));
 
         result.IsValid.ShouldBeTrue();
     }
@@ -36,7 +36,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("   ")]
     public void Validate_When_ContentTypeIsEmptyOrWhitespace_Fails_ForContentType(string contentType)
     {
-        var result = _sut.Validate(ValidCommand(contentType: contentType));
+        var result = _addPetImageCommandValidator.Validate(ValidCommand(contentType: contentType));
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(AddPetImageCommand.ContentType));
@@ -48,7 +48,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("application/octet-stream")]
     public void Validate_When_ContentTypeIsNotSupported_Fails_ForContentType(string contentType)
     {
-        var result = _sut.Validate(ValidCommand(contentType: contentType));
+        var result = _addPetImageCommandValidator.Validate(ValidCommand(contentType: contentType));
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(AddPetImageCommand.ContentType));
@@ -63,7 +63,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("   ")]
     public void Validate_When_FileNameIsEmptyOrWhitespace_Fails_ForFileName(string fileName)
     {
-        var result = _sut.Validate(ValidCommand(fileName: fileName));
+        var result = _addPetImageCommandValidator.Validate(ValidCommand(fileName: fileName));
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(AddPetImageCommand.FileName));
@@ -76,7 +76,7 @@ public class AddPetImageCommandValidatorTests
     [InlineData("photo")]
     public void Validate_When_FileExtensionIsNotSupported_Fails_ForFileName(string fileName)
     {
-        var result = _sut.Validate(ValidCommand(fileName: fileName));
+        var result = _addPetImageCommandValidator.Validate(ValidCommand(fileName: fileName));
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(AddPetImageCommand.FileName));

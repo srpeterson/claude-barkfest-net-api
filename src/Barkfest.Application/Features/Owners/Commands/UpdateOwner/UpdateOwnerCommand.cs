@@ -1,5 +1,7 @@
 using Barkfest.Application.Common.Exceptions;
+using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
@@ -12,7 +14,7 @@ public record UpdateOwnerCommand(
     string Email,
     string? PhoneNumber) : IRequest;
 
-public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOfWork unitOfWork)
+public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     : IRequestHandler<UpdateOwnerCommand>
 {
     public async Task Handle(UpdateOwnerCommand request, CancellationToken cancellationToken)
@@ -21,6 +23,9 @@ public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOf
 
         if (owner is null)
             throw new NotFoundException(nameof(Owner), request.Id);
+
+        if (owner.Id != currentUserService.OwnerId)
+            throw new ForbiddenException();
 
         owner.SetFirstName(request.FirstName);
         owner.SetLastName(request.LastName);

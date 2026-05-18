@@ -5,6 +5,7 @@ namespace Barkfest.Domain.Interfaces;
 public interface IOwnerRepository
 {
     Task<Owner?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Owner?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<IEnumerable<Owner>> GetAllAsync(CancellationToken cancellationToken = default);
     Task AddAsync(Owner owner, CancellationToken cancellationToken = default);
     Task UpdateAsync(Owner owner, CancellationToken cancellationToken = default);

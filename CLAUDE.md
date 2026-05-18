@@ -256,6 +256,7 @@ validators, tests, EF Core configuration.
 | `Owner.FirstNameMaxLength` | 50 | `Owner.cs` |
 | `Owner.LastNameMaxLength` | 100 | `Owner.cs` |
 | `Owner.EmailMaxLength` | 75 | `Owner.cs` |
+| `Administrator.EmailMaxLength` | 75 | `Administrator.cs` |
 | `Pet.NameMaxLength` | 75 | `Pet.cs` |
 | `Pet.MaxImages` | 5 | `Pet.cs` |
 | `PetImage.BlobNameMaxLength` | 500 | `PetImage.cs` |
@@ -286,6 +287,14 @@ validators, tests, EF Core configuration.
 - Validated by `SupportedImageType` static class in `Barkfest.Domain`
 - Enforced at two layers: Domain (entity methods) and Application (FluentValidation)
 - Binary files stored in Azure Blob Storage — SQL Server stores only `BlobName` and `ContentType`
+
+### Administrator
+- `Email` — required, valid email format, max `Administrator.EmailMaxLength` chars, lowercased and trimmed
+- `PasswordHash` — required, set via `SetPasswordHash(string hash)`
+- Any administrator can create new administrators (email + password)
+- Any administrator can update another administrator's password
+- Any administrator can delete another administrator but **never themselves** (self-delete throws `ForbiddenException`)
+- Administrator accounts are fully separate from Owner accounts — different tables, different JWT claims, different identity
 
 ### Profile Images
 - Both `Owner` and `Pet` have an optional profile image
@@ -360,6 +369,7 @@ Use Serilog. Configured in `Program.cs`.
 |---|---|
 | `NotFoundException` | 404 Not Found |
 | `DomainException` | 400 Bad Request |
+| `ForbiddenException` | 403 Forbidden |
 | Unhandled | 500 Internal Server Error |
 
 Never add try/catch blocks in handlers or controllers — let middleware handle it.
@@ -437,6 +447,24 @@ builder classes are available without an explicit `using` in every test file.
 - Use the shared `ModelHelper` static class which builds the EF Core model once using
   the SQL Server provider and caches it. Never use the in-memory provider for
   configuration tests — it does not reflect real column names or SQL Server constraints.
+
+### Test Class Member Naming
+
+Private fields in test classes must be named after their concrete type — never `_sut` or
+any other generic placeholder.
+
+```csharp
+// Correct — name reflects the concrete type
+private readonly CreateOwnerCommandHandler _createOwnerCommandHandler;
+private readonly CreateOwnerCommandValidator _createOwnerCommandValidator;
+private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
+
+// Wrong — generic placeholder conveys nothing
+private readonly CreateOwnerCommandHandler _sut;
+```
+
+The field name must match the class name in camelCase with a leading underscore,
+regardless of whether the class is the primary subject under test or a dependency.
 
 ### NSubstitute Style
 ```csharp

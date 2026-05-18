@@ -2,6 +2,7 @@ using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.RemoveOwnerProfileImage;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -12,11 +13,12 @@ public class RemoveOwnerProfileImageCommandHandlerTests
     private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
     private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly RemoveOwnerProfileImageCommandHandler _sut;
+    private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
+    private readonly RemoveOwnerProfileImageCommandHandler _removeOwnerProfileImageCommandHandler;
 
     public RemoveOwnerProfileImageCommandHandlerTests()
     {
-        _sut = new RemoveOwnerProfileImageCommandHandler(_ownerRepository, _blobStorageService, _unitOfWork);
+        _removeOwnerProfileImageCommandHandler = new RemoveOwnerProfileImageCommandHandler(_ownerRepository, _blobStorageService, _unitOfWork, _currentUserService);
     }
 
     [Fact]
@@ -25,9 +27,10 @@ public class RemoveOwnerProfileImageCommandHandlerTests
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetProfileImage("owners/abc/photo.jpg", "image/jpeg");
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
-        await _sut.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
+        await _removeOwnerProfileImageCommandHandler.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
 
         await _blobStorageService.Received(1).DeleteAsync(
             "owner-profile-images", "owners/abc/photo.jpg", CancellationToken.None);
@@ -40,9 +43,10 @@ public class RemoveOwnerProfileImageCommandHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
-        await _sut.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
+        await _removeOwnerProfileImageCommandHandler.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
 
         await _blobStorageService.DidNotReceive().DeleteAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
@@ -56,7 +60,18 @@ public class RemoveOwnerProfileImageCommandHandlerTests
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
         await Should.ThrowAsync<NotFoundException>(
-            () => _sut.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None));
+            () => _removeOwnerProfileImageCommandHandler.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_When_OwnerIsNotCurrentUser_Throws_ForbiddenException()
+    {
+        var ownerId = Guid.NewGuid();
+        var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
+
+        await Should.ThrowAsync<ForbiddenException>(
+            () => _removeOwnerProfileImageCommandHandler.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None));
+    }
 }

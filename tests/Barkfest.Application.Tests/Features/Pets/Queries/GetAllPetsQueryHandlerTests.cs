@@ -8,11 +8,11 @@ namespace Barkfest.Application.Tests.Features.Pets.Queries;
 public class GetAllPetsQueryHandlerTests
 {
     private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
-    private readonly GetAllPetsQueryHandler _sut;
+    private readonly GetAllPetsQueryHandler _getAllPetsQueryHandler;
 
     public GetAllPetsQueryHandlerTests()
     {
-        _sut = new GetAllPetsQueryHandler(_petRepository);
+        _getAllPetsQueryHandler = new GetAllPetsQueryHandler(_petRepository);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class GetAllPetsQueryHandlerTests
         };
         _petRepository.GetAllAsync(CancellationToken.None).Returns(pets);
 
-        var result = await _sut.Handle(new GetAllPetsQuery(), CancellationToken.None);
+        var result = await _getAllPetsQueryHandler.Handle(new GetAllPetsQuery(), CancellationToken.None);
 
         var list = result.ToList();
         list.Count.ShouldBe(2);
@@ -38,7 +38,7 @@ public class GetAllPetsQueryHandlerTests
     {
         _petRepository.GetAllAsync(CancellationToken.None).Returns([]);
 
-        var result = await _sut.Handle(new GetAllPetsQuery(), CancellationToken.None);
+        var result = await _getAllPetsQueryHandler.Handle(new GetAllPetsQuery(), CancellationToken.None);
 
         result.ShouldBeEmpty();
     }

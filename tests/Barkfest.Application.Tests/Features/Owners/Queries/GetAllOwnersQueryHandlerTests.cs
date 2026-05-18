@@ -8,11 +8,11 @@ namespace Barkfest.Application.Tests.Features.Owners.Queries;
 public class GetAllOwnersQueryHandlerTests
 {
     private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
-    private readonly GetAllOwnersQueryHandler _sut;
+    private readonly GetAllOwnersQueryHandler _getAllOwnersQueryHandler;
 
     public GetAllOwnersQueryHandlerTests()
     {
-        _sut = new GetAllOwnersQueryHandler(_ownerRepository);
+        _getAllOwnersQueryHandler = new GetAllOwnersQueryHandler(_ownerRepository);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class GetAllOwnersQueryHandlerTests
         };
         _ownerRepository.GetAllAsync(CancellationToken.None).Returns(owners);
 
-        var result = await _sut.Handle(new GetAllOwnersQuery(), CancellationToken.None);
+        var result = await _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
 
         var list = result.ToList();
         list.Count.ShouldBe(2);
@@ -38,7 +38,7 @@ public class GetAllOwnersQueryHandlerTests
     {
         _ownerRepository.GetAllAsync(CancellationToken.None).Returns([]);
 
-        var result = await _sut.Handle(new GetAllOwnersQuery(), CancellationToken.None);
+        var result = await _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
 
         result.ShouldBeEmpty();
     }

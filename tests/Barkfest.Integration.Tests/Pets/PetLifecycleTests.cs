@@ -1,3 +1,4 @@
+using Barkfest.Domain.Entities;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,7 +8,7 @@ namespace Barkfest.Integration.Tests.Pets;
 public class PetLifecycleTests(IntegrationApiFactory factory)
     : IClassFixture<IntegrationApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _unauthenticatedClient = factory.CreateClient();
 
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
@@ -19,12 +20,11 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task PetCrudLifecycle_CreateUpdateGetDelete_Succeeds()
     {
-        var ownerId = await CreateOwner();
+        var (client, _) = await RegisterAndGetClient();
 
         // Create
-        var createResponse = await _client.PostAsJsonAsync("/v1/pets", new
+        var createResponse = await client.PostAsJsonAsync("/v1/pets", new
         {
-            ownerId,
             name = "Bruno",
             description = "A very good boy",
             dateOfBirth = (string?)null,
@@ -34,13 +34,13 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
         var petId = ExtractIdFromLocation(createResponse);
 
         // Get
-        var getResponse = await _client.GetAsync($"/v1/pets/{petId}");
+        var getResponse = await client.GetAsync($"/v1/pets/{petId}");
         getResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await getResponse.Content.ReadAsStringAsync();
         body.ShouldContain("Bruno");
 
         // Update
-        var updateResponse = await _client.PutAsJsonAsync($"/v1/pets/{petId}", new
+        var updateResponse = await client.PutAsJsonAsync($"/v1/pets/{petId}", new
         {
             name = "Bruno Jr.",
             description = "Still a very good boy",
@@ -50,16 +50,16 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
         updateResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify update
-        var getAfterUpdate = await _client.GetAsync($"/v1/pets/{petId}");
+        var getAfterUpdate = await client.GetAsync($"/v1/pets/{petId}");
         var updatedBody = await getAfterUpdate.Content.ReadAsStringAsync();
         updatedBody.ShouldContain("Bruno Jr.");
 
         // Delete
-        var deleteResponse = await _client.DeleteAsync($"/v1/pets/{petId}");
+        var deleteResponse = await client.DeleteAsync($"/v1/pets/{petId}");
         deleteResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Verify gone
-        var getAfterDelete = await _client.GetAsync($"/v1/pets/{petId}");
+        var getAfterDelete = await client.GetAsync($"/v1/pets/{petId}");
         getAfterDelete.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
@@ -70,10 +70,10 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task UploadProfileImage_When_JpegProvided_Returns_NoContent()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Rex", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Rex");
 
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/v1/pets/{petId}/profile-image",
             BuildImageFormData("pet-profile.jpg", "image/jpeg"));
 
@@ -83,7 +83,9 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task UploadProfileImage_When_PetNotFound_Returns_NotFound()
     {
-        var response = await _client.PostAsync(
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.PostAsync(
             $"/v1/pets/{Guid.NewGuid()}/profile-image",
             BuildImageFormData("pet-profile.jpg", "image/jpeg"));
 
@@ -93,30 +95,30 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task RemoveProfileImage_When_PreviouslyUploaded_Returns_NoContent()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Bella", "Cat");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Bella");
 
-        var uploadResponse = await _client.PostAsync(
+        var uploadResponse = await client.PostAsync(
             $"/v1/pets/{petId}/profile-image",
             BuildImageFormData("bella.jpg", "image/jpeg"));
         uploadResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var removeResponse = await _client.DeleteAsync($"/v1/pets/{petId}/profile-image");
+        var removeResponse = await client.DeleteAsync($"/v1/pets/{petId}/profile-image");
         removeResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     [Fact]
     public async Task UploadProfileImage_When_ImageAlreadyExists_Replaces_Image()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Max", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Max");
 
-        var first = await _client.PostAsync(
+        var first = await client.PostAsync(
             $"/v1/pets/{petId}/profile-image",
             BuildImageFormData("first.jpg", "image/jpeg"));
         first.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var second = await _client.PostAsync(
+        var second = await client.PostAsync(
             $"/v1/pets/{petId}/profile-image",
             BuildImageFormData("second.png", "image/png"));
         second.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -129,10 +131,10 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task AddImage_When_FileIsValid_Returns_Created()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Luna", "Cat");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Luna");
 
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/v1/pets/{petId}/images",
             BuildImageFormData("gallery1.jpg", "image/jpeg"));
 
@@ -145,7 +147,9 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task AddImage_When_PetNotFound_Returns_NotFound()
     {
-        var response = await _client.PostAsync(
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.PostAsync(
             $"/v1/pets/{Guid.NewGuid()}/images",
             BuildImageFormData("gallery1.jpg", "image/jpeg"));
 
@@ -155,27 +159,27 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task RemoveImage_When_ImageExists_Returns_NoContent()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Charlie", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Charlie");
 
-        var addResponse = await _client.PostAsync(
+        var addResponse = await client.PostAsync(
             $"/v1/pets/{petId}/images",
             BuildImageFormData("gallery1.jpg", "image/jpeg"));
         addResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
 
         var imageId = await ExtractImageId(addResponse);
 
-        var removeResponse = await _client.DeleteAsync($"/v1/pets/{petId}/images/{imageId}");
+        var removeResponse = await client.DeleteAsync($"/v1/pets/{petId}/images/{imageId}");
         removeResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     [Fact]
     public async Task RemoveImage_When_ImageNotFound_Returns_NotFound()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Daisy", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Daisy");
 
-        var response = await _client.DeleteAsync($"/v1/pets/{petId}/images/{Guid.NewGuid()}");
+        var response = await client.DeleteAsync($"/v1/pets/{petId}/images/{Guid.NewGuid()}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -183,13 +187,12 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task AddImage_When_UpToMaxLimit_AllSucceed()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Archie", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Archie");
 
-        // MaxImages == 5
-        for (var i = 1; i <= 5; i++)
+        for (var i = 1; i <= Pet.MaxImages; i++)
         {
-            var response = await _client.PostAsync(
+            var response = await client.PostAsync(
                 $"/v1/pets/{petId}/images",
                 BuildImageFormData($"gallery{i}.jpg", "image/jpeg"));
 
@@ -200,20 +203,20 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task AddImage_When_ExceedsMaxLimit_Returns_BadRequest()
     {
-        var ownerId = await CreateOwner();
-        var petId = await CreatePet(ownerId, "Milo", "Dog");
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Milo");
 
-        for (var i = 1; i <= 5; i++)
+        for (var i = 1; i <= Pet.MaxImages; i++)
         {
-            await _client.PostAsync(
+            await client.PostAsync(
                 $"/v1/pets/{petId}/images",
                 BuildImageFormData($"gallery{i}.jpg", "image/jpeg"));
         }
 
-        // 6th image should exceed the domain limit
-        var overLimit = await _client.PostAsync(
+        // One more image should exceed the domain limit
+        var overLimit = await client.PostAsync(
             $"/v1/pets/{petId}/images",
-            BuildImageFormData("gallery6.jpg", "image/jpeg"));
+            BuildImageFormData($"gallery{Pet.MaxImages + 1}.jpg", "image/jpeg"));
 
         overLimit.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -225,54 +228,53 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     [Fact]
     public async Task FullLifecycle_OwnerWithPetAndImages_Succeeds()
     {
-        // 1. Create owner
-        var ownerId = await CreateOwner();
+        var (client, ownerId) = await RegisterAndGetClient();
 
-        // 2. Upload owner profile image
-        var ownerImageUpload = await _client.PostAsync(
+        // Upload owner profile image
+        var ownerImageUpload = await client.PostAsync(
             $"/v1/owners/{ownerId}/profile-image",
             BuildImageFormData("owner.jpg", "image/jpeg"));
         ownerImageUpload.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        // 3. Create pet under that owner
-        var petId = await CreatePet(ownerId, "Rocket", "Dog");
+        // Create pet under that owner
+        var petId = await CreatePet(client, "Rocket");
 
-        // 4. Upload pet profile image
-        var petImageUpload = await _client.PostAsync(
+        // Upload pet profile image
+        var petImageUpload = await client.PostAsync(
             $"/v1/pets/{petId}/profile-image",
             BuildImageFormData("rocket.jpg", "image/jpeg"));
         petImageUpload.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        // 5. Add two gallery images
-        var img1Response = await _client.PostAsync(
+        // Add two gallery images
+        var img1Response = await client.PostAsync(
             $"/v1/pets/{petId}/images",
             BuildImageFormData("rocket-play.jpg", "image/jpeg"));
         img1Response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var img1Id = await ExtractImageId(img1Response);
 
-        var img2Response = await _client.PostAsync(
+        var img2Response = await client.PostAsync(
             $"/v1/pets/{petId}/images",
             BuildImageFormData("rocket-sleep.png", "image/png"));
         img2Response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        // 6. Remove first gallery image
-        var removeImg1 = await _client.DeleteAsync($"/v1/pets/{petId}/images/{img1Id}");
+        // Remove first gallery image
+        var removeImg1 = await client.DeleteAsync($"/v1/pets/{petId}/images/{img1Id}");
         removeImg1.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        // 7. Get pet — should still contain gallery image 2
-        var getPet = await _client.GetAsync($"/v1/pets/{petId}");
+        // Get pet — should still contain gallery image 2
+        var getPet = await client.GetAsync($"/v1/pets/{petId}");
         getPet.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        // 8. Delete pet
-        var deletePet = await _client.DeleteAsync($"/v1/pets/{petId}");
+        // Delete pet
+        var deletePet = await client.DeleteAsync($"/v1/pets/{petId}");
         deletePet.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        // 9. Verify pet gone
-        (await _client.GetAsync($"/v1/pets/{petId}")).StatusCode
+        // Verify pet gone
+        (await client.GetAsync($"/v1/pets/{petId}")).StatusCode
             .ShouldBe(HttpStatusCode.NotFound);
 
-        // 10. Delete owner
-        var deleteOwner = await _client.DeleteAsync($"/v1/owners/{ownerId}");
+        // Delete owner
+        var deleteOwner = await client.DeleteAsync($"/v1/owners/{ownerId}");
         deleteOwner.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
@@ -280,24 +282,28 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     // Helpers
     // -----------------------------------------------------------------------
 
-    private async Task<Guid> CreateOwner()
+    private async Task<(HttpClient client, Guid ownerId)> RegisterAndGetClient()
     {
-        var response = await _client.PostAsJsonAsync("/v1/owners", new
+        var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
             firstName = "Test",
             lastName = "Owner",
             email = $"owner-{Guid.NewGuid():N}@example.com",
-            phoneNumber = (string?)null
+            phoneNumber = (string?)null,
+            password = "SecurePass1!"
         });
-        response.EnsureSuccessStatusCode();
-        return ExtractIdFromLocation(response);
+        registerResponse.EnsureSuccessStatusCode();
+
+        var location = registerResponse.Headers.Location!.ToString();
+        var ownerId = Guid.Parse(location.Split('/').Last());
+
+        return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 
-    private async Task<Guid> CreatePet(Guid ownerId, string name, string petType)
+    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog")
     {
-        var response = await _client.PostAsJsonAsync("/v1/pets", new
+        var response = await client.PostAsJsonAsync("/v1/pets", new
         {
-            ownerId,
             name,
             description = (string?)null,
             dateOfBirth = (string?)null,

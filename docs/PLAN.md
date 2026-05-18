@@ -915,6 +915,84 @@ traces, and health for all resources. The API URL is listed there.
 
 ---
 
+## Phase 11 — Authentication & Authorization ✅ Complete
+
+### Decisions
+
+| Decision | Choice |
+|---|---|
+| Registration | `POST /v1/auth/register` — creates Owner + stores PasswordHash in one step |
+| Token strategy | Access token only (no refresh tokens) |
+| Identity approach | Custom JWT — no ASP.NET Core Identity |
+| Authorization model | Owners manage only their own data; ownership checked in handlers |
+| `GetAll` endpoints | Removed (`GET /v1/owners`, `GET /v1/pets`) — no admin role, no use case |
+
+### New NuGet Packages
+
+| Project | Package |
+|---|---|
+| `Barkfest.API` | `Microsoft.AspNetCore.Authentication.JwtBearer` |
+| `Barkfest.Infrastructure` | `BCrypt.Net-Next`, `System.IdentityModel.Tokens.Jwt` |
+| `Barkfest.Tests.Common` | `Microsoft.IdentityModel.Tokens`, `System.IdentityModel.Tokens.Jwt` |
+
+### Domain
+
+- [x] `Owner.PasswordHash` property + `SetPasswordHash(string hash)` method
+- [x] `IOwnerRepository.GetByEmailAsync(string email, CancellationToken)` — returns `Owner?`
+- [x] `ForbiddenException` (maps to 403 via `ExceptionHandlingMiddleware`)
+
+### Application
+
+- [x] `ICurrentUserService` — `Guid OwnerId { get; }`
+- [x] `IJwtTokenService` — `string GenerateToken(Owner owner)`, `DateTime GetExpiry()`
+- [x] `IPasswordHasher` — `string Hash(string password)`, `bool Verify(string password, string hash)`
+- [x] `AuthTokenDto(string AccessToken, Guid OwnerId, DateTime ExpiresAt)`
+- [x] `RegisterCommand` / `RegisterCommandHandler` / `RegisterCommandValidator`
+- [x] `LoginCommand` / `LoginCommandHandler` / `LoginCommandValidator`
+- [x] All owner + pet handlers updated with `ICurrentUserService` ownership check → `ForbiddenException`
+- [x] `CreatePetCommand` — `OwnerId` removed; handler reads from `ICurrentUserService`
+
+### Persistence
+
+- [x] `OwnerConfiguration` — `PasswordHash` column (required), unique index on `Email`
+- [x] `OwnerRepository.GetByEmailAsync` implemented
+- [x] Migration `AddOwnerPasswordHash` generated
+
+### Infrastructure
+
+- [x] `JwtSettings` — `SecretKey`, `Issuer`, `Audience`, `ExpiryMinutes`
+- [x] `JwtTokenService` implementing `IJwtTokenService`
+- [x] `BcryptPasswordHasher` implementing `IPasswordHasher`
+- [x] `DependencyInjection` updated
+
+### API
+
+- [x] `AuthController` — `POST /v1/auth/register` (201), `POST /v1/auth/login` (200) — `[AllowAnonymous]`
+- [x] `OwnerController` / `PetController` — `[Authorize]` added, `GetAll` endpoints removed
+- [x] `CreatePetRequest` — `OwnerId` field removed
+- [x] `CurrentUserService` — reads `sub` claim via `IHttpContextAccessor`
+- [x] `Program.cs` — `AddJwtBearer` with `MapInboundClaims = false` (required for .NET 10's `JsonWebTokenHandler`)
+- [x] `ExceptionHandlingMiddleware` — `ForbiddenException` → 403
+- [x] `appsettings.json` / `appsettings.Development.json` / `appsettings.Testing.json`
+
+### Tests (417 total — all passing)
+
+- [x] `JwtTestHelper.GenerateToken(Guid ownerId)` in `Barkfest.Tests.Common`
+- [x] `CreateAuthenticatedClient(Guid ownerId)` in `BarkfestApiFactory` and `IntegrationApiFactory`
+- [x] `AuthControllerTests` — 6 tests
+- [x] `OwnersControllerTests` / `PetsControllerTests` — rewritten with auth, 401/403 tests added
+- [x] `OwnerLifecycleTests` / `PetLifecycleTests` — register via `/v1/auth/register`, all requests authenticated
+- [x] All Application.Tests handler tests — `ICurrentUserService` mocked, `ForbiddenException` tests added
+- [x] Auth command/validator tests — `RegisterCommandHandlerTests`, `RegisterCommandValidatorTests`, `LoginCommandHandlerTests`, `LoginCommandValidatorTests`
+
+### Key Implementation Note
+
+.NET 10's `JwtBearerHandler` uses `JsonWebTokenHandler` by default. The common advice of calling
+`JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear()` does **not** work — it only affects
+`JwtSecurityTokenHandler`. The correct fix is `options.MapInboundClaims = false` in `AddJwtBearer()`.
+
+---
+
 ## General Rules — Always Follow These
 
 - Target framework: `.NET 10`

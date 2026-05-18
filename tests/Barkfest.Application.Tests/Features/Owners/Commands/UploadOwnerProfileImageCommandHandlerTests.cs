@@ -2,6 +2,7 @@ using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.UploadOwnerProfileImage;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -12,11 +13,12 @@ public class UploadOwnerProfileImageCommandHandlerTests
     private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
     private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
-    private readonly UploadOwnerProfileImageCommandHandler _sut;
+    private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
+    private readonly UploadOwnerProfileImageCommandHandler _uploadOwnerProfileImageCommandHandler;
 
     public UploadOwnerProfileImageCommandHandlerTests()
     {
-        _sut = new UploadOwnerProfileImageCommandHandler(_ownerRepository, _blobStorageService, _unitOfWork);
+        _uploadOwnerProfileImageCommandHandler = new UploadOwnerProfileImageCommandHandler(_ownerRepository, _blobStorageService, _unitOfWork, _currentUserService);
     }
 
     [Fact]
@@ -24,12 +26,13 @@ public class UploadOwnerProfileImageCommandHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
         var content = new MemoryStream([0x89, 0x50]);
 
         var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", content, "image/jpeg");
 
-        await _sut.Handle(command, CancellationToken.None);
+        await _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None);
 
         await _blobStorageService.DidNotReceive().DeleteAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
@@ -48,12 +51,13 @@ public class UploadOwnerProfileImageCommandHandlerTests
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetProfileImage("owners/old/blob.jpg", "image/jpeg");
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
         var content = new MemoryStream([0x89, 0x50]);
 
         var command = new UploadOwnerProfileImageCommand(ownerId, "new.jpg", content, "image/jpeg");
 
-        await _sut.Handle(command, CancellationToken.None);
+        await _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None);
 
         await _blobStorageService.Received(1).DeleteAsync(
             "owner-profile-images", "owners/old/blob.jpg", CancellationToken.None);
@@ -73,7 +77,19 @@ public class UploadOwnerProfileImageCommandHandlerTests
 
         var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", Stream.Null, "image/jpeg");
 
-        await Should.ThrowAsync<NotFoundException>(() => _sut.Handle(command, CancellationToken.None));
+        await Should.ThrowAsync<NotFoundException>(() => _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_When_OwnerIsNotCurrentUser_Throws_ForbiddenException()
+    {
+        var ownerId = Guid.NewGuid();
+        var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
+
+        var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", Stream.Null, "image/jpeg");
+
+        await Should.ThrowAsync<ForbiddenException>(() => _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None));
+    }
 }

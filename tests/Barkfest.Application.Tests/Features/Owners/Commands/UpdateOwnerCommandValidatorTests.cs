@@ -5,7 +5,7 @@ namespace Barkfest.Application.Tests.Features.Owners.Commands;
 
 public class UpdateOwnerCommandValidatorTests
 {
-    private readonly UpdateOwnerCommandValidator _sut = new();
+    private readonly UpdateOwnerCommandValidator _updateOwnerCommandValidator = new();
 
     // -----------------------------------------------------------------------
     // Valid command
@@ -16,7 +16,7 @@ public class UpdateOwnerCommandValidatorTests
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null);
 
-        _sut.Validate(command).IsValid.ShouldBeTrue();
+        _updateOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     // -----------------------------------------------------------------------
@@ -28,7 +28,7 @@ public class UpdateOwnerCommandValidatorTests
     {
         var command = new UpdateOwnerCommand(Guid.Empty, "Alice", "Smith", "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Id));
@@ -46,7 +46,7 @@ public class UpdateOwnerCommandValidatorTests
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), firstName!, "Smith", "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.FirstName));
@@ -58,7 +58,7 @@ public class UpdateOwnerCommandValidatorTests
         var command = new UpdateOwnerCommand(
             Guid.NewGuid(), new string('A', Owner.FirstNameMaxLength + 1), "Smith", "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.FirstName));
@@ -76,7 +76,7 @@ public class UpdateOwnerCommandValidatorTests
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", lastName!, "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.LastName));
@@ -88,7 +88,7 @@ public class UpdateOwnerCommandValidatorTests
         var command = new UpdateOwnerCommand(
             Guid.NewGuid(), "Alice", new string('A', Owner.LastNameMaxLength + 1), "alice@example.com", null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.LastName));
@@ -106,7 +106,7 @@ public class UpdateOwnerCommandValidatorTests
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", email!, null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
@@ -120,7 +120,7 @@ public class UpdateOwnerCommandValidatorTests
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", email, null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
@@ -132,7 +132,7 @@ public class UpdateOwnerCommandValidatorTests
         var localPart = new string('a', Owner.EmailMaxLength - "@b.co".Length + 1);
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", $"{localPart}@b.co", null);
 
-        var result = _sut.Validate(command);
+        var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));

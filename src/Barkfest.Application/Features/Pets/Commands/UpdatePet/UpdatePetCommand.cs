@@ -1,6 +1,8 @@
 using Barkfest.Application.Common.Exceptions;
+using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
@@ -13,7 +15,7 @@ public record UpdatePetCommand(
     DateOnly? DateOfBirth,
     string PetType) : IRequest;
 
-public class UpdatePetCommandHandler(IPetRepository petRepository, IUnitOfWork unitOfWork)
+public class UpdatePetCommandHandler(IPetRepository petRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     : IRequestHandler<UpdatePetCommand>
 {
     public async Task Handle(UpdatePetCommand request, CancellationToken cancellationToken)
@@ -22,6 +24,9 @@ public class UpdatePetCommandHandler(IPetRepository petRepository, IUnitOfWork u
 
         if (pet is null)
             throw new NotFoundException(nameof(Pet), request.Id);
+
+        if (pet.OwnerId != currentUserService.OwnerId)
+            throw new ForbiddenException();
 
         var petType = PetType.FromName(request.PetType);
 

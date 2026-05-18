@@ -153,6 +153,139 @@
 
 ---
 
+---
+
+## Phase 10.2 — Test Infrastructure (Shared Builders) ✅ Complete
+
+- `Barkfest.Tests.Common` project created with `OwnerBuilder`, `PetBuilder`, `PetImageBuilder`
+- `Domain.Tests` and `Application.Tests` updated to use builders via `GlobalUsings.cs`
+- `CLAUDE.md` updated: `### Test Data Builders` subsection, naming convention rules, HTTP status code words
+- `docs/DECISIONS.md` updated: `## Testing` section with two decisions
+- `README.md` corrected: Integration.Tests use Testcontainers (not AppHost)
+
+---
+
+## Phase 11 — Authentication & Authorization ✅ Complete
+
+**506 tests across 5 runnable projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 159 |
+| `Barkfest.Application.Tests` | 222 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 71 |
+| `Barkfest.API.Tests` | 46 |
+
+### Domain
+- `Owner.PasswordHash` property + `SetPasswordHash(string hash)` method
+- `Owner.IsAdmin` property + `SetIsAdmin(bool isAdmin)` method (default false)
+- `Owner.Active` property + `SetActive(bool active)` method (default true)
+- `Owner.IsVisible` property + `SetIsVisible(bool isVisible)` method (default true)
+- `IOwnerRepository.GetByEmailAsync` added
+- `ForbiddenException` (→ 403)
+
+### Application
+- `ICurrentUserService` — `Guid OwnerId { get; }`, `bool IsAdmin { get; }`
+- `IJwtTokenService`, `IPasswordHasher` interfaces
+- `AuthTokenDto`
+- `RegisterCommand` / handler / validator
+- `LoginCommand` / handler / validator (blocks inactive owners with `ForbiddenException`)
+- `SetOwnerActiveCommand` / handler — admin-only, sets `Owner.Active`
+- `SetOwnerVisibilityCommand` / handler — owner-only, sets `Owner.IsVisible`
+- All owner + pet handlers updated: `ICurrentUserService` injected, ownership check throws `ForbiddenException`
+- `DeleteOwnerCommandHandler` / `RemovePetImageCommandHandler` — admin bypass (`IsAdmin` skips ownership check)
+- `CreatePetCommand` — `OwnerId` removed; handler reads from `ICurrentUserService`
+- `IBrowseRepository` + `GetBrowseImagesQuery` — public read-only browse (no auth required)
+- `GetOwnerByIdQuery`, `GetPetByIdQuery`, `GetPetsByOwnerIdQuery` — two-tier visibility: `Active` (admin-controlled) and `IsVisible` (owner-controlled); owners can always see their own data
+- `OwnerDto` — `bool IsVisible` field added
+
+### Persistence
+- `OwnerConfiguration` — `PasswordHash`, `IsAdmin`, `Active`, `IsVisible` columns; unique index on `Email`
+- `OwnerRepository.GetByEmailAsync` implemented
+- `BrowseRepository` — EF Core read-model filtered by `Active && IsVisible`; `AsSplitQuery()` + `Include`/`ThenInclude`
+- Migration `AddOwnerPasswordHash` generated
+- Migration `AddOwnerAdminAndActive` generated
+- Migration `AddOwnerIsVisible` generated
+
+### Infrastructure
+- `JwtSettings`, `JwtTokenService` (includes `is_admin` claim), `BcryptPasswordHasher`
+- `DependencyInjection` updated: `IJwtTokenService`, `IPasswordHasher`, `JwtSettings` config binding
+
+### API
+- `AuthController` — `POST /v1/auth/register` + `POST /v1/auth/login` (`[AllowAnonymous]`)
+- `AdminController` — `PATCH /v1/admin/owners/{id}/active` (`[Authorize]`, admin-only enforced in handler)
+- `BrowseController` — `GET /v1/browse/images` (`[AllowAnonymous]`, optional `?petType=&breed=` filters)
+- `OwnerController` — `[Authorize]` added, `GetAll` removed, `PATCH /v1/owners/{id}/visibility` added
+- `PetController` — `[Authorize]` added, `GetAll` removed
+- `CreatePetRequest` — `OwnerId` field removed (set server-side from JWT)
+- `CurrentUserService` — reads `sub` + `is_admin` claims from JWT via `IHttpContextAccessor`
+- `ActiveOwnerMiddleware` — DB check on every authenticated request; inactive owners → 403
+- `Program.cs` — `AddJwtBearer` with `MapInboundClaims = false`, `AddHttpContextAccessor`, `ActiveOwnerMiddleware`, admin seed on startup (skipped in Testing)
+- `ExceptionHandlingMiddleware` — `ForbiddenException` → 403
+- `appsettings.json` / `appsettings.Development.json` (Admin section) / `appsettings.Testing.json` (new)
+
+### Tests
+- `Barkfest.Tests.Common` — `JwtTestHelper.GenerateToken(Guid ownerId, bool isAdmin = false)`, `is_admin` claim included
+- `BarkfestApiFactory` / `IntegrationApiFactory` — `CreateAuthenticatedClient()` + `CreateAuthenticatedAdminClient()` helpers
+- `AuthControllerTests` — 6 tests (register + login scenarios)
+- `AdminControllerTests` — 7 tests (activate/deactivate, auth, 403 for non-admin, blocked login, middleware 403)
+- `BrowseControllerTests` — 5 tests (public access, filters, unrecognised petType → empty)
+- `OwnersControllerTests` / `PetsControllerTests` — fully rewritten: register → authenticated client, 401 tests added
+- `OwnerLifecycleTests` / `PetLifecycleTests` — register via `/v1/auth/register`, all requests use authenticated client
+- `SetOwnerActiveCommandHandlerTests` — 3 tests (admin activate/deactivate, non-admin forbidden, not found)
+- `SetOwnerVisibilityCommandHandlerTests` — 3 tests (owner sets visibility, non-owner forbidden, not found)
+- `LoginCommandHandlerTests` — added inactive owner test
+- `GetOwnerByIdQueryHandlerTests` — inactive + invisible scenarios with admin/owner bypass
+- `GetPetByIdQueryHandlerTests` — inactive + invisible scenarios with admin/owner bypass
+- `GetPetsByOwnerIdQueryHandlerTests` — inactive + invisible scenarios with admin/owner bypass
+- `OwnerTests` — `SetIsVisible`, `NewOwner_When_Instantiated_Returns_IsVisibleTrue` added
+
+---
+
+---
+
+## Post-Phase 11 — Admin → Administrator Rename
+
+- Entity `Admin` → `Administrator` (`Administrator.cs`, `IAdministratorRepository`, `AdministratorRepository`, `AdministratorConfiguration`)
+- Feature folder `Features/Admin/` → `Features/Administrators/`
+- `CreateAdminCommand/Handler/Validator` → `CreateAdministratorCommand/Handler/Validator`
+- DB table `Admins` → `Administrators`, PK column `AdminId` → `AdministratorId`
+- Migration `SeparateAdminIdentity` and model snapshot updated in place (not yet applied)
+- All type aliases (`using AdminEntity = ...`) removed — no longer needed
+- All test files renamed and updated to match
+
+---
+
+## Post-Phase 11 — Administrator Management
+
+- `UpdateAdministratorPasswordCommand` / handler / validator — admin-only, updates another admin's password hash
+- `DeleteAdministratorCommand` / handler — admin-only, deletes another admin; self-delete throws `ForbiddenException`
+- `ICurrentUserService` extended: `Guid? AdminId` added alongside existing `Guid? OwnerId` and `bool IsAdmin`
+- `CurrentUserService` updated to read `AdminId` from JWT `sub` when `account_type == "admin"`
+- `AdminController` extended: `PATCH /v1/admin/admins/{id}/password`, `DELETE /v1/admin/admins/{id}`
+- All 4 migrations consolidated into single `InitialCreate` migration (clean schema, no incremental history)
+- `README.md` updated: First Login section documents dev credentials and SeedAdminAsync flow (local dev only)
+- `CLAUDE.md` updated: `Administrator.EmailMaxLength` constant, Administrator business rules section
+- `docs/DECISIONS.md` updated: Admin/Owner separation decision, self-delete guard decision, trust model decision
+
+**538 tests across 5 runnable projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 159 |
+| `Barkfest.Application.Tests` | 231 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 85 |
+| `Barkfest.API.Tests` | 55 |
+
+- `AdministratorConfigurationTests` — table name, PK column, EmailMaxLength, required fields, unique email index
+- `AdministratorRepositoryTests` — AddAsync, GetByIdAsync, GetByEmailAsync (including case-insensitive), DeleteAsync
+- Application.Tests — `UpdateAdministratorPasswordCommandHandlerTests` (3), `UpdateAdministratorPasswordCommandValidatorTests` (2), `DeleteAdministratorCommandHandlerTests` (4)
+- API.Tests — `AdminControllerTests` extended with 9 new tests (update password: 4, delete: 5)
+
+---
+
 ## Next
 
 All phases complete.

@@ -1,27 +1,22 @@
 using Barkfest.Application.Features.Owners.Commands.CreateOwner;
 using Barkfest.Application.Features.Owners.Commands.DeleteOwner;
 using Barkfest.Application.Features.Owners.Commands.RemoveOwnerProfileImage;
+using Barkfest.Application.Features.Owners.Commands.SetOwnerVisibility;
 using Barkfest.Application.Features.Owners.Commands.UpdateOwner;
 using Barkfest.Application.Features.Owners.Commands.UploadOwnerProfileImage;
-using Barkfest.Application.Features.Owners.Queries.GetAllOwners;
 using Barkfest.Application.Features.Owners.Queries.GetOwnerById;
 using Barkfest.Application.Features.Pets.Queries.GetPetsByOwnerId;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Barkfest.API.Controllers;
 
 [ApiController]
 [Route("v1/owners")]
+[Authorize]
 public class OwnerController(IMediator mediator) : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
-    {
-        var owners = await mediator.Send(new GetAllOwnersQuery(), cancellationToken);
-        return Ok(owners);
-    }
-
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -34,16 +29,6 @@ public class OwnerController(IMediator mediator) : ControllerBase
     {
         var pets = await mediator.Send(new GetPetsByOwnerIdQuery(id), cancellationToken);
         return Ok(pets);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Create(CreateOwnerRequest request, CancellationToken cancellationToken)
-    {
-        var id = await mediator.Send(
-            new CreateOwnerCommand(request.FirstName, request.LastName, request.Email, request.PhoneNumber),
-            cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id }, null);
     }
 
     [HttpPut("{id:guid}")]
@@ -81,7 +66,14 @@ public class OwnerController(IMediator mediator) : ControllerBase
         await mediator.Send(new RemoveOwnerProfileImageCommand(id), cancellationToken);
         return NoContent();
     }
+
+    [HttpPatch("{id:guid}/visibility")]
+    public async Task<IActionResult> SetVisibility(Guid id, [FromBody] SetOwnerVisibilityRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new SetOwnerVisibilityCommand(id, request.IsVisible), cancellationToken);
+        return NoContent();
+    }
 }
 
-public record CreateOwnerRequest(string FirstName, string LastName, string Email, string? PhoneNumber);
 public record UpdateOwnerRequest(string FirstName, string LastName, string Email, string? PhoneNumber);
+public record SetOwnerVisibilityRequest(bool IsVisible);
