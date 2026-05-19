@@ -1,5 +1,4 @@
 using Barkfest.Application.Features.Pets.Queries.GetAllPets;
-using Barkfest.Domain.Entities;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 

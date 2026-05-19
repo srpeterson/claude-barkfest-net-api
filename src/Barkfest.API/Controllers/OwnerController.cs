@@ -1,4 +1,3 @@
-using Barkfest.Application.Features.Owners.Commands.CreateOwner;
 using Barkfest.Application.Features.Owners.Commands.DeleteOwner;
 using Barkfest.Application.Features.Owners.Commands.RemoveOwnerProfileImage;
 using Barkfest.Application.Features.Owners.Commands.SetOwnerVisibility;

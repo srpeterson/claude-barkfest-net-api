@@ -210,6 +210,24 @@ this pattern.
 
 ---
 
+### Decision: `static Create()` factory methods on all domain entities
+**Choice:** Every domain entity exposes a `static Create(...)` factory method
+that constructs a fully valid instance in a single call. Handlers that create new
+entities use `Create()` rather than calling `new Entity()` followed by multiple
+setter calls. The setters remain on the entity for mutation (update operations).
+
+**Reason:** Multiple setter calls leave a window where the entity is partially
+constructed and invalid — a handler building an entity across five separate setter
+calls could be interrupted, or a future developer extending the handler could miss
+one required setter. `Create()` closes that window: the entity is either fully
+valid or not created at all. `Create()` delegates to the existing setters, so all
+validation logic has a single source of truth. The parameterless constructor is
+retained (without modification) for EF Core to materialise entities from database
+rows — this reconstruction path correctly bypasses `Create()` since the data was
+already validated when it was first stored.
+
+---
+
 ## SmartEnums
 
 ### Decision: `Ardalis.SmartEnum` for `PetType`, `DogBreed`, `CatBreed`

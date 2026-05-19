@@ -85,6 +85,22 @@ public class Administrator
         Email = trimmed;
     }
 
+    public static Administrator Create(
+        string username,
+        string name,
+        string email,
+        string phoneNumber,
+        string passwordHash)
+    {
+        var administrator = new Administrator();
+        administrator.SetUsername(username);
+        administrator.SetName(name);
+        administrator.SetEmail(email);
+        administrator.SetPhoneNumber(phoneNumber);
+        administrator.SetPasswordHash(passwordHash);
+        return administrator;
+    }
+
     public void SetPasswordHash(string hash)
     {
         if (string.IsNullOrWhiteSpace(hash))

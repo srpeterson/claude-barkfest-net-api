@@ -44,7 +44,36 @@ needing a real email delivery service.
 
 ---
 
-## 2. Image Moderation
+## 2. Value Object Emails (and Other Validated Strings)
+
+**Priority:** Low
+**Status:** Not started — kept as plain `string` properties for now
+
+### What
+Introduce typed value objects — e.g. `ValidatedEmail`, `ValidatedUsername` — so the
+type system enforces that these strings have passed validation rather than relying on
+callers to always go through the entity setter.
+
+### Why deferred
+- Requires a cascade: if `Email` becomes a value object, `Username`, `FirstName`,
+  `LastName`, `PhoneNumber`, and `Name` should follow for consistency.
+- EF Core needs two construction paths: one that validates (new instances) and one
+  that skips validation (DB reconstruction via `HasConversion()`). Every value object
+  adds that boilerplate.
+- The current setter pattern (`SetEmail()` with `private set`) already guarantees a
+  string on the entity is valid — the type system benefit is incremental, not
+  foundational.
+- `ProfileImage` demonstrates the pattern (private constructor + `static Create()` +
+  `OwnsOne()` mapping) and can serve as the template when the time is right.
+
+### When to revisit
+If a validated string type needs to travel across aggregate boundaries, appear in
+domain events, or be compared across services — the value object pays for itself.
+Until then, the setter guarantee is sufficient.
+
+---
+
+## 3. Image Moderation
 
 **Priority:** Medium
 **Status:** Scaffolded — `IContentModerationService` is wired into all image upload

@@ -113,13 +113,29 @@ public record CreateOwnerCommand(
 // Query — record
 public record GetOwnerByIdQuery(Guid Id) : IRequest<OwnerDto>;
 
-// Entity — class
+// Entity — class with static Create() factory
 public class Owner
 {
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     // ...
+
+    // All domain entities expose a static Create() factory that constructs a
+    // fully valid instance in one call. Handlers use Create() — never new Entity()
+    // followed by individual setter calls.
+    public static Owner Create(string username, string firstName, ...) { ... }
 }
 ```
+
+### Entity factory method rule
+
+All domain entities expose a `static Create(...)` factory method. Handlers that
+create new entity instances must use `Create()` — not `new Entity()` with separate
+setter calls. The setters remain as the validation layer for *mutation* (update
+handlers). `Create()` delegates to the setters, so all validation has a single
+source of truth.
+
+The one exception is EF Core reconstruction: the parameterless constructor stays
+accessible so EF Core can materialise entities from database rows.
 
 ---
 

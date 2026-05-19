@@ -28,9 +28,6 @@ public class PetImageBuilder
 
     public PetImage Build()
     {
-        var image = new PetImage();
-        image.SetImage(_blobName, _contentType);
-        image.SetDisplayOrder(_displayOrder);
-        return image;
+        return PetImage.Create(_blobName, _contentType, _displayOrder);
     }
 }

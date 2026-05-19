@@ -41,9 +41,7 @@ public class AddPetImageCommandHandler(
 
         await blobStorageService.UploadAsync(ContainerName, blobName, request.Content, request.ContentType, cancellationToken);
 
-        var image = new PetImage();
-        image.SetImage(blobName, request.ContentType);
-        image.SetDisplayOrder(pet.Images.Count);
+        var image = PetImage.Create(blobName, request.ContentType, pet.Images.Count);
 
         pet.AddImage(image);
 

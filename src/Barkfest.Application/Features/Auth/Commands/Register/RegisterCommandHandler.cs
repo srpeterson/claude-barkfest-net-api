@@ -21,13 +21,13 @@ public class RegisterCommandHandler(
         if (existingByEmail is not null)
             throw new DomainException("Email is already in use.");
 
-        var owner = new Owner();
-        owner.SetUsername(request.Username);
-        owner.SetFirstName(request.FirstName);
-        owner.SetLastName(request.LastName);
-        owner.SetEmail(request.Email);
-        owner.SetPhoneNumber(request.PhoneNumber);
-        owner.SetPasswordHash(passwordHasher.Hash(request.Password));
+        var owner = Owner.Create(
+            request.Username,
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            passwordHasher.Hash(request.Password),
+            request.PhoneNumber);
 
         await ownerRepository.AddAsync(owner, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -16,6 +16,14 @@ public class PetImage
     public int DisplayOrder { get; private set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
+    public static PetImage Create(string blobName, string contentType, int displayOrder)
+    {
+        var image = new PetImage();
+        image.SetImage(blobName, contentType);
+        image.SetDisplayOrder(displayOrder);
+        return image;
+    }
+
     public void SetImage(string blobName, string contentType)
     {
         if (string.IsNullOrWhiteSpace(blobName))

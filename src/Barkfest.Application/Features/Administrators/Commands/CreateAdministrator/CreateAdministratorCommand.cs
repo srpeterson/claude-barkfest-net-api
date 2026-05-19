@@ -1,4 +1,3 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Exceptions;
@@ -28,12 +27,12 @@ public class CreateAdministratorCommandHandler(
         if (existingByEmail is not null)
             throw new DomainException($"An administrator with email '{request.Email.Trim().ToLowerInvariant()}' already exists.");
 
-        var administrator = new Administrator();
-        administrator.SetUsername(request.Username);
-        administrator.SetName(request.Name);
-        administrator.SetEmail(request.Email);
-        administrator.SetPhoneNumber(request.PhoneNumber);
-        administrator.SetPasswordHash(passwordHasher.Hash(request.Password));
+        var administrator = Administrator.Create(
+            request.Username,
+            request.Name,
+            request.Email,
+            request.PhoneNumber,
+            passwordHasher.Hash(request.Password));
 
         await administratorRepository.AddAsync(administrator, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -57,13 +57,7 @@ public class PetBuilder
 
     public Pet Build()
     {
-        var pet = new Pet(_ownerId);
-        pet.SetName(_name);
-        pet.SetPetType(_petType);
-        if (_description is not null)
-            pet.SetDescription(_description);
-        if (_dateOfBirth.HasValue)
-            pet.SetDateOfBirth(_dateOfBirth);
+        var pet = Pet.Create(_ownerId, _name, _petType, _description, _dateOfBirth);
         if (_profileImage.HasValue)
             pet.SetProfileImage(_profileImage.Value.BlobName, _profileImage.Value.ContentType);
         foreach (var image in _images)

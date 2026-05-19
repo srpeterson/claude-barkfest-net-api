@@ -32,11 +32,7 @@ public class CreatePetCommandHandler(
 
         var petType = PetType.FromName(request.PetType);
 
-        var pet = new Pet(ownerId);
-        pet.SetName(request.Name);
-        pet.SetDescription(request.Description);
-        pet.SetDateOfBirth(request.DateOfBirth);
-        pet.SetPetType(petType);
+        var pet = Pet.Create(ownerId, request.Name, petType, request.Description, request.DateOfBirth);
 
         await petRepository.AddAsync(pet, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

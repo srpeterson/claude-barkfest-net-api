@@ -32,6 +32,21 @@ public class Pet
         OwnerId = ownerId;
     }
 
+    public static Pet Create(
+        Guid ownerId,
+        string name,
+        PetType petType,
+        string? description = null,
+        DateOnly? dateOfBirth = null)
+    {
+        var pet = new Pet(ownerId);
+        pet.SetName(name);
+        pet.SetPetType(petType);
+        pet.SetDescription(description);
+        pet.SetDateOfBirth(dateOfBirth);
+        return pet;
+    }
+
     public void SetName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))

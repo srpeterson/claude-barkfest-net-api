@@ -129,6 +129,24 @@ public class Owner
         VerificationToken = null;
     }
 
+    public static Owner Create(
+        string username,
+        string firstName,
+        string lastName,
+        string email,
+        string passwordHash,
+        string? phoneNumber = null)
+    {
+        var owner = new Owner();
+        owner.SetUsername(username);
+        owner.SetFirstName(firstName);
+        owner.SetLastName(lastName);
+        owner.SetEmail(email);
+        owner.SetPasswordHash(passwordHash);
+        owner.SetPhoneNumber(phoneNumber);
+        return owner;
+    }
+
     public void SetActive(bool active) => Active = active;
 
     public void SetIsVisible(bool isVisible) => IsVisible = isVisible;

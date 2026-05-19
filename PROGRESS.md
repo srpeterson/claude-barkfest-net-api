@@ -429,6 +429,36 @@
 
 ---
 
+## Post-Phase 11 — Static Create() Factory Methods & ROADMAP update
+
+### Domain entities
+- `Owner.Create(username, firstName, lastName, email, passwordHash, phoneNumber?)` added
+- `Administrator.Create(username, name, email, phoneNumber, passwordHash)` added
+- `Pet.Create(ownerId, name, petType, description?, dateOfBirth?)` added
+- `PetImage.Create(blobName, contentType, displayOrder)` added
+- `DogBreedInfo.Create(dogBreed)` added
+- `CatBreedInfo.Create(catBreed)` added
+
+### Handlers updated
+- `RegisterCommandHandler` — uses `Owner.Create()`
+- `CreateAdministratorCommandHandler` — uses `Administrator.Create()`
+- `CreatePetCommandHandler` — uses `Pet.Create()`
+- `AddPetImageCommandHandler` — uses `PetImage.Create()`
+
+### Test builders updated
+- `OwnerBuilder` — `_passwordHash` default added, `WithPasswordHash()` added, `Build()` uses `Owner.Create()`
+- `PetBuilder` — `Build()` uses `Pet.Create()`
+- `PetImageBuilder` — `Build()` uses `PetImage.Create()`
+
+### ROADMAP.md
+- Item 2 added: Value Object Emails (and Other Validated Strings) — deferred with full rationale
+
+### Documentation
+- `CLAUDE.md` — entity factory method rule added to C# Type Conventions
+- `docs/DECISIONS.md` — `static Create()` factory method decision added
+
+---
+
 ## Next
 
 Read `docs/ROADMAP.md` to select the next item.
