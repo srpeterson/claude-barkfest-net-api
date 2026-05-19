@@ -17,7 +17,8 @@ public class UploadOwnerProfileImageCommandHandler(
     IOwnerRepository ownerRepository,
     IBlobStorageService blobStorageService,
     IUnitOfWork unitOfWork,
-    ICurrentUserService currentUserService)
+    ICurrentUserService currentUserService,
+    IContentModerationService contentModerationService)
     : IRequestHandler<UploadOwnerProfileImageCommand>
 {
     private const string ContainerName = "owner-profile-images";
@@ -31,6 +32,9 @@ public class UploadOwnerProfileImageCommandHandler(
 
         if (owner.Id != currentUserService.OwnerId)
             throw new ForbiddenException();
+
+        if (!await contentModerationService.IsImageSafeAsync(request.Content, cancellationToken))
+            throw new DomainException("Image was rejected by content moderation.");
 
         if (owner.ProfileImage is not null)
             await blobStorageService.DeleteAsync(ContainerName, owner.ProfileImage.BlobName, cancellationToken);

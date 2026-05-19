@@ -17,10 +17,10 @@ public class LoginCommandHandler(
     {
         var owner = await ownerRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (owner is null)
-            throw new NotFoundException(nameof(Owner), request.Username);
+            throw new NotFoundException(nameof(Owner), "username", request.Username);
 
         if (!passwordHasher.Verify(request.Password, owner.PasswordHash))
-            throw new NotFoundException(nameof(Owner), request.Username);
+            throw new NotFoundException(nameof(Owner), "username", request.Username);
 
         if (!owner.Active)
             throw new ForbiddenException();

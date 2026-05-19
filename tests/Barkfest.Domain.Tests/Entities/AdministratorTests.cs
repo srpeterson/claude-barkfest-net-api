@@ -1,5 +1,6 @@
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.ValueObjects;
 
 namespace Barkfest.Domain.Tests.Entities;
 
@@ -34,10 +35,10 @@ public class AdministratorTests
     public void SetEmail_When_ExceedsMaxLength_Throws_DomainException()
     {
         var administrator = new Administrator();
-        var longLocal = new string('a', Administrator.EmailMaxLength) + "@b.com";
+        var longLocal = new string('a', AccountConstraints.EmailMaxLength) + "@b.com";
 
         Should.Throw<DomainException>(() => administrator.SetEmail(longLocal))
-            .Message.ShouldContain(Administrator.EmailMaxLength.ToString());
+            .Message.ShouldContain(AccountConstraints.EmailMaxLength.ToString());
     }
 
     [Fact]

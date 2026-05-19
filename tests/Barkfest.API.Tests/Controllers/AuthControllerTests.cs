@@ -158,14 +158,20 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task AdminLogin_When_CredentialsAreValid_Returns_Ok_WithToken()
     {
-        // Create an admin via the admin endpoint first
         var adminClient = factory.CreateAuthenticatedAdminClient(Guid.NewGuid());
-        var email = $"admin-login-{Guid.NewGuid():N}@barkfest.dev";
+        var username = $"a{Guid.NewGuid():N}";
         const string password = "AdminPass1!";
 
-        await adminClient.PostAsJsonAsync("/v1/admin/admins", new { email, password });
+        await adminClient.PostAsJsonAsync("/v1/admin/admins", new
+        {
+            username,
+            name = "Login Test Admin",
+            email = $"admin-login-{Guid.NewGuid():N}@barkfest.dev",
+            phoneNumber = "+15555550100",
+            password
+        });
 
-        var response = await _client.PostAsJsonAsync("/v1/auth/admin/login", new { email, password });
+        var response = await _client.PostAsJsonAsync("/v1/auth/admin/login", new { username, password });
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
@@ -176,11 +182,11 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task AdminLogin_When_EmailNotFound_Returns_NotFound()
+    public async Task AdminLogin_When_UsernameNotFound_Returns_NotFound()
     {
         var response = await _client.PostAsJsonAsync("/v1/auth/admin/login", new
         {
-            email = $"nobody-{Guid.NewGuid():N}@barkfest.dev",
+            username = $"ghost{Guid.NewGuid():N}",
             password = "AnyPass1!"
         });
 
@@ -191,13 +197,18 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     public async Task AdminLogin_When_PasswordIsWrong_Returns_NotFound()
     {
         var adminClient = factory.CreateAuthenticatedAdminClient(Guid.NewGuid());
-        var email = $"admin-wrongpw-{Guid.NewGuid():N}@barkfest.dev";
+        var username = $"a{Guid.NewGuid():N}";
 
-        await adminClient.PostAsJsonAsync("/v1/admin/admins", new { email, password = "CorrectPass1!" });
+        await adminClient.PostAsJsonAsync("/v1/admin/admins", new
+        {
+            username,
+            email = $"admin-wrongpw-{Guid.NewGuid():N}@barkfest.dev",
+            password = "CorrectPass1!"
+        });
 
         var response = await _client.PostAsJsonAsync("/v1/auth/admin/login", new
         {
-            email,
+            username,
             password = "WrongPass1!"
         });
 

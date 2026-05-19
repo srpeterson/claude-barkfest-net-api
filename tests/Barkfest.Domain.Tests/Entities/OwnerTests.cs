@@ -1,5 +1,6 @@
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.ValueObjects;
 
 namespace Barkfest.Domain.Tests.Entities;
 
@@ -44,10 +45,10 @@ public class OwnerTests
     public void SetUsername_When_ExceedsMaxLength_Throws_DomainException()
     {
         var owner = new Owner();
-        var longUsername = new string('a', Owner.UsernameMaxLength + 1);
+        var longUsername = new string('a', AccountConstraints.UsernameMaxLength + 1);
 
         Should.Throw<DomainException>(() => owner.SetUsername(longUsername))
-            .Message.ShouldContain(Owner.UsernameMaxLength.ToString());
+            .Message.ShouldContain(AccountConstraints.UsernameMaxLength.ToString());
     }
 
     // -----------------------------------------------------------------------
@@ -149,10 +150,10 @@ public class OwnerTests
     public void SetEmail_When_ExceedsMaxLength_Throws_DomainException()
     {
         var owner = new Owner();
-        var longLocal = new string('a', Owner.EmailMaxLength) + "@b.com";
+        var longLocal = new string('a', AccountConstraints.EmailMaxLength) + "@b.com";
 
         Should.Throw<DomainException>(() => owner.SetEmail(longLocal))
-            .Message.ShouldContain(Owner.EmailMaxLength.ToString());
+            .Message.ShouldContain(AccountConstraints.EmailMaxLength.ToString());
     }
 
     [Fact]
@@ -213,23 +214,73 @@ public class OwnerTests
     // SetPhoneNumber
     // -----------------------------------------------------------------------
 
-    [Fact]
-    public void SetPhoneNumber_When_NumberIsValid_Sets_TrimmedPhoneNumber()
+    [Theory]
+    [InlineData("+15555550100")]
+    [InlineData("+447911123456")]
+    [InlineData("+33612345678")]
+    public void SetPhoneNumber_When_ValidE164_Sets_PhoneNumber(string phoneNumber)
     {
         var owner = new Owner();
 
-        owner.SetPhoneNumber("  +1-555-0100  ");
+        owner.SetPhoneNumber(phoneNumber);
 
-        owner.PhoneNumber.ShouldBe("+1-555-0100");
+        owner.PhoneNumber.ShouldBe(phoneNumber);
+    }
+
+    [Fact]
+    public void SetPhoneNumber_When_ValidE164WithWhitespace_Trims_AndSets()
+    {
+        var owner = new Owner();
+
+        owner.SetPhoneNumber("  +15555550100  ");
+
+        owner.PhoneNumber.ShouldBe("+15555550100");
+    }
+
+    [Fact]
+    public void SetPhoneNumber_When_ExceedsMaxLength_Throws_DomainException()
+    {
+        var owner = new Owner();
+        var longNumber = "+" + new string('1', E164PhoneNumber.MaxLength);
+
+        var act = () => owner.SetPhoneNumber(longNumber);
+
+        act.ShouldThrow<DomainException>();
+    }
+
+    [Theory]
+    [InlineData("+1-555-555-0100")]
+    [InlineData("5555550100")]
+    [InlineData("+0123456789")]
+    [InlineData("(555) 555-0100")]
+    [InlineData("555.555.0100")]
+    public void SetPhoneNumber_When_NotE164Format_Throws_DomainException(string phoneNumber)
+    {
+        var owner = new Owner();
+
+        var act = () => owner.SetPhoneNumber(phoneNumber);
+
+        act.ShouldThrow<DomainException>();
     }
 
     [Fact]
     public void SetPhoneNumber_When_Null_Sets_Null()
     {
         var owner = new Owner();
-        owner.SetPhoneNumber("555-0100");
+        owner.SetPhoneNumber("+15555550100");
 
         owner.SetPhoneNumber(null);
+
+        owner.PhoneNumber.ShouldBeNull();
+    }
+
+    [Fact]
+    public void SetPhoneNumber_When_Empty_Sets_Null()
+    {
+        var owner = new Owner();
+        owner.SetPhoneNumber("+15555550100");
+
+        owner.SetPhoneNumber("   ");
 
         owner.PhoneNumber.ShouldBeNull();
     }

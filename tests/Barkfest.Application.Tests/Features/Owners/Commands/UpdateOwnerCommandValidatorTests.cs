@@ -1,5 +1,6 @@
 using Barkfest.Application.Features.Owners.Commands.UpdateOwner;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 
 namespace Barkfest.Application.Tests.Features.Owners.Commands;
 
@@ -129,12 +130,47 @@ public class UpdateOwnerCommandValidatorTests
     [Fact]
     public void Validate_When_EmailExceedsMaxLength_Fails_ForEmail()
     {
-        var localPart = new string('a', Owner.EmailMaxLength - "@b.co".Length + 1);
+        var localPart = new string('a', AccountConstraints.EmailMaxLength - "@b.co".Length + 1);
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", $"{localPart}@b.co", null);
 
         var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
+    }
+
+    // -----------------------------------------------------------------------
+    // PhoneNumber
+    // -----------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("+1-555-555-0100")]
+    [InlineData("5555550100")]
+    [InlineData("+0123456789")]
+    [InlineData("(555) 555-0100")]
+    public void Fails_ForPhoneNumber_When_NotE164Format(string phoneNumber)
+    {
+        var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", phoneNumber);
+
+        var result = _updateOwnerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PhoneNumber));
+    }
+
+    [Fact]
+    public void Validate_When_PhoneNumberIsNull_Passes()
+    {
+        var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null);
+
+        _updateOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_When_PhoneNumberIsValidE164_Passes()
+    {
+        var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", "+15555550100");
+
+        _updateOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 }

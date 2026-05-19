@@ -183,7 +183,10 @@ public class AdminControllerTests(BarkfestApiFactory factory)
 
         var createResponse = await adminClient.PostAsJsonAsync("/v1/admin/admins", new
         {
+            username = $"a{Guid.NewGuid():N}",
+            name = "Target Admin",
             email = $"target-{Guid.NewGuid():N}@barkfest.dev",
+            phoneNumber = "+15555550100",
             password = "OldPass1!"
         });
         createResponse.EnsureSuccessStatusCode();
@@ -251,7 +254,10 @@ public class AdminControllerTests(BarkfestApiFactory factory)
         // Create a second admin to delete
         var createResponse = await adminClient.PostAsJsonAsync("/v1/admin/admins", new
         {
+            username = $"a{Guid.NewGuid():N}",
+            name = "To Delete Admin",
             email = $"todelete-{Guid.NewGuid():N}@barkfest.dev",
+            phoneNumber = "+15555550100",
             password = "TempPass1!"
         });
         createResponse.EnsureSuccessStatusCode();
@@ -271,7 +277,10 @@ public class AdminControllerTests(BarkfestApiFactory factory)
     {
         var response = await _unauthenticatedClient.PostAsJsonAsync("/v1/admin/admins", new
         {
+            username = $"a{Guid.NewGuid():N}",
+            name = "New Admin",
             email = $"new-{Guid.NewGuid():N}@barkfest.dev",
+            phoneNumber = "+15555550100",
             password = "AdminPass1!"
         });
 
@@ -285,7 +294,10 @@ public class AdminControllerTests(BarkfestApiFactory factory)
 
         var response = await ownerClient.PostAsJsonAsync("/v1/admin/admins", new
         {
+            username = $"a{Guid.NewGuid():N}",
+            name = "New Admin",
             email = $"new-{Guid.NewGuid():N}@barkfest.dev",
+            phoneNumber = "+15555550100",
             password = "AdminPass1!"
         });
 
@@ -299,7 +311,10 @@ public class AdminControllerTests(BarkfestApiFactory factory)
 
         var response = await adminClient.PostAsJsonAsync("/v1/admin/admins", new
         {
+            username = $"a{Guid.NewGuid():N}",
+            name = "New Admin",
             email = $"new-{Guid.NewGuid():N}@barkfest.dev",
+            phoneNumber = "+15555550100",
             password = "AdminPass1!"
         });
 
@@ -313,9 +328,9 @@ public class AdminControllerTests(BarkfestApiFactory factory)
         var adminClient = factory.CreateAuthenticatedAdminClient(Guid.NewGuid());
         var email = $"dup-admin-{Guid.NewGuid():N}@barkfest.dev";
 
-        await adminClient.PostAsJsonAsync("/v1/admin/admins", new { email, password = "AdminPass1!" });
+        await adminClient.PostAsJsonAsync("/v1/admin/admins", new { username = $"a{Guid.NewGuid():N}", name = "New Admin", email, phoneNumber = "+15555550100", password = "AdminPass1!" });
 
-        var response = await adminClient.PostAsJsonAsync("/v1/admin/admins", new { email, password = "AdminPass1!" });
+        var response = await adminClient.PostAsJsonAsync("/v1/admin/admins", new { username = $"a{Guid.NewGuid():N}", name = "New Admin", email, phoneNumber = "+15555550100", password = "AdminPass1!" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }

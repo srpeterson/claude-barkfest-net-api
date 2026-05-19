@@ -14,13 +14,13 @@ public class AdminLoginCommandHandler(
 {
     public async Task<AuthTokenDto> Handle(AdminLoginCommand request, CancellationToken cancellationToken)
     {
-        var administrator = await administratorRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var administrator = await administratorRepository.GetByUsernameAsync(request.Username, cancellationToken);
 
         if (administrator is null)
-            throw new NotFoundException(nameof(Administrator), request.Email);
+            throw new NotFoundException(nameof(Administrator), "username", request.Username);
 
         if (!passwordHasher.Verify(request.Password, administrator.PasswordHash))
-            throw new NotFoundException(nameof(Administrator), request.Email);
+            throw new NotFoundException(nameof(Administrator), "username", request.Username);
 
         var token = jwtTokenService.GenerateAdminToken(administrator);
         var expiry = jwtTokenService.GetExpiry();

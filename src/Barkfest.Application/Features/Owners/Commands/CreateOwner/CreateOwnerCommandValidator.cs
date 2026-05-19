@@ -1,4 +1,5 @@
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 using FluentValidation;
 
 namespace Barkfest.Application.Features.Owners.Commands.CreateOwner;
@@ -18,6 +19,6 @@ public class CreateOwnerCommandValidator : AbstractValidator<CreateOwnerCommand>
         RuleFor(x => x.Email)
             .NotEmpty()
             .EmailAddress()
-            .MaximumLength(Owner.EmailMaxLength);
+            .MaximumLength(AccountConstraints.EmailMaxLength);
     }
 }

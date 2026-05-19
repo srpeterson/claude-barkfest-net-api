@@ -1,4 +1,5 @@
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,8 +16,20 @@ public class AdministratorConfiguration : IEntityTypeConfiguration<Administrator
             .HasColumnName("AdministratorId")
             .HasDefaultValueSql("newsequentialid()");
 
+        builder.Property(a => a.Username)
+            .HasMaxLength(AccountConstraints.UsernameMaxLength)
+            .IsRequired();
+
+        builder.Property(a => a.Name)
+            .HasMaxLength(Administrator.NameMaxLength)
+            .IsRequired();
+
         builder.Property(a => a.Email)
-            .HasMaxLength(Administrator.EmailMaxLength)
+            .HasMaxLength(AccountConstraints.EmailMaxLength)
+            .IsRequired();
+
+        builder.Property(a => a.PhoneNumber)
+            .HasMaxLength(E164PhoneNumber.MaxLength)
             .IsRequired();
 
         builder.Property(a => a.PasswordHash)
@@ -24,6 +37,9 @@ public class AdministratorConfiguration : IEntityTypeConfiguration<Administrator
 
         builder.Property(a => a.CreatedAt)
             .IsRequired();
+
+        builder.HasIndex(a => a.Username)
+            .IsUnique();
 
         builder.HasIndex(a => a.Email)
             .IsUnique();

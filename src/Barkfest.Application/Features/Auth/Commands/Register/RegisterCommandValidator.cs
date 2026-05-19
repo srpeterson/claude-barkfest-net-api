@@ -1,4 +1,5 @@
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 using FluentValidation;
 
 namespace Barkfest.Application.Features.Auth.Commands.Register;
@@ -9,8 +10,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     {
         RuleFor(x => x.Username)
             .NotEmpty().WithMessage("Username is required.")
-            .MaximumLength(Owner.UsernameMaxLength)
-            .WithMessage($"Username cannot exceed {Owner.UsernameMaxLength} characters.");
+            .MaximumLength(AccountConstraints.UsernameMaxLength)
+            .WithMessage($"Username cannot exceed {AccountConstraints.UsernameMaxLength} characters.");
 
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required.")
@@ -24,9 +25,14 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")
-            .MaximumLength(Owner.EmailMaxLength)
-            .WithMessage($"Email cannot exceed {Owner.EmailMaxLength} characters.")
+            .MaximumLength(AccountConstraints.EmailMaxLength)
+            .WithMessage($"Email cannot exceed {AccountConstraints.EmailMaxLength} characters.")
             .EmailAddress().WithMessage("Email must be a valid email address.");
+
+        RuleFor(x => x.PhoneNumber)
+            .Matches(E164PhoneNumber.Pattern)
+            .WithMessage("Phone number must be in E.164 format (e.g. +15555555555).")
+            .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.");

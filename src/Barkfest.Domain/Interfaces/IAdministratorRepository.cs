@@ -5,6 +5,7 @@ namespace Barkfest.Domain.Interfaces;
 public interface IAdministratorRepository
 {
     Task<Administrator?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Administrator?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default);
     Task<Administrator?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task AddAsync(Administrator administrator, CancellationToken cancellationToken = default);
     Task DeleteAsync(Administrator administrator, CancellationToken cancellationToken = default);

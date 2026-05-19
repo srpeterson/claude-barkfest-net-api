@@ -14,11 +14,27 @@ public class UploadOwnerProfileImageCommandHandlerTests
     private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
+    private readonly IContentModerationService _contentModerationService = Substitute.For<IContentModerationService>();
     private readonly UploadOwnerProfileImageCommandHandler _uploadOwnerProfileImageCommandHandler;
 
     public UploadOwnerProfileImageCommandHandlerTests()
     {
-        _uploadOwnerProfileImageCommandHandler = new UploadOwnerProfileImageCommandHandler(_ownerRepository, _blobStorageService, _unitOfWork, _currentUserService);
+        _contentModerationService.IsImageSafeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(true);
+        _uploadOwnerProfileImageCommandHandler = new UploadOwnerProfileImageCommandHandler(_ownerRepository, _blobStorageService, _unitOfWork, _currentUserService, _contentModerationService);
+    }
+
+    [Fact]
+    public async Task Handle_When_ImageFailsModeration_Throws_DomainException()
+    {
+        var ownerId = Guid.NewGuid();
+        var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
+        _contentModerationService.IsImageSafeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", Stream.Null, "image/jpeg");
+
+        await Should.ThrowAsync<DomainException>(() => _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None));
     }
 
     [Fact]

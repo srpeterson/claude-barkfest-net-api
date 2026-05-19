@@ -7,8 +7,6 @@ public class Owner
 {
     public const int FirstNameMaxLength = 50;
     public const int LastNameMaxLength = 100;
-    public const int EmailMaxLength = 75;
-    public const int UsernameMaxLength = 50;
 
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     public string Username { get; private set; } = string.Empty;
@@ -32,8 +30,8 @@ public class Owner
 
         var trimmed = username.Trim();
 
-        if (trimmed.Length > UsernameMaxLength)
-            throw new DomainException($"Username cannot exceed {UsernameMaxLength} characters.");
+        if (trimmed.Length > AccountConstraints.UsernameMaxLength)
+            throw new DomainException($"Username cannot exceed {AccountConstraints.UsernameMaxLength} characters.");
 
         Username = trimmed;
     }
@@ -67,8 +65,8 @@ public class Owner
 
         var trimmed = email.Trim().ToLowerInvariant();
 
-        if (trimmed.Length > EmailMaxLength)
-            throw new DomainException($"Email cannot exceed {EmailMaxLength} characters.");
+        if (trimmed.Length > AccountConstraints.EmailMaxLength)
+            throw new DomainException($"Email cannot exceed {AccountConstraints.EmailMaxLength} characters.");
 
         if (trimmed.Contains(' '))
             throw new DomainException("Email must be a valid email address.");
@@ -88,8 +86,24 @@ public class Owner
         Email = trimmed;
     }
 
-    public void SetPhoneNumber(string? phoneNumber) =>
-        PhoneNumber = phoneNumber?.Trim();
+    public void SetPhoneNumber(string? phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            PhoneNumber = null;
+            return;
+        }
+
+        var trimmed = phoneNumber.Trim();
+
+        if (trimmed.Length > E164PhoneNumber.MaxLength)
+            throw new DomainException($"Phone number cannot exceed {E164PhoneNumber.MaxLength} characters.");
+
+        if (!E164PhoneNumber.IsValid(trimmed))
+            throw new DomainException("Phone number must be in E.164 format (e.g. +15555555555).");
+
+        PhoneNumber = trimmed;
+    }
 
     public void SetPasswordHash(string hash)
     {

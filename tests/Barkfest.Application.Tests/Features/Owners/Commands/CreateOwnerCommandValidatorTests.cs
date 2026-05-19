@@ -1,5 +1,6 @@
 using Barkfest.Application.Features.Owners.Commands.CreateOwner;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 
 namespace Barkfest.Application.Tests.Features.Owners.Commands;
 
@@ -122,7 +123,7 @@ public class CreateOwnerCommandValidatorTests
     [Fact]
     public void Validate_When_EmailExceedsMaxLength_Fails_ForEmail()
     {
-        var localPart = new string('a', Owner.EmailMaxLength - "@b.co".Length + 1);
+        var localPart = new string('a', AccountConstraints.EmailMaxLength - "@b.co".Length + 1);
         var command = new CreateOwnerCommand("Alice", "Smith", $"{localPart}@b.co", null);
 
         var result = _createOwnerCommandValidator.Validate(command);

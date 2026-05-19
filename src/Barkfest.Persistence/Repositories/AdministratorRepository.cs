@@ -9,6 +9,9 @@ public class AdministratorRepository(AppDbContext context) : IAdministratorRepos
     public async Task<Administrator?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.Administrators.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
+    public async Task<Administrator?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default) =>
+        await context.Administrators.FirstOrDefaultAsync(a => a.Username == username.Trim(), cancellationToken);
+
     public async Task<Administrator?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         await context.Administrators.FirstOrDefaultAsync(a => a.Email == email.Trim().ToLowerInvariant(), cancellationToken);
 

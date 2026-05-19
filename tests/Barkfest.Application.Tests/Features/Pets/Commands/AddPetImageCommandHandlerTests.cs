@@ -14,11 +14,27 @@ public class AddPetImageCommandHandlerTests
     private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
+    private readonly IContentModerationService _contentModerationService = Substitute.For<IContentModerationService>();
     private readonly AddPetImageCommandHandler _addPetImageCommandHandler;
 
     public AddPetImageCommandHandlerTests()
     {
-        _addPetImageCommandHandler = new AddPetImageCommandHandler(_petRepository, _blobStorageService, _unitOfWork, _currentUserService);
+        _contentModerationService.IsImageSafeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(true);
+        _addPetImageCommandHandler = new AddPetImageCommandHandler(_petRepository, _blobStorageService, _unitOfWork, _currentUserService, _contentModerationService);
+    }
+
+    [Fact]
+    public async Task Handle_When_ImageFailsModeration_Throws_DomainException()
+    {
+        var petId = Guid.NewGuid();
+        var pet = new PetBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)pet.OwnerId);
+        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
+        _contentModerationService.IsImageSafeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        var command = new AddPetImageCommand(petId, "gallery.jpg", Stream.Null, "image/jpeg");
+
+        await Should.ThrowAsync<DomainException>(() => _addPetImageCommandHandler.Handle(command, CancellationToken.None));
     }
 
     [Fact]

@@ -571,3 +571,56 @@ only hard constraint. Production deployments should create a second administrato
 immediately after first login so that access is never dependent on a single set of credentials.
 If an admin account is compromised, any other admin can delete it. This is an intentional
 design choice — trust is a prerequisite for the team using this system.
+
+---
+
+### Decision: E.164 format enforced for all phone numbers
+**Choice:** Phone numbers for `Owner` and `Administrator` must be in E.164 format
+(e.g. `+15555550100`) validated by `E164PhoneNumber.IsValid()`. Free-form strings
+(e.g. `555-0100`, `(555) 555-0100`) are rejected.
+
+**Reason:** Free-form phone numbers are a persistent data quality problem — the same
+number can be stored in dozens of different formats making deduplication, lookup, and
+programmatic dialling impossible without normalisation. E.164 is the ITU-T international
+standard: `+` followed by country code and up to 14 digits, no spaces, no dashes, no
+parentheses. Enforcing the canonical format at the domain boundary means the stored value
+is always dial-ready, always unambiguous, and never needs cleanup. Validation is a compile-time-
+checked regex defined once in `E164PhoneNumber` — the same rule applies to every entity that
+has a phone number field.
+
+---
+
+### Decision: Shared domain constants in `ValueObjects/` — `E164PhoneNumber` and `AccountConstraints`
+**Choice:** E.164 pattern, max length, and `IsValid()` method live in
+`Barkfest.Domain/ValueObjects/E164PhoneNumber.cs`. Email and username max lengths live in
+`Barkfest.Domain/ValueObjects/AccountConstraints.cs`. Neither `Owner` nor `Administrator`
+defines its own copies of these values.
+
+**Reason:** Both `Owner` and `Administrator` independently defined the same E.164 regex,
+the same max length constant, and the same `UsernameMaxLength`/`EmailMaxLength` values.
+Duplication is a maintenance hazard — changing the regex or a limit requires finding and
+updating every copy. The `ValueObjects/` folder already held `SupportedImageType` (shared
+image validation rules) and `ProfileImage` (shared structure) — this pattern was already
+established. Naming required care: `PhoneNumber` would conflict with the `PhoneNumber`
+property inside setter methods (`PhoneNumber.IsValid()` would resolve to the string property,
+not the static class). `E164PhoneNumber` is explicit about the format it represents and has
+no naming conflicts. Similarly, `AccountConstraints` avoids the `Username` and `Email`
+conflict while clearly signalling that these constants govern account-level field rules.
+
+---
+
+### Decision: Content moderation scaffolded as a NoOp — implement after Azure deployment
+**Choice:** `IContentModerationService` is defined in the Application layer with a single
+`IsImageSafeAsync` method. `NoOpContentModerationService` (Infrastructure) always returns
+`true`. All image upload handlers call the service but production enforcement is deferred
+until Azure AI Content Safety is provisioned.
+
+**Reason:** Wiring the interface into every image upload handler now means the integration
+point is tested, the dependency injection path is proven, and future activation requires only
+swapping one registration in `DependencyInjection.cs`. The alternative — adding the service
+later — risks forgetting injection points, requires touching handler code post-deployment, and
+creates a gap where images are uploaded without any moderation path in the code at all. The
+NoOp pattern makes the intent explicit: content moderation is a known requirement, not an
+afterthought. The detailed TODO comment in `NoOpContentModerationService` documents the exact
+steps to activate Azure AI Content Safety (the successor to the deprecated Azure Content
+Moderator), including the NuGet package and configuration steps required.

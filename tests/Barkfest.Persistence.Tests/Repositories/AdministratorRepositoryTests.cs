@@ -27,13 +27,14 @@ public class AdministratorRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task AddAsync_When_AdministratorAdded_Returns_SavedAdministrator()
     {
-        var administrator = BuildAdministrator("persist@barkfest.dev");
+        var administrator = BuildAdministrator("persistadmin", "persist@barkfest.dev");
         await _administratorRepository.AddAsync(administrator);
         await _context.SaveChangesAsync();
 
         var result = await _administratorRepository.GetByIdAsync(administrator.Id);
 
         result.ShouldNotBeNull();
+        result.Username.ShouldBe("persistadmin");
         result.Email.ShouldBe("persist@barkfest.dev");
         result.PasswordHash.ShouldBe("$2a$11$somehash");
     }
@@ -47,9 +48,30 @@ public class AdministratorRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task GetByUsernameAsync_When_AdministratorExists_Returns_Administrator()
+    {
+        var administrator = BuildAdministrator("lookupuser", "username-lookup@barkfest.dev");
+        await _administratorRepository.AddAsync(administrator);
+        await _context.SaveChangesAsync();
+
+        var result = await _administratorRepository.GetByUsernameAsync("lookupuser");
+
+        result.ShouldNotBeNull();
+        result.Id.ShouldBe(administrator.Id);
+    }
+
+    [Fact]
+    public async Task GetByUsernameAsync_When_UsernameNotFound_Returns_Null()
+    {
+        var result = await _administratorRepository.GetByUsernameAsync("ghostuser");
+
+        result.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task GetByEmailAsync_When_AdministratorExists_Returns_Administrator()
     {
-        var administrator = BuildAdministrator("email-lookup@barkfest.dev");
+        var administrator = BuildAdministrator("emaillookup", "email-lookup@barkfest.dev");
         await _administratorRepository.AddAsync(administrator);
         await _context.SaveChangesAsync();
 
@@ -70,7 +92,7 @@ public class AdministratorRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetByEmailAsync_When_EmailHasDifferentCase_Returns_Administrator()
     {
-        var administrator = BuildAdministrator("case-check@barkfest.dev");
+        var administrator = BuildAdministrator("casecheck", "case-check@barkfest.dev");
         await _administratorRepository.AddAsync(administrator);
         await _context.SaveChangesAsync();
 
@@ -83,7 +105,7 @@ public class AdministratorRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task DeleteAsync_When_AdministratorExists_Removes_Administrator()
     {
-        var administrator = BuildAdministrator("todelete@barkfest.dev");
+        var administrator = BuildAdministrator("deleteuser", "todelete@barkfest.dev");
         await _administratorRepository.AddAsync(administrator);
         await _context.SaveChangesAsync();
 
@@ -94,10 +116,13 @@ public class AdministratorRepositoryTests(DatabaseFixture fixture)
         result.ShouldBeNull();
     }
 
-    private static Administrator BuildAdministrator(string email)
+    private static Administrator BuildAdministrator(string username, string email)
     {
         var administrator = new Administrator();
+        administrator.SetUsername(username);
+        administrator.SetName("Test Administrator");
         administrator.SetEmail(email);
+        administrator.SetPhoneNumber("+15555550100");
         administrator.SetPasswordHash("$2a$11$somehash");
         return administrator;
     }

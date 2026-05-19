@@ -1,4 +1,5 @@
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,7 +17,7 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
             .HasDefaultValueSql("newsequentialid()");
 
         builder.Property(o => o.Username)
-            .HasMaxLength(Owner.UsernameMaxLength)
+            .HasMaxLength(AccountConstraints.UsernameMaxLength)
             .IsRequired();
 
         builder.Property(o => o.FirstName)
@@ -28,10 +29,11 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
             .IsRequired();
 
         builder.Property(o => o.Email)
-            .HasMaxLength(Owner.EmailMaxLength)
+            .HasMaxLength(AccountConstraints.EmailMaxLength)
             .IsRequired();
 
-        builder.Property(o => o.PhoneNumber);
+        builder.Property(o => o.PhoneNumber)
+            .HasMaxLength(E164PhoneNumber.MaxLength);
 
         builder.Property(o => o.PasswordHash)
             .IsRequired();

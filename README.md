@@ -106,8 +106,9 @@ required.
 
 | Field | Value |
 |---|---|
+| Username | `admin` |
 | Email | `admin@barkfest.dev` |
-| Password | `barkfest-dev-admin-password!` |
+| Password | `Admin1234!` |
 
 Once the API is running, authenticate via Scalar or any HTTP client:
 
@@ -116,8 +117,8 @@ POST https://localhost:{port}/v1/auth/admin/login
 Content-Type: application/json
 
 {
-  "email": "admin@barkfest.dev",
-  "password": "barkfest-dev-admin-password!"
+  "username": "admin",
+  "password": "Admin1234!"
 }
 ```
 

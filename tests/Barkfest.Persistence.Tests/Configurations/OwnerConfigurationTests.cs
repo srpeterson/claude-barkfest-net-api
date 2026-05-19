@@ -51,7 +51,7 @@ public class OwnerConfigurationTests
     {
         _owner.FindProperty(nameof(Owner.Username))!
               .GetMaxLength()
-              .ShouldBe(Owner.UsernameMaxLength);
+              .ShouldBe(AccountConstraints.UsernameMaxLength);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class OwnerConfigurationTests
     {
         _owner.FindProperty(nameof(Owner.Email))!
               .GetMaxLength()
-              .ShouldBe(Owner.EmailMaxLength);
+              .ShouldBe(AccountConstraints.EmailMaxLength);
     }
 
     [Fact]
@@ -144,6 +144,14 @@ public class OwnerConfigurationTests
         _owner.FindProperty(nameof(Owner.PhoneNumber))!
               .IsNullable
               .ShouldBeTrue();
+    }
+
+    [Fact]
+    public void PhoneNumber_HasCorrectMaxLength()
+    {
+        _owner.FindProperty(nameof(Owner.PhoneNumber))!
+              .GetMaxLength()
+              .ShouldBe(E164PhoneNumber.MaxLength);
     }
 
     // -----------------------------------------------------------------------

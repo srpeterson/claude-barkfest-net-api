@@ -9,12 +9,12 @@ public class AdminLoginCommandValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Fails_ForEmail_When_Empty(string email)
+    public void Fails_ForUsername_When_Empty(string username)
     {
-        var result = _adminLoginCommandValidator.Validate(new AdminLoginCommand(email, "pass"));
+        var result = _adminLoginCommandValidator.Validate(new AdminLoginCommand(username, "pass"));
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName == nameof(AdminLoginCommand.Email));
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(AdminLoginCommand.Username));
     }
 
     [Theory]
@@ -22,7 +22,7 @@ public class AdminLoginCommandValidatorTests
     [InlineData("   ")]
     public void Fails_ForPassword_When_Empty(string password)
     {
-        var result = _adminLoginCommandValidator.Validate(new AdminLoginCommand("admin@barkfest.dev", password));
+        var result = _adminLoginCommandValidator.Validate(new AdminLoginCommand("admin", password));
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(AdminLoginCommand.Password));

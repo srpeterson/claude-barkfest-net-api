@@ -17,7 +17,8 @@ public class UploadPetProfileImageCommandHandler(
     IPetRepository petRepository,
     IBlobStorageService blobStorageService,
     IUnitOfWork unitOfWork,
-    ICurrentUserService currentUserService)
+    ICurrentUserService currentUserService,
+    IContentModerationService contentModerationService)
     : IRequestHandler<UploadPetProfileImageCommand>
 {
     private const string ContainerName = "pet-profile-images";
@@ -31,6 +32,9 @@ public class UploadPetProfileImageCommandHandler(
 
         if (pet.OwnerId != currentUserService.OwnerId)
             throw new ForbiddenException();
+
+        if (!await contentModerationService.IsImageSafeAsync(request.Content, cancellationToken))
+            throw new DomainException("Image was rejected by content moderation.");
 
         if (pet.ProfileImage is not null)
             await blobStorageService.DeleteAsync(ContainerName, pet.ProfileImage.BlobName, cancellationToken);

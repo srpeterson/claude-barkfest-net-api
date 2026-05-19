@@ -29,7 +29,7 @@ public class CreateOwnerCommandHandlerTests
     [Fact]
     public async Task Handle_When_CommandIsValid_Adds_OwnerToRepository()
     {
-        var command = new CreateOwnerCommand("Jane", "Smith", "jane@example.com", "555-0100");
+        var command = new CreateOwnerCommand("Jane", "Smith", "jane@example.com", "+15555550100");
 
         await _createOwnerCommandHandler.Handle(command, CancellationToken.None);
 

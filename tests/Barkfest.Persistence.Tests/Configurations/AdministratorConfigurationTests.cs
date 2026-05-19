@@ -1,4 +1,5 @@
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -43,6 +44,58 @@ public class AdministratorConfigurationTests
     }
 
     // -----------------------------------------------------------------------
+    // Username
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Username_HasCorrectMaxLength()
+    {
+        _administrator.FindProperty(nameof(Administrator.Username))!
+                      .GetMaxLength()
+                      .ShouldBe(AccountConstraints.UsernameMaxLength);
+    }
+
+    [Fact]
+    public void Username_IsRequired()
+    {
+        _administrator.FindProperty(nameof(Administrator.Username))!
+                      .IsNullable
+                      .ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Username_HasUniqueIndex()
+    {
+        var index = _administrator.GetIndexes()
+            .SingleOrDefault(i =>
+                i.Properties.Count == 1 &&
+                i.Properties[0].Name == nameof(Administrator.Username));
+
+        index.ShouldNotBeNull();
+        index!.IsUnique.ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // Name
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Name_HasCorrectMaxLength()
+    {
+        _administrator.FindProperty(nameof(Administrator.Name))!
+                      .GetMaxLength()
+                      .ShouldBe(Administrator.NameMaxLength);
+    }
+
+    [Fact]
+    public void Name_IsRequired()
+    {
+        _administrator.FindProperty(nameof(Administrator.Name))!
+                      .IsNullable
+                      .ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
     // Email
     // -----------------------------------------------------------------------
 
@@ -51,13 +104,33 @@ public class AdministratorConfigurationTests
     {
         _administrator.FindProperty(nameof(Administrator.Email))!
                       .GetMaxLength()
-                      .ShouldBe(Administrator.EmailMaxLength);
+                      .ShouldBe(AccountConstraints.EmailMaxLength);
     }
 
     [Fact]
     public void Email_IsRequired()
     {
         _administrator.FindProperty(nameof(Administrator.Email))!
+                      .IsNullable
+                      .ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
+    // PhoneNumber
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void PhoneNumber_HasCorrectMaxLength()
+    {
+        _administrator.FindProperty(nameof(Administrator.PhoneNumber))!
+                      .GetMaxLength()
+                      .ShouldBe(E164PhoneNumber.MaxLength);
+    }
+
+    [Fact]
+    public void PhoneNumber_IsRequired()
+    {
+        _administrator.FindProperty(nameof(Administrator.PhoneNumber))!
                       .IsNullable
                       .ShouldBeFalse();
     }

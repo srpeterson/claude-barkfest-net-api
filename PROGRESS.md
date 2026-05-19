@@ -317,6 +317,62 @@
 
 ---
 
+## Post-Phase 11 — Administrator Username, Phone Validation, Content Moderation & Domain Refactoring
+
+### Administrator identity
+- `Administrator.Username` added — login identifier (max 50, trimmed, unique index `IX_Administrators_Username`)
+- Admin login switched from email/password → username/password — `AdminLoginCommand.Email` → `AdminLoginCommand.Username`
+- `IAdministratorRepository.GetByUsernameAsync` added; `GetByEmailAsync` retained for create uniqueness check
+- `AdministratorRepository.GetByUsernameAsync` implemented (exact case-sensitive match)
+- `SeedAdminAsync` in `Program.cs` updated to read and set `Admin:Username`
+- `appsettings.Development.json` — `Admin:Username = "admin"` replaces email-based seed key
+- `README.md` — First Login section updated to use `username` field
+
+### Administrator profile fields
+- `Administrator.Name` — required string, max 100 characters, trimmed
+- `Administrator.PhoneNumber` — required string, E.164 format, max 25 characters
+- `CreateAdministratorCommand` extended with `Name` and `PhoneNumber`
+- `CreateAdministratorCommandValidator` — Name (required, max length) and PhoneNumber (required, E.164) rules added
+- `AdministratorConfiguration` — `Name` and `PhoneNumber` columns configured
+- `SeedAdminAsync` reads `Admin:Name` and `Admin:PhoneNumber` from config
+- `appsettings.Development.json` — `Admin:Name = "Barkfest Admin"`, `Admin:PhoneNumber = "+15555550100"` added
+
+### Phone number validation (Owner)
+- `Owner.PhoneNumber` — E.164 format enforced (`^\+[1-9]\d{1,14}$`); null/empty clears the field
+- `Owner.PhoneNumberMaxLength = 25` — column constraint added via migration
+- `RegisterCommandValidator` and `UpdateOwnerCommandValidator` — E.164 `.Matches()` rule added (`.When` guards optional field)
+- `OwnerConfiguration` — `nvarchar(25)` column constraint
+
+### NotFoundException overload
+- Added `NotFoundException(string name, string keyName, object key)` overload — produces `"Owner with username 'x' was not found."` instead of the generic id form
+- `LoginCommandHandler` and `AdminLoginCommandHandler` use the new overload
+
+### Content moderation scaffold
+- `IContentModerationService` — `Task<bool> IsImageSafeAsync(Stream, CancellationToken)` in `Application.Common.Interfaces`
+- `NoOpContentModerationService` — always returns `true`; detailed TODO comment points to Azure AI Content Safety
+- Injected (singleton) into `UploadOwnerProfileImageCommandHandler`, `UploadPetProfileImageCommandHandler`, `AddPetImageCommandHandler`
+- All three handlers reject images that fail moderation with `DomainException` before any blob upload
+
+### Domain refactoring — shared ValueObjects
+- `E164PhoneNumber` static class (`ValueObjects/`) — `Pattern`, `MaxLength`, `IsValid()` — single source of truth for all E.164 concerns; `Owner` and `Administrator` removed their duplicated constants and now call `E164PhoneNumber.IsValid()`
+- `AccountConstraints` static class (`ValueObjects/`) — `EmailMaxLength = 75`, `UsernameMaxLength = 50` — replaces duplicated constants on both entities; all validators and EF Core configurations updated
+
+### Migration consolidation
+- All previous migrations merged into a single `InitialCreate` migration representing the full current schema
+
+**621 tests across 6 projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 174 |
+| `Barkfest.Application.Tests` | 264 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 100 |
+| `Barkfest.API.Tests` | 55 |
+| `Barkfest.Integration.Tests` | 20 |
+
+---
+
 ## Next
 
 All phases complete.

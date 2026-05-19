@@ -1,5 +1,6 @@
 using Barkfest.Application.Features.Auth.Commands.Register;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.ValueObjects;
 
 namespace Barkfest.Application.Tests.Features.Auth.Commands;
 
@@ -41,7 +42,7 @@ public class RegisterCommandValidatorTests
     public void Validate_When_UsernameExceedsMaxLength_Fails_ForUsername()
     {
         var command = new RegisterCommand(
-            new string('a', Owner.UsernameMaxLength + 1), "Alice", "Adams", "alice@example.com", null, "pass");
+            new string('a', AccountConstraints.UsernameMaxLength + 1), "Alice", "Adams", "alice@example.com", null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -141,13 +142,48 @@ public class RegisterCommandValidatorTests
     [Fact]
     public void Validate_When_EmailExceedsMaxLength_Fails_ForEmail()
     {
-        var longEmail = new string('a', Owner.EmailMaxLength) + "@example.com";
+        var longEmail = new string('a', AccountConstraints.EmailMaxLength) + "@example.com";
         var command = new RegisterCommand("aliceadams", "Alice", "Adams", longEmail, null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
+    }
+
+    // -----------------------------------------------------------------------
+    // PhoneNumber
+    // -----------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("+1-555-555-0100")]
+    [InlineData("5555550100")]
+    [InlineData("+0123456789")]
+    [InlineData("(555) 555-0100")]
+    public void Fails_ForPhoneNumber_When_NotE164Format(string phoneNumber)
+    {
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", phoneNumber, "pass");
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PhoneNumber));
+    }
+
+    [Fact]
+    public void Validate_When_PhoneNumberIsNull_Passes()
+    {
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", null, "SecurePass1!");
+
+        _registerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_When_PhoneNumberIsValidE164_Passes()
+    {
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", "+15555550100", "SecurePass1!");
+
+        _registerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     // -----------------------------------------------------------------------

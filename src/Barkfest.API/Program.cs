@@ -83,28 +83,36 @@ await app.RunAsync();
 
 static async Task SeedAdminAsync(IServiceProvider services, IConfiguration configuration, Microsoft.Extensions.Logging.ILogger logger)
 {
+    var adminUsername = configuration["Admin:Username"];
+    var adminName = configuration["Admin:Name"];
     var adminEmail = configuration["Admin:Email"];
+    var adminPhoneNumber = configuration["Admin:PhoneNumber"];
     var adminPassword = configuration["Admin:Password"];
 
-    if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+    if (string.IsNullOrWhiteSpace(adminUsername) || string.IsNullOrWhiteSpace(adminName) ||
+        string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPhoneNumber) ||
+        string.IsNullOrWhiteSpace(adminPassword))
         return;
 
     var administratorRepository = services.GetRequiredService<IAdministratorRepository>();
     var passwordHasher = services.GetRequiredService<IPasswordHasher>();
     var unitOfWork = services.GetRequiredService<IUnitOfWork>();
 
-    var existing = await administratorRepository.GetByEmailAsync(adminEmail, CancellationToken.None);
+    var existing = await administratorRepository.GetByUsernameAsync(adminUsername, CancellationToken.None);
     if (existing is not null)
         return;
 
     var administrator = new Barkfest.Domain.Entities.Administrator();
+    administrator.SetUsername(adminUsername);
+    administrator.SetName(adminName);
     administrator.SetEmail(adminEmail);
+    administrator.SetPhoneNumber(adminPhoneNumber);
     administrator.SetPasswordHash(passwordHasher.Hash(adminPassword));
 
     await administratorRepository.AddAsync(administrator, CancellationToken.None);
     await unitOfWork.SaveChangesAsync(CancellationToken.None);
 
-    logger.LogInformation("Administrator account seeded for {Email}", adminEmail);
+    logger.LogInformation("Administrator account seeded: username={Username}, email={Email}", adminUsername, adminEmail);
 }
 
 public partial class Program;

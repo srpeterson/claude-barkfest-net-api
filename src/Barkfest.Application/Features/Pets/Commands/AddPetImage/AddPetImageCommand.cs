@@ -17,7 +17,8 @@ public class AddPetImageCommandHandler(
     IPetRepository petRepository,
     IBlobStorageService blobStorageService,
     IUnitOfWork unitOfWork,
-    ICurrentUserService currentUserService)
+    ICurrentUserService currentUserService,
+    IContentModerationService contentModerationService)
     : IRequestHandler<AddPetImageCommand, Guid>
 {
     private const string ContainerName = "pet-images";
@@ -31,6 +32,9 @@ public class AddPetImageCommandHandler(
 
         if (pet.OwnerId != currentUserService.OwnerId)
             throw new ForbiddenException();
+
+        if (!await contentModerationService.IsImageSafeAsync(request.Content, cancellationToken))
+            throw new DomainException("Image was rejected by content moderation.");
 
         var extension = Path.GetExtension(request.FileName);
         var blobName = $"pets/{request.PetId}/gallery/{Guid.CreateVersion7()}{extension}";

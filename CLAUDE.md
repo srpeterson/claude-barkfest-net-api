@@ -569,6 +569,21 @@ await act.ShouldThrowAsync<NotFoundException>();
 - If context is running low, stop at a clean boundary, update `PROGRESS.md`, and
   the next session can resume by reading `PROGRESS.md` first, then `PLAN.md`.
 
+### When to update each documentation file
+
+At the end of every significant body of work, review all four files and update as needed:
+
+| File | Update when... |
+|---|---|
+| `PROGRESS.md` | A phase or milestone completes — mark it done, list what was built, advance the `Next` pointer |
+| `docs/DECISIONS.md` | A new architectural or technical decision is made — add an entry with the choice and the reasoning |
+| `docs/PLAN.md` | The plan itself changes — a step is added, removed, or fundamentally redesigned |
+| `README.md` | User-visible behaviour changes — new endpoints, new setup steps, new environment config |
+
+**Rule of thumb:** `PROGRESS.md` and `docs/DECISIONS.md` change frequently — every
+milestone and every non-trivial decision. `docs/PLAN.md` and `README.md` change
+rarely — only when the plan or public-facing behaviour actually changes.
+
 ---
 
 ## Key Files
