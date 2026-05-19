@@ -10,6 +10,7 @@ using Barkfest.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -21,7 +22,35 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration));
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        var components = document.Components ??= new OpenApiComponents();
+        components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Enter your JWT bearer token."
+        });
+
+        document.Info = new OpenApiInfo
+        {
+            Version = "v1",
+            Title = "Barkfest Web API",
+            Description = "Example API built with Claude Code",
+            Contact = new OpenApiContact
+            {
+                Name = "Cool Dudes, Inc",
+                Email = "srpeterson@outlook.com"
+            }
+        };
+
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddApplication();
 builder.Services.AddPersistence(builder.Configuration);
@@ -69,7 +98,13 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarApiReference(options =>
+    {
+        options.Authentication = new ScalarAuthenticationOptions
+        {
+            PreferredSecuritySchemes = ["Bearer"]
+        };
+    });
 }
 
 app.UseHttpsRedirection();
@@ -102,12 +137,8 @@ static async Task SeedAdminAsync(IServiceProvider services, IConfiguration confi
     if (existing is not null)
         return;
 
-    var administrator = new Barkfest.Domain.Entities.Administrator();
-    administrator.SetUsername(adminUsername);
-    administrator.SetName(adminName);
-    administrator.SetEmail(adminEmail);
-    administrator.SetPhoneNumber(adminPhoneNumber);
-    administrator.SetPasswordHash(passwordHasher.Hash(adminPassword));
+    var administrator = Barkfest.Domain.Entities.Administrator.Create(
+        adminUsername, adminName, adminEmail, adminPhoneNumber, passwordHasher.Hash(adminPassword));
 
     await administratorRepository.AddAsync(administrator, CancellationToken.None);
     await unitOfWork.SaveChangesAsync(CancellationToken.None);
