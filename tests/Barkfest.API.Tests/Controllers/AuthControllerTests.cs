@@ -21,6 +21,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     {
         var response = await _client.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"alice{Guid.NewGuid():N}",
             firstName = "Alice",
             lastName = "Adams",
             email = $"alice-{Guid.NewGuid():N}@example.com",
@@ -40,6 +41,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
 
         await _client.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"firstuser{Guid.NewGuid():N}",
             firstName = "First",
             lastName = "User",
             email,
@@ -49,6 +51,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
 
         var response = await _client.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"seconduser{Guid.NewGuid():N}",
             firstName = "Second",
             lastName = "User",
             email,
@@ -64,6 +67,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     {
         var response = await _client.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"noname{Guid.NewGuid():N}",
             firstName = "",
             lastName = "Adams",
             email = $"noname-{Guid.NewGuid():N}@example.com",
@@ -84,21 +88,22 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Login_When_CredentialsAreValid_Returns_Ok_WithToken()
     {
-        var email = $"login-{Guid.NewGuid():N}@example.com";
+        var username = $"bob{Guid.NewGuid():N}";
         const string password = "SecurePass1!";
 
         await _client.PostAsJsonAsync("/v1/auth/register", new
         {
+            username,
             firstName = "Bob",
             lastName = "Baker",
-            email,
+            email = $"bob-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password
         });
 
         var response = await _client.PostAsJsonAsync("/v1/auth/login", new
         {
-            email,
+            username,
             password
         });
 
@@ -113,20 +118,21 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Login_When_PasswordIsWrong_Returns_NotFound()
     {
-        var email = $"wrongpw-{Guid.NewGuid():N}@example.com";
+        var username = $"carol{Guid.NewGuid():N}";
 
         await _client.PostAsJsonAsync("/v1/auth/register", new
         {
+            username,
             firstName = "Carol",
             lastName = "Clark",
-            email,
+            email = $"carol-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password = "CorrectPass1!"
         });
 
         var response = await _client.PostAsJsonAsync("/v1/auth/login", new
         {
-            email,
+            username,
             password = "WrongPass1!"
         });
 
@@ -134,11 +140,11 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task Login_When_EmailNotFound_Returns_NotFound()
+    public async Task Login_When_UsernameNotFound_Returns_NotFound()
     {
         var response = await _client.PostAsJsonAsync("/v1/auth/login", new
         {
-            email = $"nobody-{Guid.NewGuid():N}@example.com",
+            username = $"nobody{Guid.NewGuid():N}",
             password = "AnyPass1!"
         });
 

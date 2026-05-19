@@ -173,6 +173,7 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
     {
         var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"integration{Guid.NewGuid():N}",
             firstName = "Integration",
             lastName = "Tester",
             email = $"integration-{Guid.NewGuid():N}@example.com",

@@ -7,6 +7,11 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
     public RegisterCommandValidator()
     {
+        RuleFor(x => x.Username)
+            .NotEmpty().WithMessage("Username is required.")
+            .MaximumLength(Owner.UsernameMaxLength)
+            .WithMessage($"Username cannot exceed {Owner.UsernameMaxLength} characters.");
+
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required.")
             .MaximumLength(Owner.FirstNameMaxLength)

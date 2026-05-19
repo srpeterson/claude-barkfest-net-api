@@ -28,7 +28,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task AddAsync_When_OwnerAdded_Returns_SavedOwner()
     {
-        var owner = BuildOwner("John", "Doe", "john@example.com");
+        var owner = BuildOwner("johndoe", "John", "Doe", "john@example.com");
         await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
@@ -49,10 +49,31 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task GetByUsernameAsync_When_OwnerExists_Returns_Owner()
+    {
+        var owner = BuildOwner("userlookup", "John", "Doe", "john-u@example.com");
+        await _ownerRepository.AddAsync(owner);
+        await _context.SaveChangesAsync();
+
+        var result = await _ownerRepository.GetByUsernameAsync("userlookup");
+
+        result.ShouldNotBeNull();
+        result.Id.ShouldBe(owner.Id);
+    }
+
+    [Fact]
+    public async Task GetByUsernameAsync_When_UsernameNotFound_Returns_Null()
+    {
+        var result = await _ownerRepository.GetByUsernameAsync("nobody");
+
+        result.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task GetAllAsync_When_Called_Returns_AllPersistedOwners()
     {
-        await _ownerRepository.AddAsync(BuildOwner("Alice", "Adams", "alice@example.com"));
-        await _ownerRepository.AddAsync(BuildOwner("Bob", "Baker", "bob@example.com"));
+        await _ownerRepository.AddAsync(BuildOwner("aliceadams", "Alice", "Adams", "alice@example.com"));
+        await _ownerRepository.AddAsync(BuildOwner("bobbaker", "Bob", "Baker", "bob@example.com"));
         await _context.SaveChangesAsync();
 
         var result = await _ownerRepository.GetAllAsync();
@@ -63,7 +84,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task UpdateAsync_When_OwnerUpdated_Persists_Changes()
     {
-        var owner = BuildOwner("Jane", "Smith", "jane@example.com");
+        var owner = BuildOwner("janesmith", "Jane", "Smith", "jane@example.com");
         await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
@@ -81,7 +102,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task DeleteAsync_When_OwnerExists_Removes_Owner()
     {
-        var owner = BuildOwner("Mark", "Jones", "mark@example.com");
+        var owner = BuildOwner("markjones", "Mark", "Jones", "mark@example.com");
         await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
 
@@ -95,7 +116,7 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
     [Fact]
     public async Task AddAsync_When_OwnerHasProfileImage_Persists_Image()
     {
-        var owner = BuildOwner("Sara", "Lee", "sara@example.com");
+        var owner = BuildOwner("saralee", "Sara", "Lee", "sara@example.com");
         owner.SetProfileImage("owners/abc/photo.jpg", "image/jpeg");
         await _ownerRepository.AddAsync(owner);
         await _context.SaveChangesAsync();
@@ -107,9 +128,10 @@ public class OwnerRepositoryTests(DatabaseFixture fixture)
         result.ProfileImage.ContentType.ShouldBe("image/jpeg");
     }
 
-    private static Owner BuildOwner(string firstName, string lastName, string email)
+    private static Owner BuildOwner(string username, string firstName, string lastName, string email)
     {
         var owner = new Owner();
+        owner.SetUsername(username);
         owner.SetFirstName(firstName);
         owner.SetLastName(lastName);
         owner.SetEmail(email);

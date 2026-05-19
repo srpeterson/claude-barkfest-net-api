@@ -15,6 +15,10 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
             .HasColumnName("OwnerId")
             .HasDefaultValueSql("newsequentialid()");
 
+        builder.Property(o => o.Username)
+            .HasMaxLength(Owner.UsernameMaxLength)
+            .IsRequired();
+
         builder.Property(o => o.FirstName)
             .HasMaxLength(Owner.FirstNameMaxLength)
             .IsRequired();
@@ -39,6 +43,9 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
         builder.Property(o => o.IsVisible)
             .IsRequired()
             .HasDefaultValue(true);
+
+        builder.HasIndex(o => o.Username)
+            .IsUnique();
 
         builder.HasIndex(o => o.Email)
             .IsUnique();

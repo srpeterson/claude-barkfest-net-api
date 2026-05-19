@@ -15,12 +15,12 @@ public class LoginCommandHandler(
 {
     public async Task<AuthTokenDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var owner = await ownerRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var owner = await ownerRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (owner is null)
-            throw new NotFoundException(nameof(Owner), request.Email);
+            throw new NotFoundException(nameof(Owner), request.Username);
 
         if (!passwordHasher.Verify(request.Password, owner.PasswordHash))
-            throw new NotFoundException(nameof(Owner), request.Email);
+            throw new NotFoundException(nameof(Owner), request.Username);
 
         if (!owner.Active)
             throw new ForbiddenException();

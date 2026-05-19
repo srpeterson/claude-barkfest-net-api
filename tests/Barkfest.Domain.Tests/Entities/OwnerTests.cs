@@ -6,6 +6,51 @@ namespace Barkfest.Domain.Tests.Entities;
 public class OwnerTests
 {
     // -----------------------------------------------------------------------
+    // SetUsername
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void SetUsername_When_UsernameIsValid_Sets_TrimmedUsername()
+    {
+        var owner = new Owner();
+
+        owner.SetUsername("  JohnDoe  ");
+
+        owner.Username.ShouldBe("JohnDoe");
+    }
+
+    [Fact]
+    public void SetUsername_When_UsernamePreservesCase()
+    {
+        var owner = new Owner();
+
+        owner.SetUsername("JohnDoe");
+
+        owner.Username.ShouldBe("JohnDoe");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetUsername_When_EmptyOrWhitespace_Throws_DomainException(string username)
+    {
+        var owner = new Owner();
+
+        Should.Throw<DomainException>(() => owner.SetUsername(username))
+            .Message.ShouldBe("Username is required.");
+    }
+
+    [Fact]
+    public void SetUsername_When_ExceedsMaxLength_Throws_DomainException()
+    {
+        var owner = new Owner();
+        var longUsername = new string('a', Owner.UsernameMaxLength + 1);
+
+        Should.Throw<DomainException>(() => owner.SetUsername(longUsername))
+            .Message.ShouldContain(Owner.UsernameMaxLength.ToString());
+    }
+
+    // -----------------------------------------------------------------------
     // SetFirstName
     // -----------------------------------------------------------------------
 

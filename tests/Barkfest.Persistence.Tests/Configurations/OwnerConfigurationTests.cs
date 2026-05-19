@@ -43,6 +43,38 @@ public class OwnerConfigurationTests
     }
 
     // -----------------------------------------------------------------------
+    // Username
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Username_HasCorrectMaxLength()
+    {
+        _owner.FindProperty(nameof(Owner.Username))!
+              .GetMaxLength()
+              .ShouldBe(Owner.UsernameMaxLength);
+    }
+
+    [Fact]
+    public void Username_IsRequired()
+    {
+        _owner.FindProperty(nameof(Owner.Username))!
+              .IsNullable
+              .ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Username_HasUniqueIndex()
+    {
+        var index = _owner.GetIndexes()
+            .SingleOrDefault(i =>
+                i.Properties.Count == 1 &&
+                i.Properties[0].Name == nameof(Owner.Username));
+
+        index.ShouldNotBeNull();
+        index!.IsUnique.ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
     // FirstName
     // -----------------------------------------------------------------------
 

@@ -181,13 +181,12 @@ public class PetsControllerTests(BarkfestApiFactory factory)
 
     private async Task<(HttpClient client, Guid ownerId)> RegisterAndGetClient()
     {
-        var email = $"petowner-{Guid.NewGuid():N}@example.com";
-
         var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"petowner{Guid.NewGuid():N}",
             firstName = "Test",
             lastName = "Owner",
-            email,
+            email = $"petowner-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password = "SecurePass1!"
         });

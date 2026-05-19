@@ -150,13 +150,14 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
 
     private async Task<(HttpClient client, Guid ownerId)> RegisterAndGetClient(string seed = "alice")
     {
-        var email = $"{seed}-{Guid.NewGuid():N}@example.com";
+        var username = $"{seed}{Guid.NewGuid():N}";
 
         var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username,
             firstName = "Alice",
             lastName = "Adams",
-            email,
+            email = $"{seed}-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password = "SecurePass1!"
         });

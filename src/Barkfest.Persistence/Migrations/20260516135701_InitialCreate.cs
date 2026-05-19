@@ -30,6 +30,7 @@ namespace Barkfest.Persistence.Migrations
                 columns: table => new
                 {
                     OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "newsequentialid()"),
+                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(75)", maxLength: 75, nullable: false),
@@ -129,6 +130,12 @@ namespace Barkfest.Persistence.Migrations
                 name: "IX_Owners_Email",
                 table: "Owners",
                 column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Owners_Username",
+                table: "Owners",
+                column: "Username",
                 unique: true);
 
             migrationBuilder.CreateIndex(

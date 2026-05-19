@@ -286,6 +286,37 @@
 
 ---
 
+---
+
+## Post-Phase 11 — Username Login
+
+- `Owner.Username` property added with `SetUsername()` and `UsernameMaxLength = 50`
+- Login changed from email/password to username/password — `LoginCommand.Email` → `LoginCommand.Username`
+- `RegisterCommand` extended with `Username` field
+- `RegisterCommandHandler` checks username uniqueness (DomainException if taken) before email uniqueness
+- `LoginCommandHandler` uses `GetByUsernameAsync` instead of `GetByEmailAsync`
+- `IOwnerRepository.GetByUsernameAsync` added; `GetByEmailAsync` retained for register uniqueness check
+- `OwnerRepository.GetByUsernameAsync` implemented (exact case-sensitive match)
+- `OwnerConfiguration` — `Username` column `nvarchar(50) NOT NULL`, unique index `IX_Owners_Username`
+- `OwnerDto` — `Username` field added
+- `OwnerMappings` — `Username` mapped
+- `OwnerBuilder` — `_username` default (unique guid), `WithUsername()` method, `SetUsername()` called in `Build()`
+- Migration `AddOwnerUsername` generated
+- Email remains unique — contact field, not used for login
+- `CLAUDE.md` — `Owner.UsernameMaxLength` constant, updated Owner business rules
+
+**553 tests across 5 runnable projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 164 |
+| `Barkfest.Application.Tests` | 236 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 90 |
+| `Barkfest.API.Tests` | 55 |
+
+---
+
 ## Next
 
 All phases complete.

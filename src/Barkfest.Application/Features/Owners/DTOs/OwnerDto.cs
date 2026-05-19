@@ -4,6 +4,7 @@ namespace Barkfest.Application.Features.Owners.DTOs;
 
 public record OwnerDto(
     Guid Id,
+    string Username,
     string FirstName,
     string LastName,
     string Email,

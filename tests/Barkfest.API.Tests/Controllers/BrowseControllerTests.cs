@@ -14,13 +14,12 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
 
     private async Task<Guid> RegisterOwnerAndAddPetImageAsync()
     {
-        var email = $"browse-{Guid.NewGuid():N}@example.com";
-
         var registerResponse = await _httpClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"browse{Guid.NewGuid():N}",
             firstName = "Alice",
             lastName = "Adams",
-            email,
+            email = $"browse-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password = "SecurePass1!"
         });

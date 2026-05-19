@@ -286,6 +286,7 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     {
         var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"testowner{Guid.NewGuid():N}",
             firstName = "Test",
             lastName = "Owner",
             email = $"owner-{Guid.NewGuid():N}@example.com",

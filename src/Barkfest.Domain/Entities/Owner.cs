@@ -8,8 +8,10 @@ public class Owner
     public const int FirstNameMaxLength = 50;
     public const int LastNameMaxLength = 100;
     public const int EmailMaxLength = 75;
+    public const int UsernameMaxLength = 50;
 
     public Guid Id { get; private set; } = Guid.CreateVersion7();
+    public string Username { get; private set; } = string.Empty;
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
@@ -22,6 +24,19 @@ public class Owner
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
     private readonly List<Pet> _pets = [];
+
+    public void SetUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            throw new DomainException("Username is required.");
+
+        var trimmed = username.Trim();
+
+        if (trimmed.Length > UsernameMaxLength)
+            throw new DomainException($"Username cannot exceed {UsernameMaxLength} characters.");
+
+        Username = trimmed;
+    }
 
     public void SetFirstName(string firstName)
     {

@@ -13,27 +13,27 @@ public class LoginCommandValidatorTests
     [Fact]
     public void Validate_When_CommandIsValid_Passes()
     {
-        var command = new LoginCommand("alice@example.com", "pass123");
+        var command = new LoginCommand("alice", "pass123");
 
         _loginCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     // -----------------------------------------------------------------------
-    // Email
+    // Username
     // -----------------------------------------------------------------------
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Validate_When_EmailIsEmptyOrNull_Fails_ForEmail(string? email)
+    public void Validate_When_UsernameIsEmptyOrNull_Fails_ForUsername(string? username)
     {
-        var command = new LoginCommand(email!, "pass123");
+        var command = new LoginCommand(username!, "pass123");
 
         var result = _loginCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Username));
     }
 
     // -----------------------------------------------------------------------
@@ -46,7 +46,7 @@ public class LoginCommandValidatorTests
     [InlineData(null)]
     public void Validate_When_PasswordIsEmptyOrNull_Fails_ForPassword(string? password)
     {
-        var command = new LoginCommand("alice@example.com", password!);
+        var command = new LoginCommand("alice", password!);
 
         var result = _loginCommandValidator.Validate(command);
 

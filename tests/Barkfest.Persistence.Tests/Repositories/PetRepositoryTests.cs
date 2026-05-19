@@ -151,6 +151,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     {
         var ownerRepo = new OwnerRepository(_context);
         var owner = new Owner();
+        owner.SetUsername($"u{Guid.NewGuid():N}");
         owner.SetFirstName("Test");
         owner.SetLastName("Owner");
         owner.SetEmail(email);

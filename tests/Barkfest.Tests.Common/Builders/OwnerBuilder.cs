@@ -4,11 +4,18 @@ namespace Barkfest.Tests.Common.Builders;
 
 public class OwnerBuilder
 {
+    private string _username = $"user{Guid.NewGuid():N}";
     private string _firstName = "Test";
     private string _lastName = "Owner";
     private string _email = $"test.{Guid.NewGuid():N}@example.com";
     private string? _phoneNumber = null;
     private (string BlobName, string ContentType)? _profileImage = null;
+
+    public OwnerBuilder WithUsername(string username)
+    {
+        _username = username;
+        return this;
+    }
 
     public OwnerBuilder WithFirstName(string firstName)
     {
@@ -43,6 +50,7 @@ public class OwnerBuilder
     public Owner Build()
     {
         var owner = new Owner();
+        owner.SetUsername(_username);
         owner.SetFirstName(_firstName);
         owner.SetLastName(_lastName);
         owner.SetEmail(_email);

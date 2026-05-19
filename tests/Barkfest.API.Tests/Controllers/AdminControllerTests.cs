@@ -104,15 +104,16 @@ public class AdminControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task Login_When_OwnerIsInactive_Returns_Forbidden()
     {
-        var email = $"inactive-{Guid.NewGuid():N}@example.com";
+        var username = $"inactive{Guid.NewGuid():N}";
         const string password = "SecurePass1!";
 
         // Register owner
         var registerResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username,
             firstName = "In",
             lastName = "Active",
-            email,
+            email = $"inactive-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password
         });
@@ -128,7 +129,7 @@ public class AdminControllerTests(BarkfestApiFactory factory)
         // Attempt to login
         var loginResponse = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/login", new
         {
-            email,
+            username,
             password
         });
 
@@ -325,12 +326,12 @@ public class AdminControllerTests(BarkfestApiFactory factory)
 
     private async Task<Guid> RegisterOwnerAsync(string prefix = "admin-test")
     {
-        var email = $"{prefix}-{Guid.NewGuid():N}@example.com";
         var response = await _unauthenticatedClient.PostAsJsonAsync("/v1/auth/register", new
         {
+            username = $"u{Guid.NewGuid():N}",
             firstName = "Test",
             lastName = "User",
-            email,
+            email = $"{prefix}-{Guid.NewGuid():N}@example.com",
             phoneNumber = (string?)null,
             password = "SecurePass1!"
         });

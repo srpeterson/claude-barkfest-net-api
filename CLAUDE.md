@@ -253,6 +253,7 @@ validators, tests, EF Core configuration.
 
 | Constant | Value | Location |
 |---|---|---|
+| `Owner.UsernameMaxLength` | 50 | `Owner.cs` |
 | `Owner.FirstNameMaxLength` | 50 | `Owner.cs` |
 | `Owner.LastNameMaxLength` | 100 | `Owner.cs` |
 | `Owner.EmailMaxLength` | 75 | `Owner.cs` |
@@ -267,10 +268,12 @@ validators, tests, EF Core configuration.
 ## Business Rules
 
 ### Owner
+- `Username` — required, max `Owner.UsernameMaxLength` chars, trimmed, case-sensitive, unique
 - `FirstName` — required, max `Owner.FirstNameMaxLength` chars, trimmed
 - `LastName` — required, max `Owner.LastNameMaxLength` chars, trimmed
-- `Email` — required, valid email format, max `Owner.EmailMaxLength` chars, lowercased and trimmed
+- `Email` — required, valid email format, max `Owner.EmailMaxLength` chars, lowercased and trimmed, unique (contact only — not used for login)
 - `PhoneNumber` — optional, no max length constraint
+- Login uses `Username` + password; `Email` is a contact field only
 
 ### Pet
 - `Name` — required, max `Pet.NameMaxLength` chars, trimmed

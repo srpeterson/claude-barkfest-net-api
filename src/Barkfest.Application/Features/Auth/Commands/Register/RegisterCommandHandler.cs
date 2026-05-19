@@ -13,11 +13,16 @@ public class RegisterCommandHandler(
 {
     public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var existing = await ownerRepository.GetByEmailAsync(request.Email, cancellationToken);
-        if (existing is not null)
+        var existingByUsername = await ownerRepository.GetByUsernameAsync(request.Username, cancellationToken);
+        if (existingByUsername is not null)
+            throw new DomainException("Username is already in use.");
+
+        var existingByEmail = await ownerRepository.GetByEmailAsync(request.Email, cancellationToken);
+        if (existingByEmail is not null)
             throw new DomainException("Email is already in use.");
 
         var owner = new Owner();
+        owner.SetUsername(request.Username);
         owner.SetFirstName(request.FirstName);
         owner.SetLastName(request.LastName);
         owner.SetEmail(request.Email);

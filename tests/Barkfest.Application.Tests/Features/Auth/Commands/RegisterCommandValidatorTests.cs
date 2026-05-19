@@ -14,9 +14,39 @@ public class RegisterCommandValidatorTests
     [Fact]
     public void Validate_When_CommandIsValid_Passes()
     {
-        var command = new RegisterCommand("Alice", "Adams", "alice@example.com", null, "SecurePass1!");
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", null, "SecurePass1!");
 
         _registerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
+    // Username
+    // -----------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Validate_When_UsernameIsEmptyOrNull_Fails_ForUsername(string? username)
+    {
+        var command = new RegisterCommand(username!, "Alice", "Adams", "alice@example.com", null, "pass");
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Username));
+    }
+
+    [Fact]
+    public void Validate_When_UsernameExceedsMaxLength_Fails_ForUsername()
+    {
+        var command = new RegisterCommand(
+            new string('a', Owner.UsernameMaxLength + 1), "Alice", "Adams", "alice@example.com", null, "pass");
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Username));
     }
 
     // -----------------------------------------------------------------------
@@ -29,7 +59,7 @@ public class RegisterCommandValidatorTests
     [InlineData(null)]
     public void Validate_When_FirstNameIsEmptyOrNull_Fails_ForFirstName(string? firstName)
     {
-        var command = new RegisterCommand(firstName!, "Adams", "alice@example.com", null, "pass");
+        var command = new RegisterCommand("aliceadams", firstName!, "Adams", "alice@example.com", null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -41,7 +71,7 @@ public class RegisterCommandValidatorTests
     public void Validate_When_FirstNameExceedsMaxLength_Fails_ForFirstName()
     {
         var command = new RegisterCommand(
-            new string('A', Owner.FirstNameMaxLength + 1), "Adams", "alice@example.com", null, "pass");
+            "aliceadams", new string('A', Owner.FirstNameMaxLength + 1), "Adams", "alice@example.com", null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -59,7 +89,7 @@ public class RegisterCommandValidatorTests
     [InlineData(null)]
     public void Validate_When_LastNameIsEmptyOrNull_Fails_ForLastName(string? lastName)
     {
-        var command = new RegisterCommand("Alice", lastName!, "alice@example.com", null, "pass");
+        var command = new RegisterCommand("aliceadams", "Alice", lastName!, "alice@example.com", null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -71,7 +101,7 @@ public class RegisterCommandValidatorTests
     public void Validate_When_LastNameExceedsMaxLength_Fails_ForLastName()
     {
         var command = new RegisterCommand(
-            "Alice", new string('A', Owner.LastNameMaxLength + 1), "alice@example.com", null, "pass");
+            "aliceadams", "Alice", new string('A', Owner.LastNameMaxLength + 1), "alice@example.com", null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -89,7 +119,7 @@ public class RegisterCommandValidatorTests
     [InlineData(null)]
     public void Validate_When_EmailIsEmptyOrNull_Fails_ForEmail(string? email)
     {
-        var command = new RegisterCommand("Alice", "Adams", email!, null, "pass");
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", email!, null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -100,7 +130,7 @@ public class RegisterCommandValidatorTests
     [Fact]
     public void Validate_When_EmailIsInvalidFormat_Fails_ForEmail()
     {
-        var command = new RegisterCommand("Alice", "Adams", "not-an-email", null, "pass");
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "not-an-email", null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -112,7 +142,7 @@ public class RegisterCommandValidatorTests
     public void Validate_When_EmailExceedsMaxLength_Fails_ForEmail()
     {
         var longEmail = new string('a', Owner.EmailMaxLength) + "@example.com";
-        var command = new RegisterCommand("Alice", "Adams", longEmail, null, "pass");
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", longEmail, null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 
@@ -130,7 +160,7 @@ public class RegisterCommandValidatorTests
     [InlineData(null)]
     public void Validate_When_PasswordIsEmptyOrNull_Fails_ForPassword(string? password)
     {
-        var command = new RegisterCommand("Alice", "Adams", "alice@example.com", null, password!);
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", null, password!);
 
         var result = _registerCommandValidator.Validate(command);
 
