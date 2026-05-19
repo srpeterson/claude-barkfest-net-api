@@ -4,6 +4,7 @@ using Barkfest.Application.Features.Owners.Commands.RemoveOwnerProfileImage;
 using Barkfest.Application.Features.Owners.Commands.SetOwnerVisibility;
 using Barkfest.Application.Features.Owners.Commands.UpdateOwner;
 using Barkfest.Application.Features.Owners.Commands.UploadOwnerProfileImage;
+using Barkfest.Application.Features.Owners.Queries.GetAllOwners;
 using Barkfest.Application.Features.Owners.Queries.GetOwnerById;
 using Barkfest.Application.Features.Pets.Queries.GetPetsByOwnerId;
 using MediatR;
@@ -17,6 +18,13 @@ namespace Barkfest.API.Controllers;
 [Authorize]
 public class OwnerController(IMediator mediator) : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        var owners = await mediator.Send(new GetAllOwnersQuery(), cancellationToken);
+        return Ok(owners);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {

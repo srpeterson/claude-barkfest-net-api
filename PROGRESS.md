@@ -403,6 +403,32 @@
 
 ---
 
+## Post-Phase 11 — GetAll Endpoints
+
+- `GET /v1/owners` — lists all owners; admin JWT required; `ForbiddenException` for non-admins
+- `GET /v1/admin/admins` — lists all administrators; admin JWT required; `ForbiddenException` for non-admins
+- `IAdministratorRepository.GetAllAsync` — new interface method + repository implementation
+- `AdministratorDto` — new DTO (Id, Username, Name, Email, PhoneNumber, CreatedAt — no PasswordHash)
+- `AdministratorMappings` — `ToDto()` and `ToDtoList()` extension methods
+- `GetAllAdministratorsQuery` + handler with admin-only check
+- `GetAllOwnersQueryHandler` — `ICurrentUserService` injected, admin-only check added
+- Admin-only enforcement in handlers (Application layer) — not just at the route level
+- CLAUDE.md — Domain Constants table corrected (AccountConstraints, E164PhoneNumber, Administrator.NameMaxLength); Administrator business rules updated; Authorization section added
+- DECISIONS.md — admin-only GetAll decision added
+
+**621 tests across 6 projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 181 |
+| `Barkfest.Application.Tests` | 268 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 103 |
+| `Barkfest.API.Tests` | 61 |
+| `Barkfest.Integration.Tests` | 20 |
+
+---
+
 ## Next
 
 Read `docs/ROADMAP.md` to select the next item.

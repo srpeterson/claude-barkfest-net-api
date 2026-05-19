@@ -5,8 +5,7 @@ namespace Barkfest.Infrastructure.Tests;
 
 public class AzuriteFixture : IAsyncLifetime
 {
-    private readonly AzuriteContainer _container = new AzuriteBuilder()
-        .WithImage("mcr.microsoft.com/azure-storage/azurite:latest")
+    private readonly AzuriteContainer _container = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:latest")
         .Build();
 
     public BlobServiceClient CreateBlobServiceClient()

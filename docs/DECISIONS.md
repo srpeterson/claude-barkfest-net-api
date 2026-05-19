@@ -624,3 +624,18 @@ NoOp pattern makes the intent explicit: content moderation is a known requiremen
 afterthought. The detailed TODO comment in `NoOpContentModerationService` documents the exact
 steps to activate Azure AI Content Safety (the successor to the deprecated Azure Content
 Moderator), including the NuGet package and configuration steps required.
+
+---
+
+### Decision: `GET /v1/owners` and `GET /v1/admin/admins` are admin-only
+**Choice:** Both list endpoints are guarded by `ICurrentUserService.IsAdmin` in the handler,
+throwing `ForbiddenException` for non-admin callers. Regular owners cannot enumerate all owner
+accounts or any administrator accounts.
+
+**Reason:** Listing all owners exposes PII (usernames, emails, phone numbers) across the entire
+user base — a capability that belongs to platform administrators, not individual owners. Allowing
+any authenticated owner to enumerate all accounts would be a significant privacy and security
+concern. Similarly, listing all administrator accounts should only be visible to other
+administrators. Enforcing the check in the handler (Application layer) rather than only at the
+route level ensures the rule is testable in isolation and cannot be bypassed by adding a new
+controller endpoint that accidentally omits the attribute.

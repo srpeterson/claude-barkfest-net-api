@@ -1,5 +1,6 @@
+using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Queries.GetAllOwners;
-using Barkfest.Domain.Entities;
+using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -8,11 +9,13 @@ namespace Barkfest.Application.Tests.Features.Owners.Queries;
 public class GetAllOwnersQueryHandlerTests
 {
     private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
+    private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
     private readonly GetAllOwnersQueryHandler _getAllOwnersQueryHandler;
 
     public GetAllOwnersQueryHandlerTests()
     {
-        _getAllOwnersQueryHandler = new GetAllOwnersQueryHandler(_ownerRepository);
+        _currentUserService.IsAdmin.Returns(true);
+        _getAllOwnersQueryHandler = new GetAllOwnersQueryHandler(_ownerRepository, _currentUserService);
     }
 
     [Fact]
@@ -43,4 +46,13 @@ public class GetAllOwnersQueryHandlerTests
         result.ShouldBeEmpty();
     }
 
+    [Fact]
+    public async Task Handle_When_NotAdmin_Throws_ForbiddenException()
+    {
+        _currentUserService.IsAdmin.Returns(false);
+
+        var act = () => _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
+
+        await act.ShouldThrowAsync<ForbiddenException>();
+    }
 }

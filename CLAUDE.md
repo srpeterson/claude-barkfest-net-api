@@ -253,11 +253,12 @@ validators, tests, EF Core configuration.
 
 | Constant | Value | Location |
 |---|---|---|
-| `Owner.UsernameMaxLength` | 50 | `Owner.cs` |
+| `AccountConstraints.UsernameMaxLength` | 50 | `ValueObjects/AccountConstraints.cs` |
+| `AccountConstraints.EmailMaxLength` | 75 | `ValueObjects/AccountConstraints.cs` |
+| `E164PhoneNumber.MaxLength` | 25 | `ValueObjects/E164PhoneNumber.cs` |
 | `Owner.FirstNameMaxLength` | 50 | `Owner.cs` |
 | `Owner.LastNameMaxLength` | 100 | `Owner.cs` |
-| `Owner.EmailMaxLength` | 75 | `Owner.cs` |
-| `Administrator.EmailMaxLength` | 75 | `Administrator.cs` |
+| `Administrator.NameMaxLength` | 100 | `Administrator.cs` |
 | `Pet.NameMaxLength` | 75 | `Pet.cs` |
 | `Pet.MaxImages` | 5 | `Pet.cs` |
 | `PetImage.BlobNameMaxLength` | 500 | `PetImage.cs` |
@@ -292,12 +293,21 @@ validators, tests, EF Core configuration.
 - Binary files stored in Azure Blob Storage — SQL Server stores only `BlobName` and `ContentType`
 
 ### Administrator
-- `Email` — required, valid email format, max `Administrator.EmailMaxLength` chars, lowercased and trimmed
+- `Username` — required, max `AccountConstraints.UsernameMaxLength` chars, trimmed, case-sensitive, unique
+- `Name` — required, max `Administrator.NameMaxLength` chars, trimmed
+- `Email` — required, valid email format, max `AccountConstraints.EmailMaxLength` chars, lowercased and trimmed, unique
+- `PhoneNumber` — required, E.164 format, max `E164PhoneNumber.MaxLength` chars
 - `PasswordHash` — required, set via `SetPasswordHash(string hash)`
-- Any administrator can create new administrators (email + password)
+- Login uses `Username` + password
+- Any administrator can create new administrators (username + name + email + phoneNumber + password)
 - Any administrator can update another administrator's password
 - Any administrator can delete another administrator but **never themselves** (self-delete throws `ForbiddenException`)
 - Administrator accounts are fully separate from Owner accounts — different tables, different JWT claims, different identity
+
+### Authorization
+- `GET /v1/owners` — lists all owners; admin JWT required (throws `ForbiddenException` for non-admins)
+- `GET /v1/admin/admins` — lists all administrators; admin JWT required (throws `ForbiddenException` for non-admins)
+- All other owner and pet endpoints require a valid owner JWT; ownership enforced in handlers
 
 ### Profile Images
 - Both `Owner` and `Pet` have an optional profile image

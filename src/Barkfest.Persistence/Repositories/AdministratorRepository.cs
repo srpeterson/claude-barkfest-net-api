@@ -6,6 +6,9 @@ namespace Barkfest.Persistence.Repositories;
 
 public class AdministratorRepository(AppDbContext context) : IAdministratorRepository
 {
+    public async Task<IEnumerable<Administrator>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await context.Administrators.ToListAsync(cancellationToken);
+
     public async Task<Administrator?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.Administrators.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 

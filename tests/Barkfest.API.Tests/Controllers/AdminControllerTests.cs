@@ -336,6 +336,38 @@ public class AdminControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
+    // GET /v1/admin/admins — get all administrators
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAllAdministrators_When_Unauthenticated_Returns_Unauthorized()
+    {
+        var response = await _unauthenticatedClient.GetAsync("/v1/admin/admins");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetAllAdministrators_When_CallerIsNotAdmin_Returns_Forbidden()
+    {
+        var ownerClient = factory.CreateAuthenticatedClient(Guid.NewGuid());
+
+        var response = await ownerClient.GetAsync("/v1/admin/admins");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetAllAdministrators_When_CallerIsAdmin_Returns_Ok()
+    {
+        var adminClient = factory.CreateAuthenticatedAdminClient(Guid.NewGuid());
+
+        var response = await adminClient.GetAsync("/v1/admin/admins");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 

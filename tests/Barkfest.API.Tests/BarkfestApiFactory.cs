@@ -18,8 +18,7 @@ public class BarkfestApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
 
     private readonly AzuriteContainer _azuriteContainer =
-        new AzuriteBuilder()
-            .WithImage("mcr.microsoft.com/azure-storage/azurite:latest")
+        new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:latest")
             .Build();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

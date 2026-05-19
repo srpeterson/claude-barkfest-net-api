@@ -9,6 +9,38 @@ public class OwnersControllerTests(BarkfestApiFactory factory)
     private readonly HttpClient _unauthenticatedClient = factory.CreateClient();
 
     // -----------------------------------------------------------------------
+    // GET /v1/owners — get all owners (admin only)
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAll_When_Unauthenticated_Returns_Unauthorized()
+    {
+        var response = await _unauthenticatedClient.GetAsync("/v1/owners");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetAll_When_CallerIsNotAdmin_Returns_Forbidden()
+    {
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.GetAsync("/v1/owners");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task GetAll_When_CallerIsAdmin_Returns_Ok()
+    {
+        var adminClient = factory.CreateAuthenticatedAdminClient(Guid.NewGuid());
+
+        var response = await adminClient.GetAsync("/v1/owners");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // -----------------------------------------------------------------------
     // GET /v1/owners/{id} — auth
     // -----------------------------------------------------------------------
 
