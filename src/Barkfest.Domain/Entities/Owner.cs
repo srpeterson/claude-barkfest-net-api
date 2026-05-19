@@ -15,6 +15,8 @@ public class Owner
     public string Email { get; private set; } = string.Empty;
     public string? PhoneNumber { get; private set; }
     public string PasswordHash { get; private set; } = string.Empty;
+    public bool IsEmailVerified { get; private set; } = false;
+    public string? VerificationToken { get; private set; }
     public bool Active { get; private set; } = true;
     public bool IsVisible { get; private set; } = true;
     public ProfileImage? ProfileImage { get; private set; }
@@ -111,6 +113,20 @@ public class Owner
             throw new DomainException("Password hash is required.");
 
         PasswordHash = hash;
+    }
+
+    public void SetVerificationToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new DomainException("Verification token is required.");
+
+        VerificationToken = token.Trim();
+    }
+
+    public void MarkEmailVerified()
+    {
+        IsEmailVerified = true;
+        VerificationToken = null;
     }
 
     public void SetActive(bool active) => Active = active;

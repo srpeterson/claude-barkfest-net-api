@@ -568,6 +568,8 @@ await act.ShouldThrowAsync<NotFoundException>();
   to point to the next phase.
 - If context is running low, stop at a clean boundary, update `PROGRESS.md`, and
   the next session can resume by reading `PROGRESS.md` first, then `PLAN.md`.
+- When the `Next` pointer in `PROGRESS.md` indicates a new phase needs to be
+  chosen, read `docs/ROADMAP.md` to select the next item.
 
 ### When to update each documentation file
 
@@ -593,6 +595,7 @@ rarely — only when the plan or public-facing behaviour actually changes.
 | `CLAUDE.md` | This file — Claude Code session rules and conventions |
 | `docs/PLAN.md` | Full build plan — all phases and implementation details |
 | `docs/DECISIONS.md` | Architectural and technical decisions with reasoning |
+| `docs/ROADMAP.md` | Post-build feature backlog — read when choosing the next phase |
 | `docs/SPEC.md` | Functional specification — what the app does |
 | `PROGRESS.md` | Current build progress — updated after each phase |
 | `README.md` | Repo landing page — rendered by GitHub |

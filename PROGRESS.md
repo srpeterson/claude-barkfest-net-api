@@ -373,6 +373,36 @@
 
 ---
 
+## Post-Phase 11 — Email Verification Scaffold & Project Documentation
+
+### Email verification scaffold
+- `Owner.IsEmailVerified` (`bool`, default `false`) — not nullable, DB default `false`
+- `Owner.VerificationToken` (`string?`) — nullable, no max length constraint
+- `SetVerificationToken(string token)` — required, trims input, throws `DomainException` if empty
+- `MarkEmailVerified()` — sets `IsEmailVerified = true`, clears `VerificationToken`
+- `OwnerConfiguration` — `IsEmailVerified` (not null, default `false`), `VerificationToken` (nullable) configured
+- Migration consolidated into single `InitialCreate` — both new columns included
+- Login is **unenforced** — `LoginCommandHandler` unchanged; owners log in regardless of verification status
+
+### Project documentation
+- `docs/ROADMAP.md` created — post-build feature backlog in priority order
+  - Email verification: domain scaffolded, enforcement deferred pending `IEmailService`
+  - Image moderation: `IContentModerationService` scaffolded, activation deferred pending Azure AI Content Safety
+- `CLAUDE.md` updated — documentation update rules table, ROADMAP.md reference and read trigger
+
+**611 tests across 6 projects — all passing**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 181 |
+| `Barkfest.Application.Tests` | 264 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 103 |
+| `Barkfest.API.Tests` | 55 |
+| `Barkfest.Integration.Tests` | 20 |
+
+---
+
 ## Next
 
-All phases complete.
+Read `docs/ROADMAP.md` to select the next item.

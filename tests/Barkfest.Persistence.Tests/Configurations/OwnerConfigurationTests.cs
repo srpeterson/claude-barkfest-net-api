@@ -155,6 +155,38 @@ public class OwnerConfigurationTests
     }
 
     // -----------------------------------------------------------------------
+    // IsEmailVerified
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void IsEmailVerified_IsRequired()
+    {
+        _owner.FindProperty(nameof(Owner.IsEmailVerified))!
+              .IsNullable
+              .ShouldBeFalse();
+    }
+
+    [Fact]
+    public void IsEmailVerified_HasDefaultValueFalse()
+    {
+        _owner.FindProperty(nameof(Owner.IsEmailVerified))!
+              .GetDefaultValue()
+              .ShouldBe(false);
+    }
+
+    // -----------------------------------------------------------------------
+    // VerificationToken
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void VerificationToken_IsNullable()
+    {
+        _owner.FindProperty(nameof(Owner.VerificationToken))!
+              .IsNullable
+              .ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
     // ProfileImage (owned entity — shares Owners table)
     // -----------------------------------------------------------------------
 

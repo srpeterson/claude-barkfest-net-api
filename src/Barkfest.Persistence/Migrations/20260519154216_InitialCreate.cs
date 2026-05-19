@@ -39,6 +39,8 @@ namespace Barkfest.Persistence.Migrations
                     Email = table.Column<string>(type: "nvarchar(75)", maxLength: 75, nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsEmailVerified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    VerificationToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Active = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     IsVisible = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     ProfileImageBlobName = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),

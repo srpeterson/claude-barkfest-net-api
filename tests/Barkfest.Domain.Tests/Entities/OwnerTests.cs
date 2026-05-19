@@ -313,6 +313,71 @@ public class OwnerTests
     }
 
     // -----------------------------------------------------------------------
+    // SetVerificationToken / MarkEmailVerified
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void NewOwner_When_Instantiated_Returns_IsEmailVerifiedFalse()
+    {
+        var owner = new Owner();
+
+        owner.IsEmailVerified.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void SetVerificationToken_When_TokenIsValid_Sets_VerificationToken()
+    {
+        var owner = new Owner();
+
+        owner.SetVerificationToken("abc123token");
+
+        owner.VerificationToken.ShouldBe("abc123token");
+    }
+
+    [Fact]
+    public void SetVerificationToken_When_TokenHasWhitespace_Trims_AndSets()
+    {
+        var owner = new Owner();
+
+        owner.SetVerificationToken("  abc123token  ");
+
+        owner.VerificationToken.ShouldBe("abc123token");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetVerificationToken_When_EmptyOrWhitespace_Throws_DomainException(string token)
+    {
+        var owner = new Owner();
+
+        Should.Throw<DomainException>(() => owner.SetVerificationToken(token))
+            .Message.ShouldBe("Verification token is required.");
+    }
+
+    [Fact]
+    public void MarkEmailVerified_When_Called_Sets_IsEmailVerifiedTrue()
+    {
+        var owner = new Owner();
+        owner.SetVerificationToken("abc123token");
+
+        owner.MarkEmailVerified();
+
+        owner.IsEmailVerified.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void MarkEmailVerified_When_Called_Clears_VerificationToken()
+    {
+        var owner = new Owner();
+        owner.SetVerificationToken("abc123token");
+
+        owner.MarkEmailVerified();
+
+        owner.VerificationToken.ShouldBeNull();
+    }
+
+    // -----------------------------------------------------------------------
     // SetActive
     // -----------------------------------------------------------------------
 
