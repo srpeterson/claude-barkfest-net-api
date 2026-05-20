@@ -993,6 +993,73 @@ traces, and health for all resources. The API URL is listed there.
 
 ---
 
+## Phase 12 — Frontend Scaffold ✅ Complete
+
+### Decisions
+
+| Decision | Choice |
+|---|---|
+| Build tool | Vite + React + TypeScript |
+| Package manager | pnpm |
+| Routing | React Router v7 (library mode) |
+| Server state | TanStack Query v5 |
+| Styling | Tailwind CSS v4 via `@tailwindcss/vite` |
+| Components | shadcn/ui (base-ui headless primitives) |
+| Token storage | HttpOnly cookies — CORS wired here; cookie login/logout in Phase 13 |
+| Folder structure | Feature-based under `src/` |
+| Aspire integration | `AddViteApp` + `WithPnpm` — Aspire injects `VITE_API_BASE_URL` |
+| Testing | Vitest + React Testing Library |
+
+### Structure
+
+```
+barkfest-ui/
+├── src/
+│   ├── components/ui/    ← shadcn/ui generated components
+│   ├── features/         ← auth, owners, pets feature folders (Phase 13+)
+│   ├── hooks/
+│   │   └── useAuth.ts
+│   ├── layouts/
+│   │   └── ShellLayout.tsx
+│   ├── lib/
+│   │   └── api.ts        ← typed fetch wrappers (credentials: 'include')
+│   ├── pages/            ← LoginPage, RegisterPage, OwnersPage, PetsPage
+│   ├── test/
+│   │   └── setup.ts      ← jest-dom matchers
+│   ├── App.tsx
+│   └── main.tsx
+├── .env.example
+├── .gitignore
+├── pnpm-workspace.yaml   ← allowBuilds: msw (pnpm 11 requirement)
+├── vite.config.ts        ← test block included (Vitest config co-located)
+├── tsconfig.app.json
+└── package.json
+```
+
+### Scripts
+
+| Command | Purpose |
+|---|---|
+| `pnpm dev` | Vite dev server (run via Aspire, not directly) |
+| `pnpm build` | Production build → `dist/` |
+| `pnpm test` | Vitest single-pass run — CI-safe, exit 0 with no tests |
+| `pnpm test:watch` | Interactive watch mode |
+| `pnpm test:ui` | Vitest browser UI |
+
+### .NET API changes
+
+- CORS policy `BarkfestUI` added — `AllowCredentials()`, `AllowAnyHeader()`, `AllowAnyMethod()`
+- Origin read from `Cors:AllowedOrigin` config key (defaults to `http://localhost:5173`)
+- `appsettings.Development.json` — `"Cors": { "AllowedOrigin": "http://localhost:5173" }`
+- `app.UseCors("BarkfestUI")` inserted before `UseAuthentication()`
+
+### Aspire changes
+
+- `Aspire.Hosting.JavaScript` v13.3.4 added to `Barkfest.AppHost.csproj`
+- `AppHost.cs` registers `barkfest-ui` resource with `VITE_API_BASE_URL` injected from API endpoint
+
+---
+
 ## General Rules — Always Follow These
 
 - Target framework: `.NET 10`

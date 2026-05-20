@@ -459,6 +459,68 @@
 
 ---
 
+---
+
+## Phase 12 — Frontend Scaffold ✅ Complete
+
+### barkfest-ui (Vite + React + TypeScript)
+
+- `barkfest-ui/` scaffolded at repo root using Vite + React + TypeScript template
+- **Package manager:** pnpm
+- **Routing:** React Router v6 (deliberately v6, not v7)
+- **Server state:** TanStack Query v5 (`QueryClientProvider`, `ReactQueryDevtools`)
+- **Styling:** Tailwind CSS v4 via `@tailwindcss/vite` plugin
+- **Component library:** shadcn/ui (base-ui headless primitives)
+- **Path alias:** `@/` → `src/` configured in `vite.config.ts` and `tsconfig.app.json`
+- **Testing:** Vitest + React Testing Library (`pnpm test`, `pnpm test:watch`, `pnpm test:ui`)
+- **pnpm-workspace.yaml** — `allowBuilds: msw: true` to allow msw postinstall (pnpm 11 requirement)
+- `.env.example` committed as template; `.env` gitignored
+
+### Routing structure
+
+- `ShellLayout` with header nav — wraps all routes via `<Outlet />`
+- Routes: `/login`, `/register`, `/owners`, `/pets`
+- Default redirect: `/` → `/login`
+
+### API client
+
+- `src/lib/api.ts` — typed `get`, `post`, `put`, `delete` wrappers
+- All requests include `credentials: 'include'` for HttpOnly cookie support (Phase 13)
+
+### Auth context
+
+- `src/hooks/useAuth.ts` — `isAuthenticated`, `accountId`, `accountType` in sessionStorage
+- `signIn(accountId, accountType)` / `signOut()` helpers
+
+### .NET API changes
+
+- CORS policy `BarkfestUI` — `AllowCredentials()`, origin from `Cors:AllowedOrigin` config
+- `app.UseCors("BarkfestUI")` added before `UseAuthentication()`
+- `appsettings.Development.json` — `"Cors": { "AllowedOrigin": "http://localhost:5173" }`
+
+### Aspire integration
+
+- `Aspire.Hosting.JavaScript` v13.3.4 added to `Barkfest.AppHost`
+- `AppHost.cs` — `AddViteApp("barkfest-ui", "../../barkfest-ui").WithPnpm().WithHttpEndpoint(port: 5173).WithEnvironment("VITE_API_BASE_URL", api.GetEndpoint("https")).WaitFor(api)`
+- Aspire auto-installs pnpm packages and starts Vite dev server — no `.env` needed when running via Aspire
+
+### Versions
+
+| Package | Version |
+|---|---|
+| Vite | 8.0.12 |
+| React | 19.2.6 |
+| React Router DOM | 7.15.1 |
+| TanStack Query | 5.100.11 |
+| Tailwind CSS | 4.3.0 |
+| TypeScript | 6.0.2 |
+| Vitest | 4.1.6 |
+| @types/node | 25.9.0 |
+
+**621 .NET tests — all passing. Frontend: 0 tests (scaffold only, tests written per feature in Phase 13+)**
+
+---
+
 ## Next
 
-Read `docs/ROADMAP.md` to select the next item.
+Phase 13 — Authentication UI (Login + Register screens with HttpOnly cookie flow)

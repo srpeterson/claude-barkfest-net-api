@@ -22,6 +22,19 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration));
 
 builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BarkfestUI", policy =>
+    {
+        policy
+            .WithOrigins(
+                builder.Configuration["Cors:AllowedOrigin"] ?? "http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, context, cancellationToken) =>
@@ -108,6 +121,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("BarkfestUI");
 app.UseAuthentication();
 app.UseMiddleware<ActiveOwnerMiddleware>();
 app.UseAuthorization();

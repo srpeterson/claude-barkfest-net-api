@@ -21,6 +21,11 @@ Pet and owner profile images are stored in Azure Blob Storage.
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (Included with Visual Studio 2026)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop) — must be running before starting the app
 - [Git](https://git-scm.com/downloads)
+- [Node.js](https://nodejs.org/) (LTS) — required for the frontend (`barkfest-ui`)
+- **pnpm** — package manager used by `barkfest-ui`. Install once via:
+  ```bash
+  npm install -g pnpm
+  ```
 - **EF Core CLI tools** (`dotnet ef`) — minimum version **10.0.7**
 
   The repo includes a `dotnet-tools.json` manifest pinned to `10.0.7`.
@@ -90,6 +95,20 @@ all connection strings — no manual configuration is required.
 The database migration is applied automatically on startup. Container data persists across
 restarts — SQL Server and Azurite volumes survive `docker stop` and machine reboots.
 
+### Frontend environment variables
+
+When running via Aspire, **no `.env` file is needed** — Aspire injects `VITE_API_BASE_URL`
+directly into the Vite dev server process using service discovery. The frontend automatically
+points at the correct API URL.
+
+If you ever want to run the frontend standalone (outside Aspire):
+
+```bash
+cd barkfest-ui
+cp .env.example .env   # then edit VITE_API_BASE_URL to match your API port
+pnpm dev
+```
+
 ---
 
 ## First Login (Local Development Only)
@@ -136,9 +155,33 @@ immediately after first login so that access is never dependent on a single set 
 
 ## Running Tests
 
+### .NET tests
+
 ```bash
 dotnet test
 ```
 
 All tests manage their own infrastructure via Testcontainers (SQL Server and Azurite containers
 are started and torn down automatically per test run). Docker Desktop must be running.
+
+### Frontend tests
+
+```bash
+pnpm --dir barkfest-ui test
+```
+
+Runs Vitest in single-pass mode (no watch). Safe to run in CI and as part of a pre-commit check.
+
+Interactive watch mode during development:
+
+```bash
+pnpm --dir barkfest-ui test:watch
+```
+
+Visual test UI (opens in browser):
+
+```bash
+pnpm --dir barkfest-ui test:ui
+```
+
+Frontend tests do **not** require Docker or a running API — they are pure unit and component tests.

@@ -337,6 +337,66 @@ lifecycle via `IAsyncLifetime`.
 
 ---
 
+### Decision: React Router v7 in library mode
+**Choice:** React Router v7 (`react-router-dom@^7`) used in library mode — `<BrowserRouter>`,
+`<Routes>`, `<Route>`, `<Outlet>`. Framework mode (file-based routing, SSR, loaders/actions)
+is not used.
+
+**Reason:** v7 in library mode is API-compatible with v6 for the patterns we use.
+The upgrade was made before any routing logic was written, keeping the cost near zero.
+Starting on v7 avoids a future migration once screens are built. Framework mode was
+explicitly rejected — it brings Remix-style complexity (file-based routing, server
+functions, adapters) that is not appropriate for a single-page app backed by a
+separate .NET API.
+
+---
+
+### Decision: Vitest + React Testing Library for frontend unit tests
+**Choice:** Vitest as the test runner and React Testing Library (RTL) for component
+testing in `barkfest-ui`. No Playwright or Cypress at this stage.
+
+**Reason:** Vitest is the natural companion to Vite — it reuses `vite.config.ts`
+directly and shares the same transform pipeline, so TypeScript, path aliases, and
+plugins all work without additional configuration. The Jest-compatible API means
+documentation and community answers for Jest apply directly. React Testing Library
+tests components through the DOM the way a user would interact with them, rather
+than testing implementation details. End-to-end tests (Playwright) are not included
+yet — they require a running API and add significant setup overhead that is not
+justified until the UI screens are built. Vitest + RTL covers the high-value layer
+(component behaviour, hooks, utility functions) with minimal friction.
+
+**Scripts:**
+- `pnpm test` — single run, exits 0 when all tests pass (CI-safe, used before commits)
+- `pnpm test:watch` — interactive watch mode for development
+- `pnpm test:ui` — Vitest browser UI for debugging test results
+
+---
+
+### Decision: pnpm as the frontend package manager
+**Choice:** pnpm is used for all Node.js dependency management in `barkfest-ui`
+instead of npm or yarn.
+
+**Reason:** Four factors make pnpm the right fit for this project:
+
+1. **Monorepo-ready** — pnpm has first-class workspace support. If `barkfest-ui`
+   is later joined by additional frontend projects in the same repo, pnpm workspaces
+   handle shared utilities and types without extra tooling.
+2. **Strict dependency isolation** — pnpm's non-flat `node_modules` structure
+   prevents phantom dependency access (using a package you haven't declared). The
+   `package.json` always reflects what the project actually depends on.
+3. **Disk efficiency** — pnpm uses a content-addressable global store with hard
+   links rather than copying packages per project. On a machine with multiple Node
+   projects, disk savings are significant and subsequent installs are faster.
+4. **Tooling compatibility** — Vite, shadcn/ui, and Tailwind all support pnpm
+   fully and their documentation includes pnpm examples.
+
+Install once globally before working on the frontend:
+```bash
+npm install -g pnpm
+```
+
+---
+
 ### Decision: Serilog for logging
 **Choice:** Serilog configured in `Program.cs`.
 
@@ -642,6 +702,35 @@ NoOp pattern makes the intent explicit: content moderation is a known requiremen
 afterthought. The detailed TODO comment in `NoOpContentModerationService` documents the exact
 steps to activate Azure AI Content Safety (the successor to the deprecated Azure Content
 Moderator), including the NuGet package and configuration steps required.
+
+---
+
+### Decision: HttpOnly cookies for frontend auth token storage
+**Choice:** The JWT issued on login is stored in an HttpOnly cookie set by the
+server, not in `localStorage` or `sessionStorage` on the client.
+
+**Reason:** `localStorage` and `sessionStorage` are accessible to any JavaScript
+running on the page — an XSS vulnerability anywhere in the frontend can silently
+exfiltrate the token. An HttpOnly cookie cannot be read by JavaScript at all;
+the browser attaches it to requests automatically and it is invisible to client-side
+code. Combined with `Secure` (HTTPS only) and `SameSite=Strict`, this is the
+correct default for any application handling authenticated sessions.
+
+**What this requires:**
+- .NET API: login endpoint sets the cookie via `Response.Cookies.Append()` with
+  `HttpOnly = true`, `Secure = true`, `SameSite = Strict` instead of returning
+  the token in the response body
+- .NET API: new `POST /v1/auth/logout` endpoint that clears the cookie
+- .NET API: CORS configured with `AllowCredentials()` and an explicit allowed
+  origin for the frontend dev server
+- Frontend: all API calls include `credentials: 'include'` so the browser sends
+  the cookie cross-origin
+- Frontend auth context: tracks `isAuthenticated` (boolean) — no token ever
+  touches client-side storage
+
+**Implementation split:**
+- Phase 12: CORS configuration (needed for any frontend → API communication)
+- Phase 13: HttpOnly cookie login/logout + frontend auth context
 
 ---
 

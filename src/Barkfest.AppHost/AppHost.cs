@@ -11,10 +11,16 @@ var storage = builder.AddAzureStorage("barkfest-storage")
 
 var blobs = storage.AddBlobs("barkfest-blobs");
 
-builder.AddProject<Projects.Barkfest_API>("barkfest-api")
-       .WithReference(sql)
-       .WithReference(blobs)
-       .WaitFor(sql)
-       .WaitFor(blobs);
+var api = builder.AddProject<Projects.Barkfest_API>("barkfest-api")
+                 .WithReference(sql)
+                 .WithReference(blobs)
+                 .WaitFor(sql)
+                 .WaitFor(blobs);
+
+builder.AddViteApp("barkfest-ui", "../../barkfest-ui")
+       .WithPnpm()
+       .WithHttpEndpoint(port: 5173, isProxied: false)
+       .WithEnvironment("VITE_API_BASE_URL", api.GetEndpoint("https"))
+       .WaitFor(api);
 
 builder.Build().Run();
