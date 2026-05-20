@@ -9,17 +9,14 @@ public static class PipelineConfiguration
     {
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        if (app.Environment.IsDevelopment())
+        app.MapOpenApi();
+        app.MapScalarApiReference(options =>
         {
-            app.MapOpenApi();
-            app.MapScalarApiReference(options =>
+            options.Authentication = new ScalarAuthenticationOptions
             {
-                options.Authentication = new ScalarAuthenticationOptions
-                {
-                    PreferredSecuritySchemes = ["Bearer"]
-                };
-            });
-        }
+                PreferredSecuritySchemes = ["Bearer"]
+            };
+        });
 
         app.UseHttpsRedirection();
         app.UseCors("BarkfestUI");

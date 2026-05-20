@@ -111,13 +111,13 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           // Placeholder image — replaced by api.yml on first deployment
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
+            cpu: json('0.25')
+            memory: '0.5Gi'
           }
         }
       ]
       scale: {
-        minReplicas: 0  // scales to zero when idle — no cost when not in use
+        minReplicas: 1  // always warm — no cold starts during demos
         maxReplicas: 3
       }
     }
