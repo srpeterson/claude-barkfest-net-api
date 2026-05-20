@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="CLAUDE.md" />
+    <File Path="docs/DECISIONS.md" />
+    <File Path="docs/PLAN.md" />
+    <File Path="README.md" />
+    <File Path="docs/SPEC.md" />
+    <File Path="PROGRESS.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Barkfest.API/Barkfest.API.csproj" />
+    <Project Path="src/Barkfest.AppHost/Barkfest.AppHost.csproj" />
+    <Project Path="src/Barkfest.Application/Barkfest.Application.csproj" />
+    <Project Path="src/Barkfest.Domain/Barkfest.Domain.csproj" />
+    <Project Path="src/Barkfest.Infrastructure/Barkfest.Infrastructure.csproj" />
+    <Project Path="src/Barkfest.Persistence/Barkfest.Persistence.csproj" />
+    <Project Path="src/Barkfest.ServiceDefaults/Barkfest.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Barkfest.API.Tests/Barkfest.API.Tests.csproj" />
+    <Project Path="tests/Barkfest.Application.Tests/Barkfest.Application.Tests.csproj" />
+    <Project Path="tests/Barkfest.Domain.Tests/Barkfest.Domain.Tests.csproj" />
+    <Project Path="tests/Barkfest.Infrastructure.Tests/Barkfest.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Barkfest.Integration.Tests/Barkfest.Integration.Tests.csproj" />
+    <Project Path="tests/Barkfest.Persistence.Tests/Barkfest.Persistence.Tests.csproj" />
+    <Project Path="tests/Barkfest.Tests.Common/Barkfest.Tests.Common.csproj" />
+  </Folder>
+</Solution>

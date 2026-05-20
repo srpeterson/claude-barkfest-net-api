@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Barkfest.Application\Barkfest.Application.csproj" />
+    <ProjectReference Include="..\Barkfest.Tests.Common\Barkfest.Tests.Common.csproj" />
+  </ItemGroup>
+
+</Project>
