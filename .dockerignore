@@ -1,0 +1,12 @@
+**/.vs
+**/.git
+**/.github
+**/[Bb]in
+**/[Oo]bj
+**/*.user
+**/node_modules
+docs
+tests
+infra
+barkfest-ui
+*.md
