@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 @description('Azure region for all resources.')
-param location string = 'eastus'
+param location string = 'centralus'
 
 @description('SQL Server administrator login username.')
 param sqlAdminLogin string
@@ -35,8 +35,14 @@ module resources 'resources.bicep' = {
 // Used after provisioning to configure GitHub Secrets.
 // See docs/features/azure-pipeline/PLAN.md — Step 2 for full instructions.
 
-@description('App Service name — used as the GitHub Secret API_APP_NAME.')
-output apiAppName string = resources.outputs.apiAppName
+@description('Container App name — used as the GitHub Secret CONTAINER_APP_NAME.')
+output containerAppName string = resources.outputs.containerAppName
+
+@description('Container App FQDN — used to construct API_URL and CORS_ALLOWED_ORIGIN.')
+output containerAppFqdn string = resources.outputs.containerAppFqdn
+
+@description('Container Registry login server — used as the GitHub Secret REGISTRY_LOGIN_SERVER.')
+output containerRegistryLoginServer string = resources.outputs.containerRegistryLoginServer
 
 @description('Static Web App name — used as the GitHub Secret STATIC_WEB_APP_NAME.')
 output staticWebAppName string = resources.outputs.staticWebAppName

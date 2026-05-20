@@ -2,7 +2,8 @@
 
 ## Step 1 — Bicep Infrastructure (`infra/main.bicep`) 🔄 In progress
 
-- [x] Write `infra/main.bicep` and `infra/resources.bicep`
+- [x] Write `infra/main.bicep` and `infra/resources.bicep` (Container Apps, ACR, SQL, Storage, App Insights, Static Web App)
+- [x] Write `Dockerfile` and `.dockerignore`
 - [x] Verify Bicep compiles without errors (`az bicep build`)
 - [ ] Provision resources to Azure (`az deployment sub create`)
 - [ ] Confirm all resources created in Azure Portal
@@ -16,9 +17,9 @@
 
 - [x] Write workflow file
 - [x] Trigger on merge to `main`
-- [x] Build, test, publish .NET API
-- [x] Set App Service environment variables from secrets
-- [x] Deploy to App Service
+- [x] Build, test, Docker build/push to ACR
+- [x] Set Container App environment variables from secrets
+- [x] Deploy to Container App
 
 ## Step 4 — Frontend Pipeline (`.github/workflows/ui.yml`) ✅ Written
 

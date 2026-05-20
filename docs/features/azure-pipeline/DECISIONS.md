@@ -13,14 +13,18 @@ meaningful benefit at this project scale.
 
 ---
 
-## Decision: Azure App Service (Linux, B1) for the .NET API
-**Choice:** Azure App Service on Linux with the B1 SKU to host the .NET 10 API.
+## Decision: Azure Container Apps for the .NET API
+**Choice:** Azure Container Apps to host the .NET 10 API via a Docker container.
 
-**Reason:** App Service is the simplest production host for a .NET API — no Docker
-knowledge required, built-in deployment slots (S1+), automatic TLS, and straightforward
-GitHub Actions integration. B1 (~$13/month) is sufficient for a dev/demo project.
-Azure Container Apps was considered but adds container build complexity that is not
-warranted until the app needs horizontal scaling or multiple services.
+**Reason:** App Service was the original choice but was abandoned after hitting
+subscription-level VM quota restrictions (0 quota on a fresh MSDN subscription) that
+blocked all deployments regardless of SKU. Container Apps uses a completely different
+resource provider (`Microsoft.App`) with no VM quota restrictions. Beyond unblocking
+the deployment, Container Apps is the better modern choice: it scales to zero when
+idle (no cost), scales out automatically under load, and is the direction Microsoft is
+pushing new containerised workloads. The tradeoff is a Dockerfile and a Container
+Registry, which are standard practice in 2026. The `Dockerfile` uses a multi-stage
+build: SDK image for build/publish, ASP.NET runtime image for the final layer.
 
 ---
 
@@ -56,13 +60,13 @@ connection string via an App Service environment variable — no code changes re
 
 ---
 
-## Decision: `eastus` as the Azure region
-**Choice:** East US (Virginia) as the deployment region for all resources.
+## Decision: `centralus` as the Azure region
+**Choice:** Central US (Iowa) as the deployment region for all resources.
 
-**Reason:** `eastus` is the most widely used Azure region in the US, has the broadest
-service availability, lowest prices on several services, and is the default assumed by
-most Azure documentation and tutorials. Geographically reasonable for a project based
-in the US — latency is not a concern for a dev/demo project.
+**Reason:** `eastus` was the original choice but was switched to `centralus` during
+the initial provisioning attempt to troubleshoot quota availability. `centralus` has
+broad service availability and is geographically reasonable for a project based in
+the US. Latency is not a concern for a dev/demo project.
 
 ---
 
