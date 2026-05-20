@@ -412,8 +412,37 @@ npm install -g pnpm
 
 ---
 
+### Decision: `Startup/` folder pattern for `Barkfest.API`
+**Choice:** `Program.cs` is reduced to ~14 lines. All service registration, pipeline
+configuration, and database initialisation are extracted into three static extension
+method classes in `src/Barkfest.API/Startup/`:
+
+| Class | Extension method | Responsibility |
+|---|---|---|
+| `ServiceRegistration` | `AddBarkfestServices(this WebApplicationBuilder)` | All `builder.*` wiring: Serilog, controllers, CORS, OpenAPI, Application/Persistence/Infrastructure DI, JWT auth, CurrentUserService |
+| `DatabaseInitializer` | `InitialiseDatabaseAsync(this WebApplication)` | `MigrateAsync()` and `SeedAdminAsync` — skipped in Testing environment |
+| `PipelineConfiguration` | `ConfigurePipeline(this WebApplication)` | Middleware order and all route/endpoint mapping |
+
+**`WebApplicationBuilder` as the extension target (not `IServiceCollection`):**
+`AddBarkfestServices` extends `WebApplicationBuilder` rather than `IServiceCollection`
+because it needs access to both `.Services` and `.Configuration` in one place, and
+because `IHostApplicationBuilder` (which `WebApplicationBuilder` implements) is required
+for Aspire's `AddInfrastructure()` call. An `IServiceCollection` extension cannot satisfy
+this requirement without being passed a second `IConfiguration` parameter — making the
+signature unwieldy. `WebApplicationBuilder` covers both needs with a single clean extension.
+
+**Reason:** `Program.cs` with ~160 lines of mixed service registration, middleware, and
+initialisation becomes hard to scan and impossible to test in isolation. Each Startup class
+has a single clearly-stated responsibility. A developer looking for middleware order goes to
+`PipelineConfiguration`. A developer looking for where JWT is configured goes to
+`ServiceRegistration`. Database startup logic is isolated in `DatabaseInitializer` and
+explicitly skipped in the Testing environment. `Program.cs` itself becomes a readable
+executive summary of the startup sequence.
+
+---
+
 ### Decision: Serilog for logging
-**Choice:** Serilog configured in `Program.cs`.
+**Choice:** Serilog configured in `Startup/ServiceRegistration.cs` via `builder.Host.UseSerilog()`.
 
 **Reason:** Serilog is the de facto standard for structured logging in .NET.
 Structured logs are queryable in tools like Seq, Application Insights, and

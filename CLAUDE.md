@@ -181,13 +181,14 @@ LEFT JOIN  PetImages pi ON p.Id = pi.PetId
 ## Dependency Injection
 
 Each `src` project has its own `DependencyInjection.cs` with a self-registering
-extension method. The API wires everything together in `Program.cs`:
+extension method. The API wires everything together in `Program.cs` via two calls:
 
 ```csharp
-builder.AddServiceDefaults();                           // Aspire — telemetry, health checks
-builder.Services.AddApplication();
-builder.Services.AddPersistence(builder.Configuration); // standard EF Core, key "barkfest-sql"
-builder.AddInfrastructure();                            // Aspire-aware — reads "barkfest-blobs"
+builder.AddServiceDefaults();   // Aspire — telemetry, health checks
+builder.AddBarkfestServices();  // all API-layer services — see Startup/ServiceRegistration.cs
+
+await app.InitialiseDatabaseAsync();  // migration + admin seed — see Startup/DatabaseInitializer.cs
+app.ConfigurePipeline();              // middleware + endpoints — see Startup/PipelineConfiguration.cs
 ```
 
 `AddPersistence` takes `IServiceCollection` + `IConfiguration` (standard EF Core registration).
@@ -196,6 +197,20 @@ See DECISIONS.md — `AddSqlServerDbContext` was tried but dropped due to `WebAp
 configuration injection limitations in .NET 10's minimal hosting model.
 
 Never register services from one layer inside another layer's `DependencyInjection.cs`.
+
+### API Startup Folder
+
+`Barkfest.API/Startup/` contains three static classes that keep `Program.cs` minimal:
+
+| File | Extension method | Responsibility |
+|---|---|---|
+| `ServiceRegistration.cs` | `AddBarkfestServices(this WebApplicationBuilder)` | Serilog, controllers, CORS, OpenAPI, Application/Persistence/Infrastructure DI, JWT auth |
+| `DatabaseInitializer.cs` | `InitialiseDatabaseAsync(this WebApplication)` | `MigrateAsync()` + `SeedAdminAsync` (skipped in Testing environment) |
+| `PipelineConfiguration.cs` | `ConfigurePipeline(this WebApplication)` | Middleware order, route mapping |
+
+`AddBarkfestServices` extends `WebApplicationBuilder` (not `IServiceCollection`) because it
+needs access to both `.Services` and `.Configuration`, and satisfies `IHostApplicationBuilder`
+for Aspire's `AddInfrastructure()`. See DECISIONS.md for the full reasoning.
 
 ---
 
@@ -386,7 +401,7 @@ app.MapScalarApiReference();            // serves /scalar/v1
 
 ## Logging
 
-Use Serilog. Configured in `Program.cs`.
+Use Serilog. Configured in `Startup/ServiceRegistration.cs` via `builder.Host.UseSerilog()`.
 
 ---
 

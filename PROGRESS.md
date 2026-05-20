@@ -547,6 +547,25 @@ All NuGet packages upgraded to latest compatible versions. `Directory.Packages.p
 
 ---
 
+---
+
+## Chore — Program.cs Refactoring (Startup Folder)
+
+`Program.cs` extracted from ~160 lines into three focused static extension method classes
+under `src/Barkfest.API/Startup/`:
+
+| File | Extension method | Responsibility |
+|---|---|---|
+| `ServiceRegistration.cs` | `AddBarkfestServices(this WebApplicationBuilder)` | Serilog, controllers, CORS, OpenAPI, Application/Persistence/Infrastructure DI, JWT auth, CurrentUserService |
+| `DatabaseInitializer.cs` | `InitialiseDatabaseAsync(this WebApplication)` | `MigrateAsync()` + `SeedAdminAsync` (skips Testing environment) |
+| `PipelineConfiguration.cs` | `ConfigurePipeline(this WebApplication)` | Middleware order, route mapping |
+
+`Program.cs` is now 14 lines. `CLAUDE.md` and `DECISIONS.md` updated to reflect the pattern.
+
+**621 tests — all passing.**
+
+---
+
 ## Next
 
 Phase 13 — Authentication UI (Login + Register screens with HttpOnly cookie flow)
