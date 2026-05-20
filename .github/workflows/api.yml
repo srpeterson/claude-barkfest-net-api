@@ -1,0 +1,72 @@
+name: API — Build, Test, Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-deploy:
+    name: Build, Test & Deploy .NET API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Publish
+        run: dotnet publish src/Barkfest.API/Barkfest.API.csproj \
+          --no-build \
+          --configuration Release \
+          --output ./publish
+
+      - name: Zip publish output
+        run: |
+          cd publish
+          zip -r ../api.zip .
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set App Service environment variables
+        run: |
+          az webapp config appsettings set \
+            --name ${{ secrets.API_APP_NAME }} \
+            --resource-group rg-barkfest \
+            --settings \
+              ConnectionStrings__barkfest-sql="${{ secrets.SQL_CONNECTION_STRING }}" \
+              ConnectionStrings__barkfest-blobs="${{ secrets.BLOB_CONNECTION_STRING }}" \
+              APPLICATIONINSIGHTS_CONNECTION_STRING="${{ secrets.APPINSIGHTS_CONNECTION_STRING }}" \
+              Jwt__SecretKey="${{ secrets.JWT_SECRET_KEY }}" \
+              Jwt__Issuer="barkfest-api" \
+              Jwt__Audience="barkfest-client" \
+              Jwt__ExpiryMinutes="60" \
+              Admin__Username="${{ secrets.ADMIN_USERNAME }}" \
+              Admin__Name="${{ secrets.ADMIN_NAME }}" \
+              Admin__Email="${{ secrets.ADMIN_EMAIL }}" \
+              Admin__PhoneNumber="${{ secrets.ADMIN_PHONE_NUMBER }}" \
+              Admin__Password="${{ secrets.ADMIN_PASSWORD }}" \
+              Cors__AllowedOrigin="${{ secrets.CORS_ALLOWED_ORIGIN }}" \
+              ASPNETCORE_ENVIRONMENT="Production"
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.API_APP_NAME }}
+          package: api.zip
