@@ -1,8 +1,8 @@
 # Azure Infrastructure & Release Pipeline — Progress
 
-## Step 1 — Bicep Infrastructure (`infra/main.bicep`) ⬜ Not started
+## Step 1 — Bicep Infrastructure (`infra/main.bicep`) 🔄 In progress
 
-- [ ] Write `infra/main.bicep` defining all Azure resources
+- [x] Write `infra/main.bicep` and `infra/resources.bicep`
 - [ ] Verify Bicep compiles without errors (`az bicep build`)
 - [ ] Provision resources to Azure (`az deployment sub create`)
 - [ ] Confirm all resources created in Azure Portal

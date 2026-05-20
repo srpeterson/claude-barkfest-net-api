@@ -67,6 +67,34 @@ az deployment sub create \
   --parameters sqlAdminLogin=<username> sqlAdminPassword=<password>
 ```
 
+### Reading outputs after provisioning
+
+```bash
+# Get all outputs
+az deployment sub show \
+  --name barkfest-resources \
+  --query properties.outputs
+
+# Get the SQL connection string (construct from outputs + your password)
+# Server=tcp:{sqlServerFqdn},1433;Initial Catalog=barkfest;Persist Security Info=False;
+# User ID={sqlAdminLogin};Password={sqlAdminPassword};MultipleActiveResultSets=False;
+# Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
+
+# Get the Blob Storage connection string
+az storage account show-connection-string \
+  --name <storageAccountName from output> \
+  --resource-group rg-barkfest \
+  --query connectionString \
+  --output tsv
+
+# Get the Static Web App deployment token (needed for ui.yml GitHub Actions)
+az staticwebapp secrets list \
+  --name stapp-barkfest \
+  --resource-group rg-barkfest \
+  --query properties.apiKey \
+  --output tsv
+```
+
 ---
 
 ## Step 2 — GitHub Secrets
@@ -79,6 +107,7 @@ After provisioning, add the following secrets in GitHub:
 | `AZURE_CREDENTIALS` | Service principal JSON (see below) | Both workflows — Azure login |
 | `API_APP_NAME` | App Service name output from Bicep | `api.yml` — deployment target |
 | `STATIC_WEB_APP_NAME` | Static Web App name from Bicep | `ui.yml` — deployment target |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Static Web App deployment token (see CLI command above) | `ui.yml` — Static Web Apps deploy action |
 | `SQL_CONNECTION_STRING` | SQL connection string from Bicep output | App Service config |
 | `BLOB_CONNECTION_STRING` | Blob Storage connection string from Bicep output | App Service config |
 | `APPINSIGHTS_CONNECTION_STRING` | Application Insights connection string | App Service config |
