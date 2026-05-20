@@ -11,8 +11,11 @@ Pet and owner profile images are stored in Azure Blob Storage.
 | Document | Purpose |
 |---|---|
 | [docs/SPEC.md](docs/SPEC.md) | Functional specification — what the application does |
-| [docs/PLAN.md](docs/PLAN.md) | Build plan — phased implementation checklist |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Architecture decisions — the why behind every key choice |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Feature backlog — what's planned next |
+| [docs/PLAN.md](docs/PLAN.md) | Initial build plan — phases 1–12 (historical record) |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Initial build decisions — the why behind every key choice (historical record) |
+| [PROGRESS.md](PROGRESS.md) | Initial build progress — phase-by-phase summary (historical record) |
+| `docs/features/<name>/` | Per-feature plan, progress, and decisions — one folder per feature |
 
 ---
 

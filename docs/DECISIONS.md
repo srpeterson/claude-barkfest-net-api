@@ -612,6 +612,27 @@ extension method is required for that to work.
 
 ---
 
+## Documentation Structure
+
+### Decision: Feature-scoped docs under `docs/features/` after the initial build
+**Choice:** After `feature/initial-build` merges into `main`, each new feature gets its
+own branch (`feature/<name>`) and its own docs folder (`docs/features/<name>/`) containing
+three files: `PLAN.md`, `PROGRESS.md`, and `DECISIONS.md`.
+
+The root-level `PLAN.md`, `PROGRESS.md`, and `DECISIONS.md` become historical records of
+the initial build — they are not updated for new features. The root files that remain
+actively maintained are `CLAUDE.md`, `README.md`, `ROADMAP.md`, and `SPEC.md`.
+
+**Reason:** The root docs grew large during the initial build and primarily document
+decisions and progress from phases 1–12. Continuing to append new feature work to them
+would make them unwieldy and hard to navigate. Feature-scoped docs mean a developer
+working on a feature can read just the three files in that feature's folder to get full
+context, without wading through the entire initial build history. Each feature PR has a
+clean, self-contained paper trail. The root docs serve as a stable foundation reference —
+they do not grow indefinitely.
+
+---
+
 ## Git and Workflow
 
 ### Decision: Branch protection on `main`, PRs only

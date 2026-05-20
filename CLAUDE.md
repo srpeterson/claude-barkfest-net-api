@@ -563,14 +563,7 @@ await act.ShouldThrowAsync<NotFoundException>();
    any `git commit` and confirm all tests pass. Never commit if any
    tests are failing.
 
-4. Commit after each logical milestone is complete and verified:
-   - After Phase 2 — Domain layer complete and tests passing
-   - After Phase 3 — Application layer complete and tests passing
-   - After Phase 4 — Persistence layer and migration verified
-   - After Phase 5 — Infrastructure layer complete
-   - After Phase 6 — API layer complete
-   - After Phase 7 — All tests written and passing
-   - After Phase 8 — Aspire wired and running locally
+4. Commit after each logical milestone is complete and verified.
 
 5. Always stage specific files by name — never use `git add .` or
    `git add -A`. Before staging, tell the user which files will be
@@ -599,33 +592,52 @@ await act.ShouldThrowAsync<NotFoundException>();
     - `git branch -d <branch-name>`
     - Run `dotnet build && dotnet test` to verify main is clean
 
+### Feature branch model (post-initial-build)
+
+After `feature/initial-build` merged into `main`, all new work follows this model:
+
+- Each feature gets its own branch: `feature/<name>` (e.g. `feature/landing-page`)
+- Each feature gets its own docs folder: `docs/features/<name>/`
+  - `PLAN.md` — implementation plan for this feature
+  - `PROGRESS.md` — progress tracking for this feature
+  - `DECISIONS.md` — decisions made during this feature
+- The branch is PR'd into `main` when the feature is complete, then deleted
+
+**Root-level docs after the initial build:**
+
+| File | Status | Notes |
+|---|---|---|
+| `CLAUDE.md` | Always current | Updated whenever conventions change |
+| `README.md` | Always current | Updated when user-facing behaviour changes |
+| `docs/ROADMAP.md` | Always current | Updated as features are planned and shipped |
+| `docs/SPEC.md` | Always current | Updated as features ship and the spec evolves |
+| `PROGRESS.md` | Historical record | Initial build history — not updated for new features |
+| `docs/PLAN.md` | Historical record | Initial build plan — not updated for new features |
+| `docs/DECISIONS.md` | Historical record | Initial build decisions — not updated for new features |
+
 ---
 
 ## Progress Tracking
 
-- **Update `PROGRESS.md` immediately when a phase is completed** — do not wait
-  until the end of the project.
-- Mark the phase as complete, list what was built, and update the `Next` section
-  to point to the next phase.
-- If context is running low, stop at a clean boundary, update `PROGRESS.md`, and
-  the next session can resume by reading `PROGRESS.md` first, then `PLAN.md`.
-- When the `Next` pointer in `PROGRESS.md` indicates a new phase needs to be
-  chosen, read `docs/ROADMAP.md` to select the next item.
+For active feature branches, update the feature's own `docs/features/<name>/PROGRESS.md`
+immediately when a milestone is complete. If context is running low, stop at a clean
+boundary, update `PROGRESS.md`, and the next session can resume by reading it first.
+
+When starting a new feature, read `docs/ROADMAP.md` to select the next item.
 
 ### When to update each documentation file
 
-At the end of every significant body of work, review all four files and update as needed:
+At the end of every significant body of work, review the relevant files and update as needed:
 
 | File | Update when... |
 |---|---|
-| `PROGRESS.md` | A phase or milestone completes — mark it done, list what was built, advance the `Next` pointer |
-| `docs/DECISIONS.md` | A new architectural or technical decision is made — add an entry with the choice and the reasoning |
-| `docs/PLAN.md` | The plan itself changes — a step is added, removed, or fundamentally redesigned |
-| `README.md` | User-visible behaviour changes — new endpoints, new setup steps, new environment config |
-
-**Rule of thumb:** `PROGRESS.md` and `docs/DECISIONS.md` change frequently — every
-milestone and every non-trivial decision. `docs/PLAN.md` and `README.md` change
-rarely — only when the plan or public-facing behaviour actually changes.
+| `docs/features/<name>/PROGRESS.md` | A milestone within the feature completes |
+| `docs/features/<name>/DECISIONS.md` | A decision is made that is specific to this feature |
+| `docs/features/<name>/PLAN.md` | The feature plan changes — a step added, removed, or redesigned |
+| `docs/ROADMAP.md` | A backlog item is started, completed, or reprioritised |
+| `docs/SPEC.md` | User-visible behaviour changes — new endpoints, new business rules |
+| `README.md` | Setup steps, environment config, or user-facing behaviour changes |
+| `CLAUDE.md` | Session conventions change — new rules, new patterns, corrected guidance |
 
 ---
 
@@ -634,9 +646,12 @@ rarely — only when the plan or public-facing behaviour actually changes.
 | File | Purpose |
 |---|---|
 | `CLAUDE.md` | This file — Claude Code session rules and conventions |
-| `docs/PLAN.md` | Full build plan — all phases and implementation details |
-| `docs/DECISIONS.md` | Architectural and technical decisions with reasoning |
-| `docs/ROADMAP.md` | Post-build feature backlog — read when choosing the next phase |
-| `docs/SPEC.md` | Functional specification — what the app does |
-| `PROGRESS.md` | Current build progress — updated after each phase |
 | `README.md` | Repo landing page — rendered by GitHub |
+| `docs/ROADMAP.md` | Feature backlog — read when choosing the next feature to build |
+| `docs/SPEC.md` | Functional specification — what the app does |
+| `docs/PLAN.md` | Initial build plan — historical record, phases 1–12 |
+| `docs/DECISIONS.md` | Initial build decisions — historical record |
+| `PROGRESS.md` | Initial build progress — historical record |
+| `docs/features/<name>/PLAN.md` | Implementation plan for a specific feature |
+| `docs/features/<name>/PROGRESS.md` | Progress tracking for a specific feature |
+| `docs/features/<name>/DECISIONS.md` | Decisions made during a specific feature |
