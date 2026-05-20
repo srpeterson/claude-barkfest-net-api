@@ -50,6 +50,9 @@ jobs:
             ${{ secrets.REGISTRY_LOGIN_SERVER }}/barkfest-api:${{ github.sha }}
             ${{ secrets.REGISTRY_LOGIN_SERVER }}/barkfest-api:latest
 
+      - name: Register Microsoft.App provider
+        run: az provider register --namespace Microsoft.App --wait
+
       - name: Deploy to Container App
         run: |
           az containerapp update \
