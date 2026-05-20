@@ -10,7 +10,11 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy project files first so Docker cache is reused when only source changes
+# Copy props files first — TargetFramework and package versions are defined here
+COPY ["Directory.Packages.props", "."]
+COPY ["src/Directory.Build.props", "src/"]
+
+# Copy project files so Docker cache is reused when only source changes
 COPY ["src/Barkfest.API/Barkfest.API.csproj",                     "src/Barkfest.API/"]
 COPY ["src/Barkfest.Application/Barkfest.Application.csproj",     "src/Barkfest.Application/"]
 COPY ["src/Barkfest.Domain/Barkfest.Domain.csproj",               "src/Barkfest.Domain/"]
