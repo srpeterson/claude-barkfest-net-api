@@ -387,6 +387,34 @@ revisit.
 
 ---
 
+### Decision: Azure Monitor OpenTelemetry exporter for Application Insights
+**Choice:** `Azure.Monitor.OpenTelemetry.AspNetCore` added to `Barkfest.ServiceDefaults`.
+The exporter is conditionally activated via `UseAzureMonitor()` when
+`APPLICATIONINSIGHTS_CONNECTION_STRING` is present. When the key is absent (local dev),
+the block is skipped and the Aspire dashboard receives telemetry via the OTLP exporter instead.
+
+**Why the OpenTelemetry exporter, not the Serilog sink:**
+Aspire already configures a full OpenTelemetry pipeline in `ServiceDefaults` — logs, traces,
+and metrics are all flowing through it. Plugging `UseAzureMonitor()` into that pipeline sends
+everything (structured logs, distributed traces, HTTP dependency calls, custom metrics) to
+Application Insights with a single call. The Serilog `ApplicationInsights` sink only captures
+log events — it has no visibility into traces or metrics. The OpenTelemetry approach is also the
+direction Microsoft is standardising on for Azure Monitor going forward.
+
+**Why conditional on connection string presence:**
+Activating Azure Monitor unconditionally would break local dev (no connection string available)
+and integration tests (containers have no Azure connectivity). Checking
+`APPLICATIONINSIGHTS_CONNECTION_STRING` at startup means the exporter self-activates in any
+environment where it is configured and stays silent everywhere else. No code changes required
+when deploying to Azure — just set the environment variable.
+
+**How to activate in production:**
+Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure App Service
+(Settings → Environment variables) or via Key Vault reference. Never commit this value to source
+control or `appsettings.json`.
+
+---
+
 ### Decision: pnpm as the frontend package manager
 **Choice:** pnpm is used for all Node.js dependency management in `barkfest-ui`
 instead of npm or yarn.

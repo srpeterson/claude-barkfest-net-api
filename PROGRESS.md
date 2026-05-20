@@ -521,8 +521,6 @@
 
 ---
 
----
-
 ## Chore — NuGet Package Upgrades
 
 All NuGet packages upgraded to latest compatible versions. `Directory.Packages.props` is the single source of truth (central package management).
@@ -547,8 +545,6 @@ All NuGet packages upgraded to latest compatible versions. `Directory.Packages.p
 
 ---
 
----
-
 ## Chore — Program.cs Refactoring (Startup Folder)
 
 `Program.cs` extracted from ~160 lines into three focused static extension method classes
@@ -563,6 +559,23 @@ under `src/Barkfest.API/Startup/`:
 `Program.cs` is now 14 lines. `CLAUDE.md` and `DECISIONS.md` updated to reflect the pattern.
 
 **621 tests — all passing.**
+
+---
+
+---
+
+## Chore — Application Insights (Azure Monitor OpenTelemetry)
+
+Added `Azure.Monitor.OpenTelemetry.AspNetCore` 1.5.0 to `Barkfest.ServiceDefaults`.
+Activated the Azure Monitor exporter block in `Extensions.cs` — conditionally enabled when
+`APPLICATIONINSIGHTS_CONNECTION_STRING` is present in configuration. Gracefully inactive in
+local dev (Aspire dashboard used instead). Zero config required for local development.
+
+**How to activate in Azure:**
+Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure App Service
+(Settings → Environment variables) or via Key Vault. Never commit a real connection string.
+
+**621 tests — all passing. 0 build warnings.**
 
 ---
 

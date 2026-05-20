@@ -95,7 +95,34 @@ with `Microsoft.OpenApi` 3.x. Once confirmed, remove the pin in
 
 ---
 
-## 4. Image Moderation
+## 4. Application Insights — Provision and Connect
+
+**Priority:** High (before first Azure deployment)
+**Status:** Code complete — `Azure.Monitor.OpenTelemetry.AspNetCore` wired into `ServiceDefaults`. Activates automatically when `APPLICATIONINSIGHTS_CONNECTION_STRING` is present.
+
+### What
+Provision an Azure Application Insights resource and connect it to the deployed API so logs, distributed traces, HTTP dependencies, and metrics flow into Azure Monitor.
+
+### Steps
+1. Create an **Application Insights** resource in your Azure subscription (or let Azure App Service create one during deployment)
+2. Copy the **Connection String** from the Application Insights Overview blade
+3. Set it as an environment variable in Azure App Service:
+   **Settings → Environment variables → + Add** — name: `APPLICATIONINSIGHTS_CONNECTION_STRING`, value: the copied string
+4. Redeploy / restart the app — telemetry will start flowing immediately
+
+### What you get
+- Live distributed traces for every HTTP request
+- Structured log search via Log Analytics (`traces` table)
+- Dependency tracking (SQL Server queries, Blob Storage calls)
+- Custom metrics (ASP.NET Core + runtime)
+- Alerting and availability tests via Azure Monitor
+
+### No code changes required
+The exporter self-activates on the connection string presence check in `ServiceDefaults/Extensions.cs`.
+
+---
+
+## 5. Image Moderation
 
 **Priority:** Medium
 **Status:** Scaffolded — `IContentModerationService` is wired into all image upload

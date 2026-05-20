@@ -153,6 +153,29 @@ immediately after first login so that access is never dependent on a single set 
 
 ---
 
+## Observability (Application Insights)
+
+When deployed to Azure, the API sends logs, distributed traces, HTTP dependency calls,
+and runtime metrics to **Azure Application Insights** automatically.
+
+No code changes are required — the exporter is already wired into `Barkfest.ServiceDefaults`
+and activates when `APPLICATIONINSIGHTS_CONNECTION_STRING` is present in the environment.
+In local development the key is absent, so the Aspire dashboard is used instead.
+
+### Connecting Application Insights in Azure
+
+1. Create an **Application Insights** resource in your Azure subscription
+   (or let Azure App Service create one during deployment)
+2. Copy the **Connection String** from the Application Insights Overview blade
+3. In Azure App Service go to **Settings → Environment variables → + Add**:
+   - Name: `APPLICATIONINSIGHTS_CONNECTION_STRING`
+   - Value: the connection string copied above
+4. Save and restart — telemetry starts flowing immediately
+
+> **Never** commit the connection string to source control or add it to `appsettings.json`.
+
+---
+
 ## Running Tests
 
 ### .NET tests
