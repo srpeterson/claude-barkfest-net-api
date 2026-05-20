@@ -73,7 +73,29 @@ Until then, the setter guarantee is sufficient.
 
 ---
 
-## 3. Image Moderation
+## 3. Upgrade Microsoft.OpenApi to 3.x
+
+**Priority:** Low
+**Status:** Blocked — pinned to 2.7.4 (latest 2.x)
+
+### What
+Upgrade `Microsoft.OpenApi` from 2.x to 3.x once `Microsoft.AspNetCore.OpenApi`
+ships a compatible version.
+
+### Why blocked
+`Microsoft.OpenApi` 3.0 made `IOpenApiMediaType.Example` read-only. The
+`Microsoft.AspNetCore.OpenApi` source generator (version 10.0.8) assigns to that
+property in auto-generated code (`OpenApiXmlCommentSupport.generated.cs`), causing
+a `CS0200` build error. A warning comment is in `Directory.Packages.props`.
+
+### When to revisit
+Check when a new `Microsoft.AspNetCore.OpenApi` release notes mention compatibility
+with `Microsoft.OpenApi` 3.x. Once confirmed, remove the pin in
+`Directory.Packages.props` and run `dotnet build` + `dotnet test` to verify.
+
+---
+
+## 4. Image Moderation
 
 **Priority:** Medium
 **Status:** Scaffolded — `IContentModerationService` is wired into all image upload

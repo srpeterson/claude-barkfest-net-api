@@ -372,6 +372,21 @@ justified until the UI screens are built. Vitest + RTL covers the high-value lay
 
 ---
 
+### Decision: `Microsoft.OpenApi` pinned to 2.x — do not upgrade to 3.x
+**Choice:** `Microsoft.OpenApi` is pinned to the latest 2.x release (`2.7.4`) in
+`Directory.Packages.props`. Upgrading to 3.x is blocked until `Microsoft.AspNetCore.OpenApi`
+ships a compatible version.
+
+**Reason:** `Microsoft.OpenApi` 3.0 made `IOpenApiMediaType.Example` read-only. The
+`Microsoft.AspNetCore.OpenApi` source generator (10.0.8) assigns to that property in
+auto-generated code (`OpenApiXmlCommentSupport.generated.cs`), producing a `CS0200`
+build error. This is a Microsoft tooling gap — the two packages are published by the
+same team but their versions are not yet aligned. A warning comment in
+`Directory.Packages.props` documents this constraint. ROADMAP item 3 tracks when to
+revisit.
+
+---
+
 ### Decision: pnpm as the frontend package manager
 **Choice:** pnpm is used for all Node.js dependency management in `barkfest-ui`
 instead of npm or yarn.

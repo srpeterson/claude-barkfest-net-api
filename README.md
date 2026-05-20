@@ -26,9 +26,9 @@ Pet and owner profile images are stored in Azure Blob Storage.
   ```bash
   npm install -g pnpm
   ```
-- **EF Core CLI tools** (`dotnet ef`) — minimum version **10.0.7**
+- **EF Core CLI tools** (`dotnet ef`) — minimum version **10.0.8**
 
-  The repo includes a `dotnet-tools.json` manifest pinned to `10.0.7`.
+  The repo includes a `dotnet-tools.json` manifest pinned to `10.0.8`.
   Install the exact version with:
   ```bash
   dotnet tool restore
@@ -37,7 +37,7 @@ Pet and owner profile images are stored in Azure Blob Storage.
   ```bash
   dotnet ef --version
   ```
-  You should see `10.0.7` (or later). If `dotnet ef` is not recognised, make sure
+  You should see `10.0.8` (or later). If `dotnet ef` is not recognised, make sure
   `~/.dotnet/tools` is on your `PATH`.
 
 ### (Highly Recommended) Pull Docker images before running the app for the first time

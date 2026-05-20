@@ -521,6 +521,32 @@
 
 ---
 
+---
+
+## Chore — NuGet Package Upgrades
+
+All NuGet packages upgraded to latest compatible versions. `Directory.Packages.props` is the single source of truth (central package management).
+
+| Package | From | To | Note |
+|---|---|---|---|
+| `Microsoft.AspNetCore.OpenApi` | 10.0.7 | 10.0.8 | |
+| `Microsoft.OpenApi` | 2.0.0 | 2.7.4 | Pinned to 2.x — see ROADMAP item 3 and comment in `Directory.Packages.props` |
+| `Microsoft.Extensions.Logging.Abstractions` | 10.0.0 | 10.0.8 | |
+| `Aspire.Azure.Storage.Blobs` | 13.3.3 | 13.3.4 | |
+| `Aspire.Microsoft.EntityFrameworkCore.SqlServer` | 13.3.3 | 13.3.4 | |
+| `Microsoft.EntityFrameworkCore.*` | 10.0.7 | 10.0.8 | |
+| `Aspire.Hosting.Azure.Storage` | 13.3.3 | 13.3.4 | |
+| `Aspire.Hosting.SqlServer` | 13.3.3 | 13.3.4 | |
+| `Microsoft.Extensions.Http.Resilience` | 10.5.0 | 10.6.0 | |
+| `Microsoft.Extensions.ServiceDiscovery` | 10.5.0 | 10.6.0 | |
+| `coverlet.collector` | 10.0.0 | 10.0.1 | |
+| `Testcontainers.Azurite` | 4.11.0 | 4.12.0 | |
+| `Testcontainers.MsSql` | 4.11.0 | 4.12.0 | |
+
+**621 tests — all passing after upgrades.**
+
+---
+
 ## Next
 
 Phase 13 — Authentication UI (Login + Register screens with HttpOnly cookie flow)

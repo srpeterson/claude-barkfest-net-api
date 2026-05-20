@@ -74,6 +74,12 @@ Barkfest.Integration.Tests    → Barkfest.API
 
 ### NuGet Packages
 
+All package versions are managed centrally in `Directory.Packages.props` at the repo root.
+Individual `.csproj` files reference packages without version numbers.
+
+> ⚠️ Do **not** upgrade `Microsoft.OpenApi` to 3.x — see the comment in `Directory.Packages.props`
+> and ROADMAP item 3 for details.
+
 | Project | Packages |
 |---|---|
 | `Barkfest.AppHost` | `Aspire.Hosting.AppHost`, `Aspire.Hosting.SqlServer`, `Aspire.Hosting.Azure.Storage` |
@@ -82,7 +88,7 @@ Barkfest.Integration.Tests    → Barkfest.API
 | `Barkfest.Application` | `MediatR`, `FluentValidation` |
 | `Barkfest.Persistence` | `Microsoft.EntityFrameworkCore.SqlServer`, `Microsoft.EntityFrameworkCore.Tools`, `Aspire.Microsoft.EntityFrameworkCore.SqlServer` |
 | `Barkfest.Infrastructure` | `Azure.Storage.Blobs`, `Aspire.Azure.Storage.Blobs` |
-| `Barkfest.API` | `Scalar.AspNetCore`, `Serilog.AspNetCore` |
+| `Barkfest.API` | `Scalar.AspNetCore`, `Serilog.AspNetCore`, `Microsoft.AspNetCore.OpenApi`, `Microsoft.OpenApi` |
 | `*.Tests` (unit) | `xunit`, `Shouldly`, `NSubstitute` |
 | `*.Tests` (integration) | above + `Testcontainers.MsSql`, `Testcontainers.Azurite` |
 | `Barkfest.API.Tests` | above + `Microsoft.AspNetCore.Mvc.Testing` |
