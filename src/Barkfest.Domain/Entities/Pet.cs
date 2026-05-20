@@ -7,7 +7,7 @@ namespace Barkfest.Domain.Entities;
 public class Pet
 {
     public const int NameMaxLength = 75;
-    public const int MaxImages = 5;
+    public const int MaxImages = 6;
 
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     public Guid OwnerId { get; private set; }

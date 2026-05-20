@@ -21,7 +21,7 @@ Barkfest is a pet management API allowing owners to register themselves and show
 - Update pet details
 - Delete a pet (cascades to all its images)
 - Upload and remove a pet profile image
-- Add up to 5 gallery images per pet
+- Add up to 6 gallery images per pet
 - Remove individual gallery images
 
 ## Data Storage
@@ -37,6 +37,6 @@ RESTful HTTP API. All endpoints return JSON. See [PLAN.md](PLAN.md) for the full
 ## Constraints
 
 - Image uploads restricted to JPEG, JPG, and PNG formats
-- Maximum 5 gallery images per pet
+- Maximum 6 gallery images per pet
 - Pet age is computed from date of birth at runtime — never stored
 - Breed must match pet type (Dog → dog breed, Cat → cat breed, Other → no breed)

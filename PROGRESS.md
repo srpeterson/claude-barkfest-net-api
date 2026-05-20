@@ -579,6 +579,18 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure 
 
 ---
 
+---
+
+## Chore — Increase Pet.MaxImages from 5 to 6
+
+- `Pet.MaxImages` constant changed from `5` → `6` in `Barkfest.Domain/Entities/Pet.cs`
+- All tests already reference `Pet.MaxImages` — no test changes required
+- SPEC.md, PLAN.md, CLAUDE.md updated to reflect the new limit
+
+**621 tests — all passing.**
+
+---
+
 ## Next
 
 Phase 13 — Authentication UI (Login + Register screens with HttpOnly cookie flow)

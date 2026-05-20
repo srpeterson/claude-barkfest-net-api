@@ -165,13 +165,13 @@ ordering. Cascade delete ensures images are cleaned up when a pet is deleted.
 
 ---
 
-### Decision: Maximum 5 gallery images per pet
-**Choice:** `Pet.MaxImages = 5` enforced as a domain constant in `Pet.cs`.
+### Decision: Maximum 6 gallery images per pet
+**Choice:** `Pet.MaxImages = 6` enforced as a domain constant in `Pet.cs`.
 
 **Reason:** Prevents unbounded image uploads. The limit is a constant rather
 than a hardcoded magic number so it can be increased in one place without
-touching validators, tests, or any other code. Start conservative — increase
-when there is user demand.
+touching validators, tests, or any other code. Initially set to 5, increased
+to 6 before Phase 13 to give owners a bit more flexibility in showcasing their pets.
 
 ---
 

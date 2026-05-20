@@ -198,7 +198,7 @@ Individual `.csproj` files reference packages without version numbers.
   - Computed property: `Age` (nullable `int`, calculated from `DateOfBirth`, never stored in DB)
   - Constants:
     - `public const int NameMaxLength = 75`
-    - `public const int MaxImages = 5`
+    - `public const int MaxImages = 6`
   - Methods:
     - `SetName(string)` — required, max 75 chars, trimmed
     - `SetDescription(string?)` — optional, no max length, trimmed
@@ -210,7 +210,7 @@ Individual `.csproj` files reference packages without version numbers.
       - Other → breed must be null
     - `SetProfileImage(string blobName, string contentType)` — delegates to `ProfileImage.Create()`
     - `RemoveProfileImage()` — sets `ProfileImage` to null
-    - `AddImage(PetImage)` — null throws, enforces max 5 images via `MaxImages` constant
+    - `AddImage(PetImage)` — null throws, enforces max 6 images via `MaxImages` constant
     - `RemoveImage(Guid petImageId)` — not found throws `DomainException`
 
 ### 2.6 Interfaces
@@ -1084,7 +1084,7 @@ barkfest-ui/
 - Repository interfaces defined in `Barkfest.Domain`, implemented in `Barkfest.Persistence`
 - `IBlobStorageService` defined in `Barkfest.Application`, implemented in `Barkfest.Infrastructure`
 - `SupportedImageType` enforced at both Domain (`ProfileImage.Create()`, `PetImage.SetImage()`) and Application (validators) layers
-- `Pet.MaxImages` constant used in all image limit tests — never hardcode the number `5`
+- `Pet.MaxImages` constant used in all image limit tests — never hardcode the number `6`
 - `Owner.FirstNameMaxLength`, `Owner.LastNameMaxLength`, `Owner.EmailMaxLength`, `Pet.NameMaxLength` constants used in all length-related tests — never hardcode the numbers
 - Each `src` project has its own `DependencyInjection.cs` with a self-registering extension method
 - Connection strings injected by Aspire for local dev; populated via environment variables or secrets manager in production and CI — never committed to source control

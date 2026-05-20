@@ -291,7 +291,7 @@ validators, tests, EF Core configuration.
 | `Owner.LastNameMaxLength` | 100 | `Owner.cs` |
 | `Administrator.NameMaxLength` | 100 | `Administrator.cs` |
 | `Pet.NameMaxLength` | 75 | `Pet.cs` |
-| `Pet.MaxImages` | 5 | `Pet.cs` |
+| `Pet.MaxImages` | 6 | `Pet.cs` |
 | `PetImage.BlobNameMaxLength` | 500 | `PetImage.cs` |
 | `PetImage.ContentTypeMaxLength` | 100 | `PetImage.cs` |
 
@@ -314,7 +314,7 @@ validators, tests, EF Core configuration.
 - `Age` — computed from `DateOfBirth` at runtime, **never stored in the database**
 - `PetType` — required SmartEnum
 - `Breed` — must match `PetType`: Dog → `DogBreedInfo`, Cat → `CatBreedInfo`, Other → null only
-- `Images` — maximum `Pet.MaxImages` gallery images
+- `Images` — maximum `Pet.MaxImages` (6) gallery images
 
 ### Images (applies to all image uploads across the entire application)
 - Allowed content types: `image/jpeg`, `image/jpg`, `image/png`
