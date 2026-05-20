@@ -559,9 +559,13 @@ await act.ShouldThrowAsync<NotFoundException>();
    - `chore/<name>`   — maintenance tasks (dependency updates, config changes)
    - `test/<name>`    — adding or fixing tests only
 
-3. Stage specific files by name as work progresses. Run `dotnet test` before
-   any `git commit` and confirm all tests pass. Never commit if any
-   tests are failing.
+3. Stage specific files by name as work progresses. Run both test suites before
+   any `git commit` and confirm all tests pass. Never commit if any tests are failing.
+
+   ```bash
+   dotnet test
+   npm test --prefix barkfest-ui
+   ```
 
 4. Commit after each logical milestone is complete and verified.
 

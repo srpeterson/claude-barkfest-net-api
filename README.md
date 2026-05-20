@@ -165,17 +165,16 @@ No code changes are required — the exporter is already wired into `Barkfest.Se
 and activates when `APPLICATIONINSIGHTS_CONNECTION_STRING` is present in the environment.
 In local development the key is absent, so the Aspire dashboard is used instead.
 
-### Connecting Application Insights in Azure
-
-1. Create an **Application Insights** resource in your Azure subscription
-   (or let Azure App Service create one during deployment)
-2. Copy the **Connection String** from the Application Insights Overview blade
-3. In Azure App Service go to **Settings → Environment variables → + Add**:
-   - Name: `APPLICATIONINSIGHTS_CONNECTION_STRING`
-   - Value: the connection string copied above
-4. Save and restart — telemetry starts flowing immediately
-
 > **Never** commit the connection string to source control or add it to `appsettings.json`.
+
+---
+
+## Deployment
+
+Merging into `main` triggers two GitHub Actions pipelines automatically. The API pipeline
+builds, tests, packages a Docker image, pushes it to Azure Container Registry, and deploys
+to Azure Container Apps. The frontend pipeline builds the React app and deploys to Azure
+Static Web Apps. No manual steps required.
 
 ---
 
