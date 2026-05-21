@@ -954,6 +954,7 @@ traces, and health for all resources. The API URL is listed there.
 - [x] `IPasswordHasher` — `string Hash(string password)`, `bool Verify(string password, string hash)`
 - [x] `AuthTokenDto(string AccessToken, Guid OwnerId, DateTime ExpiresAt)`
 - [x] `RegisterCommand` / `RegisterCommandHandler` / `RegisterCommandValidator`
+  - `Password`: not empty, min `AccountConstraints.PasswordMinLength` (8), max `AccountConstraints.PasswordMaxLength` (72) — BCrypt silently truncates beyond 72; no complexity rules enforced (see DECISIONS.md)
 - [x] `LoginCommand` / `LoginCommandHandler` / `LoginCommandValidator`
 - [x] All owner + pet handlers updated with `ICurrentUserService` ownership check → `ForbiddenException`
 - [x] `CreatePetCommand` — `OwnerId` removed; handler reads from `ICurrentUserService`
@@ -981,7 +982,7 @@ traces, and health for all resources. The API URL is listed there.
 - [x] `ExceptionHandlingMiddleware` — `ForbiddenException` → 403
 - [x] `appsettings.json` / `appsettings.Development.json` / `appsettings.Testing.json`
 
-### Tests (417 total — all passing)
+### Tests (647 total — all passing)
 
 - [x] `JwtTestHelper.GenerateToken(Guid ownerId)` in `Barkfest.Tests.Common`
 - [x] `CreateAuthenticatedClient(Guid ownerId)` in `BarkfestApiFactory` and `IntegrationApiFactory`

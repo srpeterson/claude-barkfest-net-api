@@ -839,3 +839,14 @@ concern. Similarly, listing all administrator accounts should only be visible to
 administrators. Enforcing the check in the handler (Application layer) rather than only at the
 route level ensures the rule is testable in isolation and cannot be bypassed by adding a new
 controller endpoint that accidentally omits the attribute.
+
+---
+
+### Decision: Password length constraints (min 8, max 72)
+**Choice:** All password validators enforce `MinimumLength(AccountConstraints.PasswordMinLength)` (8) and `MaximumLength(AccountConstraints.PasswordMaxLength)` (72). Applies to owner registration, administrator creation, and administrator password updates. Login validators are excluded.
+
+**Reason for minimum (8):** Provides a baseline against trivially weak passwords. The backend is the authoritative enforcement point — frontend validation can be bypassed by calling the API directly.
+
+**Reason for maximum (72):** BCrypt silently truncates input at 72 bytes — any characters beyond that are ignored during hashing. A 73-character password sharing the first 72 characters with another would produce identical hashes, which is a subtle security flaw. Capping at 72 makes the truncation behaviour explicit and prevents it entirely.
+
+**Reason no complexity rules are enforced:** NIST SP 800-63B recommends against mandatory complexity requirements (uppercase, numbers, special characters). They cause predictable substitutions (`Password1!`) without meaningfully improving security, and penalise strong passphrases that happen to lack symbols. Complexity guidance is left to the frontend (strength meter) where it can inform without hard-blocking.

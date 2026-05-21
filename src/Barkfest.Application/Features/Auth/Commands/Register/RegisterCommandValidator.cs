@@ -35,6 +35,10 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.");
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(AccountConstraints.PasswordMinLength)
+            .WithMessage($"Password must be at least {AccountConstraints.PasswordMinLength} characters.")
+            .MaximumLength(AccountConstraints.PasswordMaxLength)
+            .WithMessage($"Password cannot exceed {AccountConstraints.PasswordMaxLength} characters.");
     }
 }

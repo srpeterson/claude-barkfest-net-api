@@ -203,4 +203,30 @@ public class RegisterCommandValidatorTests
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Password));
     }
+
+    [Fact]
+    public void Validate_When_PasswordIsBelowMinLength_Fails_ForPassword()
+    {
+        var command = new RegisterCommand(
+            "aliceadams", "Alice", "Adams", "alice@example.com", null,
+            new string('a', AccountConstraints.PasswordMinLength - 1));
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Password));
+    }
+
+    [Fact]
+    public void Validate_When_PasswordExceedsMaxLength_Fails_ForPassword()
+    {
+        var command = new RegisterCommand(
+            "aliceadams", "Alice", "Adams", "alice@example.com", null,
+            new string('a', AccountConstraints.PasswordMaxLength + 1));
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Password));
+    }
 }
