@@ -1,6 +1,5 @@
 using Barkfest.Domain.Enums;
 using Barkfest.Domain.Exceptions;
-using Barkfest.Domain.ValueObjects;
 
 namespace Barkfest.Domain.Entities;
 
@@ -17,8 +16,8 @@ public class Pet
     public DateOnly? DateOfBirth { get; private set; }
     public PetType PetType { get; private set; } = null!;
     public Breed? Breed { get; private set; }
-    public ProfileImage? ProfileImage { get; private set; }
     public IReadOnlyCollection<PetImage> Images => _images.AsReadOnly();
+    public PetImage? FeaturedImage => _images.FirstOrDefault(i => i.IsFeaturedImage);
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
     public int? Age => DateOfBirth.HasValue ? CalculateAge(DateOfBirth.Value) : null;
@@ -93,11 +92,16 @@ public class Pet
         Breed = breed;
     }
 
-    public void SetProfileImage(string blobName, string contentType) =>
-        ProfileImage = ProfileImage.Create(blobName, contentType);
+    public void SetFeaturedImage(Guid petImageId)
+    {
+        var image = _images.FirstOrDefault(i => i.Id == petImageId)
+            ?? throw new DomainException("Image not found.");
 
-    public void RemoveProfileImage() =>
-        ProfileImage = null;
+        foreach (var img in _images.Where(i => i.IsFeaturedImage))
+            img.UnsetAsFeatured();
+
+        image.SetAsFeatured();
+    }
 
     public void AddImage(PetImage image)
     {
@@ -106,6 +110,9 @@ public class Pet
 
         if (_images.Count >= MaxImages)
             throw new DomainException($"A pet cannot have more than {MaxImages} images.");
+
+        if (_images.Count == 0)
+            image.SetAsFeatured();
 
         _images.Add(image);
     }
@@ -118,6 +125,20 @@ public class Pet
             throw new DomainException("Image not found.");
 
         _images.Remove(image);
+    }
+
+    public void RemoveImages(IReadOnlyList<Guid> petImageIds)
+    {
+        if (petImageIds is null || petImageIds.Count == 0)
+            throw new DomainException("At least one image ID is required.");
+
+        var notFound = petImageIds.Where(id => _images.All(i => i.Id != id)).ToList();
+        if (notFound.Count > 0)
+            throw new DomainException("One or more images were not found.");
+
+        var toRemove = _images.Where(i => petImageIds.Contains(i.Id)).ToList();
+        foreach (var image in toRemove)
+            _images.Remove(image);
     }
 
     private static int CalculateAge(DateOnly dateOfBirth)

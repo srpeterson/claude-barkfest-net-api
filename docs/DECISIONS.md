@@ -116,6 +116,25 @@ because not all owners will know their pet's exact date of birth.
 
 ---
 
+### Decision: Migration naming convention — `{Verb}{Subject}` PascalCase
+**Choice:** Each migration name is a PascalCase phrase starting with an approved verb:
+`Add`, `Remove`, `Create`, `Drop`, `Rename`, `Alter`. Compound changes use `And`.
+
+Examples: `AddOwnerPasswordHash`, `RemovePetProfileImageColumnsAndAddIsFeaturedImage`,
+`CreatePetImagesTable`.
+
+Banned: `UpdatePet`, `FixSchema`, `Misc`, `Changes`.
+
+**Reason:** A migration name is a permanent record in the repository — it must communicate
+exactly what changed to any developer reading the history. Vague names like `UpdatePet`
+require opening the migration file to understand what was changed. A well-formed name
+(`RemovePetProfileImageColumnsAndAddIsFeaturedImage`) reads as documentation.
+Standardising the verb set prevents ambiguous choices — `Add` means a new column or
+index on an existing table; `Create` means a new table entirely. Once established,
+the convention applies to every future migration with no exceptions.
+
+---
+
 ### Decision: Migration applied at runtime via `MigrateAsync()`
 **Choice:** `dotnet ef database update` is never used. The migration is applied
 automatically at startup via `db.Database.MigrateAsync()` in `Program.cs`.
@@ -162,6 +181,47 @@ value object. EF Core maps it via `OwnsOne()` — no extra table, same columns.
 SQL Server holds only lightweight metadata (`BlobName`, `ContentType`,
 `DisplayOrder`). A separate table allows a pet to have multiple images with
 ordering. Cascade delete ensures images are cleaned up when a pet is deleted.
+
+---
+
+### Decision: Remove `Pet.ProfileImage`; replace with `IsFeaturedImage` on `PetImage`
+**Choice:** `Pet.ProfileImage` (a `ProfileImage` value object stored as two nullable columns on
+`Pets`) is removed entirely. Every pet image is now a `PetImage` entity. Any one image can be
+designated as featured via `IsFeaturedImage = true` on the `PetImage` row. Only one may be
+featured at a time. The `Owner.ProfileImage` value object is unchanged.
+
+**Reason:** The old model had two separate concepts — a profile image (outside the gallery, not
+counted against the limit) and gallery images (up to 5, counted). This created an off-by-one bug:
+a pet could effectively have 6 images but the domain only enforced a max of 5 gallery images.
+It also made the UI awkward — a user uploading photos had to think about "profile" vs "gallery"
+when really they just want to upload photos and pick a favourite. The new model is simpler:
+upload up to 6 images, then designate one as featured. The featured image serves the same role
+as the old profile image without creating a separate concept. The limit is now 6 total, enforced
+uniformly by `Pet.AddImage()`.
+
+**Domain rules for `IsFeaturedImage`:**
+- Only one image can be featured at a time; `Pet.SetFeaturedImage()` unsets the previous before setting the new one
+- Featured is optional — a pet can have images with none featured
+- Deleting the featured image leaves the pet with no featured image; no auto-promotion
+- When a pet has zero images and the first image is uploaded, it is automatically featured
+- Subsequent uploads do not auto-feature; the owner uses `PUT /v1/pets/{id}/images/{imageId}/featured`
+
+---
+
+### Decision: `DateOfBirth` stays as-is; UI handles age vs exact date UX
+**Choice:** `Pet.DateOfBirth` remains `DateOnly?` — no new `Age` field, no `IsApproximateAge`
+flag. The UI presents an age spinner ("My pet is 5 years old") as an alternative to the calendar
+picker. When the owner enters an age, the UI back-calculates `DateOfBirth = today − N years`
+and sends that to the API. The API is unaware of whether the date was entered directly or
+approximated.
+
+**Reason:** Most owners cannot recall their pet's exact birthday but can state their age in years.
+Adding `Age` as a separate field creates a staleness problem — stored age never increments
+automatically. Adding `IsApproximateAge` adds schema and domain complexity for a UX concern.
+The pragmatic solution: let the UI own the UX, let the API own the data. A back-calculated date
+is slightly imprecise but the age computed from it will auto-increment correctly each birthday,
+which is more accurate than a static stored integer. For a pet showcase application, approximate
+age is entirely acceptable — no veterinary records are involved.
 
 ---
 
@@ -517,6 +577,53 @@ unsupported or potentially dangerous file types. The rule is defined once in
 no duplication, no risk of the allowed list drifting between Owner and Pet
 image uploads. When a new pet type (e.g. Horse) is added, the same rule applies
 automatically.
+
+---
+
+### Decision: Batch image upload — upfront slot validation, 207 partial success
+**Choice:** `POST /v1/pets/{id}/images` accepts `IFormFileCollection` (1 to N files).
+Validation is two-phase:
+
+1. **Upfront (400):** File type/extension invalid, or submitted count exceeds available slots
+   (`MaxImages − current image count`). Nothing is processed.
+2. **Per-image (207):** Content moderation runs per file independently. Failures are reported
+   in the response alongside successes. 201 is returned when all files succeed; 207 when at
+   least one fails moderation.
+
+The first successfully processed image on a pet that previously had zero images is automatically
+set as `IsFeaturedImage = true`.
+
+**Reason:** The upfront slot check gates the expensive operations (blob upload, moderation API
+calls) before they happen — if the user submits 4 files but only 3 slots remain, they see a
+clear error and resubmit the correct number. This matches the UI which displays remaining slots
+before the upload. Content moderation cannot be predicted client-side so per-image partial
+results (207) are the correct model — the owner gets their good images saved and is told which
+one failed. Keeping save-and-not-save in one response is simpler than requiring a retry for
+partial batches.
+
+**Why not atomic for moderation failures:** Moderation failure is unknowable before upload.
+Rejecting a 5-image batch because image 3 failed moderation would discard 4 valid images the
+owner uploaded correctly. Per-image reporting is the right model here. Slot overflow, by
+contrast, is knowable upfront and is treated atomically — the owner fixes their selection
+before anything is processed.
+
+---
+
+### Decision: Batch image delete — `POST .../batch-delete`, atomic
+**Choice:** `POST /v1/pets/{id}/images/batch-delete` accepts `{ imageIds: [...] }` and
+deletes all listed images atomically. If any `imageId` does not exist on the pet, the
+entire request is rejected with 400 and nothing is deleted.
+
+**Why `POST` not `DELETE`:** `DELETE` with a request body is technically permitted by
+RFC 7231 but many HTTP clients, proxies, and frameworks strip or reject the body.
+`POST` to an explicit sub-resource (`/batch-delete`) is pragmatic, unambiguous, and
+consistent with how major APIs (GitHub, Stripe) handle batch destructive operations.
+
+**Why atomic:** Deletes are irreversible. An `imageId` not found on this pet indicates either
+a stale UI (the image was already deleted) or a tampered request. In both cases the correct
+response is to reject everything and let the client re-query state before retrying. Partial
+deletion would leave the owner uncertain about which images were removed, which is worse UX
+than a clean rejection with a clear message.
 
 ---
 

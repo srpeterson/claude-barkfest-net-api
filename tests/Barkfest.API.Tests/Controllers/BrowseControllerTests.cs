@@ -42,7 +42,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
 
         using var imageContent = new MultipartFormDataContent();
         var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
-        imageContent.Add(new ByteArrayContent(imageBytes) { Headers = { ContentType = new("image/jpeg") } }, "file", "photo.jpg");
+        imageContent.Add(new ByteArrayContent(imageBytes) { Headers = { ContentType = new("image/jpeg") } }, "files", "photo.jpg");
         await authClient.PostAsync($"/v1/pets/{petId}/images", imageContent);
 
         return ownerId;

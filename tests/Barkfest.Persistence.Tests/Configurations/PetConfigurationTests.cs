@@ -1,5 +1,4 @@
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -139,43 +138,4 @@ public class PetConfigurationTests
         fk.DeleteBehavior.ShouldBe(DeleteBehavior.Cascade);
     }
 
-    // -----------------------------------------------------------------------
-    // ProfileImage (owned entity — shares Pets table)
-    // -----------------------------------------------------------------------
-
-    [Fact]
-    public void ProfileImage_BlobName_MapsToCorrectColumn()
-    {
-        var owned = _pet.FindNavigation(nameof(Pet.ProfileImage))!.TargetEntityType;
-        owned.FindProperty(nameof(ProfileImage.BlobName))!
-             .GetColumnName(TableId)
-             .ShouldBe("ProfileImageBlobName");
-    }
-
-    [Fact]
-    public void ProfileImage_BlobName_HasMaxLength500()
-    {
-        var owned = _pet.FindNavigation(nameof(Pet.ProfileImage))!.TargetEntityType;
-        owned.FindProperty(nameof(ProfileImage.BlobName))!
-             .GetMaxLength()
-             .ShouldBe(500);
-    }
-
-    [Fact]
-    public void ProfileImage_ContentType_MapsToCorrectColumn()
-    {
-        var owned = _pet.FindNavigation(nameof(Pet.ProfileImage))!.TargetEntityType;
-        owned.FindProperty(nameof(ProfileImage.ContentType))!
-             .GetColumnName(TableId)
-             .ShouldBe("ProfileImageContentType");
-    }
-
-    [Fact]
-    public void ProfileImage_ContentType_HasMaxLength100()
-    {
-        var owned = _pet.FindNavigation(nameof(Pet.ProfileImage))!.TargetEntityType;
-        owned.FindProperty(nameof(ProfileImage.ContentType))!
-             .GetMaxLength()
-             .ShouldBe(100);
-    }
 }

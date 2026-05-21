@@ -25,10 +25,10 @@ public class GetBrowseImagesQueryHandlerTests
     {
         var images = new[]
         {
-            new BrowseImageDto(Guid.NewGuid(), "pets/1/img.jpg", "image/jpeg", DateTime.UtcNow,
-                "Alice Adams", Guid.NewGuid(), "Buddy", null, null, null, "Dog", null, null),
-            new BrowseImageDto(Guid.NewGuid(), "pets/2/img.jpg", "image/jpeg", DateTime.UtcNow,
-                "Bob Baker", Guid.NewGuid(), "Whiskers", null, null, null, "Cat", null, null)
+            new BrowseImageDto(Guid.NewGuid(), "pets/1/img.jpg", "image/jpeg", false, DateTime.UtcNow,
+                "Alice Adams", Guid.NewGuid(), "Buddy", null, null, null, "Dog", null),
+            new BrowseImageDto(Guid.NewGuid(), "pets/2/img.jpg", "image/jpeg", false, DateTime.UtcNow,
+                "Bob Baker", Guid.NewGuid(), "Whiskers", null, null, null, "Cat", null)
         };
         _browseRepository.GetBrowseImagesAsync(null, null, CancellationToken.None).Returns(images);
 

@@ -11,7 +11,6 @@ public class PetBuilder
     private DateOnly? _dateOfBirth = null;
     private PetType _petType = PetType.Dog;
     private Breed _breed = DefaultDogBreed();
-    private (string BlobName, string ContentType)? _profileImage = null;
     private readonly List<PetImage> _images = [];
 
     private static Breed DefaultDogBreed()
@@ -58,12 +57,6 @@ public class PetBuilder
         return this;
     }
 
-    public PetBuilder WithProfileImage(string blobName, string contentType)
-    {
-        _profileImage = (blobName, contentType);
-        return this;
-    }
-
     public PetBuilder WithImage(PetImage image)
     {
         _images.Add(image);
@@ -73,8 +66,6 @@ public class PetBuilder
     public Pet Build()
     {
         var pet = Pet.Create(_ownerId, _name, _petType, _breed, _description, _dateOfBirth);
-        if (_profileImage.HasValue)
-            pet.SetProfileImage(_profileImage.Value.BlobName, _profileImage.Value.ContentType);
         foreach (var image in _images)
             pet.AddImage(image);
         return pet;

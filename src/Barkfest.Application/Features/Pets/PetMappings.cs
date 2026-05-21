@@ -18,8 +18,7 @@ public static class PetMappings
             CatBreedInfo cat => cat.CatBreed.Name,
             _ => null
         },
-        pet.ProfileImage is null ? null : new ProfileImageDto(pet.ProfileImage.BlobName, pet.ProfileImage.ContentType),
-        pet.Images.Select(i => new PetImageDto(i.Id, i.BlobName, i.ContentType, i.DisplayOrder, i.CreatedAt)).ToList().AsReadOnly(),
+        pet.Images.Select(i => new PetImageDto(i.Id, i.BlobName, i.ContentType, i.DisplayOrder, i.IsFeaturedImage, i.CreatedAt)).ToList().AsReadOnly(),
         pet.OwnerId,
         pet.CreatedAt);
 

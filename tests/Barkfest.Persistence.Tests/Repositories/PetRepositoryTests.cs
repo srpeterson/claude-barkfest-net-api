@@ -132,21 +132,6 @@ public class PetRepositoryTests(DatabaseFixture fixture)
         result.Images.First().BlobName.ShouldBe("pets/abc/gallery/photo.jpg");
     }
 
-    [Fact]
-    public async Task AddAsync_When_PetHasProfileImage_Persists_Image()
-    {
-        var (owner, _) = await SeedOwner();
-        var pet = BuildPet(owner.Id, "Coco", PetType.Cat);
-        pet.SetProfileImage("pets/abc/profile/photo.png", "image/png");
-        await _petRepository.AddAsync(pet);
-        await _context.SaveChangesAsync();
-
-        var result = await _petRepository.GetByIdAsync(pet.Id);
-
-        result!.ProfileImage.ShouldNotBeNull();
-        result.ProfileImage.BlobName.ShouldBe("pets/abc/profile/photo.png");
-    }
-
     private async Task<(Owner owner, OwnerRepository repo)> SeedOwner(string email = "owner@example.com")
     {
         var ownerRepo = new OwnerRepository(_context);

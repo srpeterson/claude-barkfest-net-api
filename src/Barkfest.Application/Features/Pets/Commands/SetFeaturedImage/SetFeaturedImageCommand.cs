@@ -5,20 +5,17 @@ using Barkfest.Domain.Exceptions;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
-namespace Barkfest.Application.Features.Pets.Commands.RemovePetProfileImage;
+namespace Barkfest.Application.Features.Pets.Commands.SetFeaturedImage;
 
-public record RemovePetProfileImageCommand(Guid PetId) : IRequest;
+public record SetFeaturedImageCommand(Guid PetId, Guid ImageId) : IRequest;
 
-public class RemovePetProfileImageCommandHandler(
+public class SetFeaturedImageCommandHandler(
     IPetRepository petRepository,
-    IBlobStorageService blobStorageService,
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUserService)
-    : IRequestHandler<RemovePetProfileImageCommand>
+    : IRequestHandler<SetFeaturedImageCommand>
 {
-    private const string ContainerName = "pet-profile-images";
-
-    public async Task Handle(RemovePetProfileImageCommand request, CancellationToken cancellationToken)
+    public async Task Handle(SetFeaturedImageCommand request, CancellationToken cancellationToken)
     {
         var pet = await petRepository.GetByIdAsync(request.PetId, cancellationToken);
 
@@ -28,10 +25,7 @@ public class RemovePetProfileImageCommandHandler(
         if (pet.OwnerId != currentUserService.OwnerId)
             throw new ForbiddenException();
 
-        if (pet.ProfileImage is not null)
-            await blobStorageService.DeleteAsync(ContainerName, pet.ProfileImage.BlobName, cancellationToken);
-
-        pet.RemoveProfileImage();
+        pet.SetFeaturedImage(request.ImageId);
 
         await petRepository.UpdateAsync(pet, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

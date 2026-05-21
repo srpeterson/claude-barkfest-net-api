@@ -8,7 +8,6 @@ public record PetDto(
     int? Age,
     string PetType,
     string? Breed,
-    ProfileImageDto? ProfileImage,
     IReadOnlyCollection<PetImageDto> Images,
     Guid OwnerId,
     DateTime CreatedAt);

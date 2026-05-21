@@ -314,7 +314,7 @@ validators, tests, EF Core configuration.
 - `Age` — computed from `DateOfBirth` at runtime, **never stored in the database**
 - `PetType` — required SmartEnum; only `Dog` (1) and `Cat` (2) are valid values
 - `Breed` — required; must match `PetType`: Dog → `DogBreedInfo`, Cat → `CatBreedInfo`; "Other" is a valid breed name within each species (same as any named breed)
-- `Images` — maximum `Pet.MaxImages` (6) gallery images
+- `Images` — maximum `Pet.MaxImages` (6) images total; any one can be designated `IsFeaturedImage = true`; only one may be featured at a time
 
 ### Images (applies to all image uploads across the entire application)
 - Allowed content types: `image/jpeg`, `image/jpg`, `image/png`
@@ -341,10 +341,10 @@ validators, tests, EF Core configuration.
 - All other owner and pet endpoints require a valid owner JWT; ownership enforced in handlers
 
 ### Profile Images
-- Both `Owner` and `Pet` have an optional profile image
-- Represented as a `ProfileImage` value object (`sealed record`) with `BlobName` and `ContentType`
-- Mapped to two nullable columns in the DB via EF Core `OwnsOne()`:
+- `Owner` has an optional profile image represented as a `ProfileImage` value object (`sealed record`) with `BlobName` and `ContentType`
+- Mapped to two nullable columns on `Owners` via EF Core `OwnsOne()`:
   `ProfileImageBlobName` nvarchar(500), `ProfileImageContentType` nvarchar(100)
+- `Pet` has no separate profile image — any of its gallery images can be designated as featured via `IsFeaturedImage = true` on `PetImage`
 
 ---
 
@@ -353,10 +353,37 @@ validators, tests, EF Core configuration.
 - Use `IEntityTypeConfiguration<T>` for all entity configuration — no data annotations
 - SmartEnums stored as `int` using `.HasConversion(pt => pt.Value, value => PetType.FromValue(value))`
 - `Breed` uses Table Per Hierarchy (TPH) with discriminator column `BreedType` (`"Dog"` or `"Cat"`)
-- `ProfileImage` value object mapped using `OwnsOne()` — no separate table
+- `Owner.ProfileImage` value object mapped using `OwnsOne()` — no separate table
 - `Pet.Age` must be ignored: `builder.Ignore(p => p.Age)`
+- `Pet.FeaturedImage` must be ignored: `builder.Ignore(p => p.FeaturedImage)`
 - All cascade deletes: `Owner` → `Pets`, `Pet` → `PetImages`, `Pet` → `Breeds`
 - Migration applied at startup via `MigrateAsync()` — never run `dotnet ef database update`
+
+### Migration naming
+
+Format: `{Verb}{Subject}` in PascalCase. For compound changes use `And`.
+
+| Verb | When to use |
+|---|---|
+| `Add` | New column, index, or constraint on an existing table |
+| `Remove` | Drop a column, index, or constraint |
+| `Create` | New table |
+| `Drop` | Remove a table entirely |
+| `Rename` | Rename a column or table |
+| `Alter` | Change type, nullability, or length of an existing column |
+
+```
+✅ AddOwnerPasswordHash
+✅ AddUniqueIndexOnOwnerEmail
+✅ CreatePetImagesTable
+✅ RemovePetProfileImageColumns
+✅ AddPetImageIsFeaturedImage
+✅ RemovePetProfileImageColumnsAndAddIsFeaturedImage
+
+❌ UpdatePet          — says nothing about what changed
+❌ FixSchema          — vague
+❌ Misc / Changes     — never acceptable
+```
 
 ---
 

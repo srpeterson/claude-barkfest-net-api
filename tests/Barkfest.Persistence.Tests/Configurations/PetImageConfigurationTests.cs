@@ -95,6 +95,26 @@ public class PetImageConfigurationTests
     }
 
     // -----------------------------------------------------------------------
+    // IsFeaturedImage
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void IsFeaturedImage_IsRequired()
+    {
+        _petImage.FindProperty(nameof(PetImage.IsFeaturedImage))!
+                 .IsNullable
+                 .ShouldBeFalse();
+    }
+
+    [Fact]
+    public void IsFeaturedImage_DefaultsToFalse()
+    {
+        _petImage.FindProperty(nameof(PetImage.IsFeaturedImage))!
+                 .GetDefaultValue()
+                 .ShouldBe(false);
+    }
+
+    // -----------------------------------------------------------------------
     // Pet FK (cascade delete)
     // -----------------------------------------------------------------------
 

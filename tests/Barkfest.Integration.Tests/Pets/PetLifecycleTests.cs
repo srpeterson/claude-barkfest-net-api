@@ -65,110 +65,172 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
-    // Profile image upload / remove
+    // Set featured image
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task UploadProfileImage_When_JpegProvided_Returns_NoContent()
+    public async Task SetFeaturedImage_When_ImageExists_Returns_NoContent()
     {
         var (client, _) = await RegisterAndGetClient();
         var petId = await CreatePet(client, "Rex");
+        var imageId = await AddImageAndGetId(client, petId, "rex.jpg");
 
-        var response = await client.PostAsync(
-            $"/v1/pets/{petId}/profile-image",
-            BuildImageFormData("pet-profile.jpg", "image/jpeg"));
+        var response = await client.PutAsync(
+            $"/v1/pets/{petId}/images/{imageId}/featured", null);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     [Fact]
-    public async Task UploadProfileImage_When_PetNotFound_Returns_NotFound()
-    {
-        var (client, _) = await RegisterAndGetClient();
-
-        var response = await client.PostAsync(
-            $"/v1/pets/{Guid.NewGuid()}/profile-image",
-            BuildImageFormData("pet-profile.jpg", "image/jpeg"));
-
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task RemoveProfileImage_When_PreviouslyUploaded_Returns_NoContent()
+    public async Task SetFeaturedImage_When_ReplacingExisting_Returns_NoContent()
     {
         var (client, _) = await RegisterAndGetClient();
         var petId = await CreatePet(client, "Bella");
+        var firstImageId = await AddImageAndGetId(client, petId, "bella1.jpg");
+        var secondImageId = await AddImageAndGetId(client, petId, "bella2.jpg");
 
-        var uploadResponse = await client.PostAsync(
-            $"/v1/pets/{petId}/profile-image",
-            BuildImageFormData("bella.jpg", "image/jpeg"));
-        uploadResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        await client.PutAsync($"/v1/pets/{petId}/images/{firstImageId}/featured", null);
+        var response = await client.PutAsync(
+            $"/v1/pets/{petId}/images/{secondImageId}/featured", null);
 
-        var removeResponse = await client.DeleteAsync($"/v1/pets/{petId}/profile-image");
-        removeResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-    }
-
-    [Fact]
-    public async Task UploadProfileImage_When_ImageAlreadyExists_Replaces_Image()
-    {
-        var (client, _) = await RegisterAndGetClient();
-        var petId = await CreatePet(client, "Max");
-
-        var first = await client.PostAsync(
-            $"/v1/pets/{petId}/profile-image",
-            BuildImageFormData("first.jpg", "image/jpeg"));
-        first.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-
-        var second = await client.PostAsync(
-            $"/v1/pets/{petId}/profile-image",
-            BuildImageFormData("second.png", "image/png"));
-        second.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     // -----------------------------------------------------------------------
-    // Gallery images (add / remove)
+    // Batch upload images
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task AddImage_When_FileIsValid_Returns_Created()
+    public async Task AddImages_When_FilesAreValid_Returns_Created()
     {
         var (client, _) = await RegisterAndGetClient();
         var petId = await CreatePet(client, "Luna");
 
         var response = await client.PostAsync(
             $"/v1/pets/{petId}/images",
-            BuildImageFormData("gallery1.jpg", "image/jpeg"));
+            BuildBatchFormData([("gallery1.jpg", "image/jpeg"), ("gallery2.png", "image/png")]));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
-
         var body = await response.Content.ReadAsStringAsync();
-        body.ShouldContain("imageId");
+        body.ShouldContain("results");
     }
 
     [Fact]
-    public async Task AddImage_When_PetNotFound_Returns_NotFound()
+    public async Task AddImages_When_PetNotFound_Returns_NotFound()
     {
         var (client, _) = await RegisterAndGetClient();
 
         var response = await client.PostAsync(
             $"/v1/pets/{Guid.NewGuid()}/images",
-            BuildImageFormData("gallery1.jpg", "image/jpeg"));
+            BuildBatchFormData([("gallery1.jpg", "image/jpeg")]));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task AddImages_When_UpToMaxLimit_AllSucceed()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Archie");
+
+        for (var i = 1; i <= Pet.MaxImages; i++)
+        {
+            var response = await client.PostAsync(
+                $"/v1/pets/{petId}/images",
+                BuildBatchFormData([($"gallery{i}.jpg", "image/jpeg")]));
+
+            response.StatusCode.ShouldBe(HttpStatusCode.Created, $"image {i} should succeed");
+        }
+    }
+
+    [Fact]
+    public async Task AddImages_When_ExceedsMaxLimit_Returns_BadRequest()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Milo");
+
+        for (var i = 1; i <= Pet.MaxImages; i++)
+        {
+            await client.PostAsync(
+                $"/v1/pets/{petId}/images",
+                BuildBatchFormData([($"gallery{i}.jpg", "image/jpeg")]));
+        }
+
+        var overLimit = await client.PostAsync(
+            $"/v1/pets/{petId}/images",
+            BuildBatchFormData([($"gallery{Pet.MaxImages + 1}.jpg", "image/jpeg")]));
+
+        overLimit.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task AddImages_When_FirstUpload_FirstImage_IsAutoFeatured()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Nova");
+
+        var uploadResponse = await client.PostAsync(
+            $"/v1/pets/{petId}/images",
+            BuildBatchFormData([("nova1.jpg", "image/jpeg"), ("nova2.jpg", "image/jpeg")]));
+        uploadResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        var getPet = await client.GetAsync($"/v1/pets/{petId}");
+        var petBody = await getPet.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(petBody);
+        var images = doc.RootElement.GetProperty("images");
+        var featured = images.EnumerateArray().FirstOrDefault(i => i.GetProperty("isFeaturedImage").GetBoolean());
+        featured.ValueKind.ShouldNotBe(JsonValueKind.Undefined);
+    }
+
+    // -----------------------------------------------------------------------
+    // Batch delete images
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task BatchDeleteImages_When_AllExist_Returns_NoContent()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Charlie");
+        var imageId1 = await AddImageAndGetId(client, petId, "charlie1.jpg");
+        var imageId2 = await AddImageAndGetId(client, petId, "charlie2.jpg");
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/pets/{petId}/images/batch-delete",
+            new { imageIds = new[] { imageId1, imageId2 } });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        // Verify both gone
+        var getPet = await client.GetAsync($"/v1/pets/{petId}");
+        var body = await getPet.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("images").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task BatchDeleteImages_When_AnyNotFound_Returns_BadRequest()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Daisy");
+        var imageId = await AddImageAndGetId(client, petId, "daisy.jpg");
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/pets/{petId}/images/batch-delete",
+            new { imageIds = new[] { imageId, Guid.NewGuid() } });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // -----------------------------------------------------------------------
+    // Single image remove
+    // -----------------------------------------------------------------------
 
     [Fact]
     public async Task RemoveImage_When_ImageExists_Returns_NoContent()
     {
         var (client, _) = await RegisterAndGetClient();
         var petId = await CreatePet(client, "Charlie");
-
-        var addResponse = await client.PostAsync(
-            $"/v1/pets/{petId}/images",
-            BuildImageFormData("gallery1.jpg", "image/jpeg"));
-        addResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
-
-        var imageId = await ExtractImageId(addResponse);
+        var imageId = await AddImageAndGetId(client, petId, "gallery1.jpg");
 
         var removeResponse = await client.DeleteAsync($"/v1/pets/{petId}/images/{imageId}");
         removeResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -185,43 +247,6 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    [Fact]
-    public async Task AddImage_When_UpToMaxLimit_AllSucceed()
-    {
-        var (client, _) = await RegisterAndGetClient();
-        var petId = await CreatePet(client, "Archie");
-
-        for (var i = 1; i <= Pet.MaxImages; i++)
-        {
-            var response = await client.PostAsync(
-                $"/v1/pets/{petId}/images",
-                BuildImageFormData($"gallery{i}.jpg", "image/jpeg"));
-
-            response.StatusCode.ShouldBe(HttpStatusCode.Created, $"image {i} should succeed");
-        }
-    }
-
-    [Fact]
-    public async Task AddImage_When_ExceedsMaxLimit_Returns_BadRequest()
-    {
-        var (client, _) = await RegisterAndGetClient();
-        var petId = await CreatePet(client, "Milo");
-
-        for (var i = 1; i <= Pet.MaxImages; i++)
-        {
-            await client.PostAsync(
-                $"/v1/pets/{petId}/images",
-                BuildImageFormData($"gallery{i}.jpg", "image/jpeg"));
-        }
-
-        // One more image should exceed the domain limit
-        var overLimit = await client.PostAsync(
-            $"/v1/pets/{petId}/images",
-            BuildImageFormData($"gallery{Pet.MaxImages + 1}.jpg", "image/jpeg"));
-
-        overLimit.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-    }
-
     // -----------------------------------------------------------------------
     // Full cross-resource lifecycle
     // -----------------------------------------------------------------------
@@ -234,29 +259,24 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
         // Upload owner profile image
         var ownerImageUpload = await client.PostAsync(
             $"/v1/owners/{ownerId}/profile-image",
-            BuildImageFormData("owner.jpg", "image/jpeg"));
+            BuildSingleFormData("owner.jpg", "image/jpeg"));
         ownerImageUpload.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         // Create pet under that owner
         var petId = await CreatePet(client, "Rocket");
 
-        // Upload pet profile image
-        var petImageUpload = await client.PostAsync(
-            $"/v1/pets/{petId}/profile-image",
-            BuildImageFormData("rocket.jpg", "image/jpeg"));
-        petImageUpload.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-
-        // Add two gallery images
-        var img1Response = await client.PostAsync(
+        // Add two gallery images as a batch
+        var batchResponse = await client.PostAsync(
             $"/v1/pets/{petId}/images",
-            BuildImageFormData("rocket-play.jpg", "image/jpeg"));
-        img1Response.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var img1Id = await ExtractImageId(img1Response);
+            BuildBatchFormData([("rocket-play.jpg", "image/jpeg"), ("rocket-sleep.png", "image/png")]));
+        batchResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        var img2Response = await client.PostAsync(
-            $"/v1/pets/{petId}/images",
-            BuildImageFormData("rocket-sleep.png", "image/png"));
-        img2Response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var batchBody = await batchResponse.Content.ReadAsStringAsync();
+        using var batchDoc = JsonDocument.Parse(batchBody);
+        var img1Id = batchDoc.RootElement
+            .GetProperty("results")[0]
+            .GetProperty("imageId")
+            .GetGuid();
 
         // Remove first gallery image
         var removeImg1 = await client.DeleteAsync($"/v1/pets/{petId}/images/{img1Id}");
@@ -319,19 +339,42 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
     private static Guid ExtractIdFromLocation(HttpResponseMessage response) =>
         Guid.Parse(response.Headers.Location!.ToString().Split('/').Last());
 
-    private static async Task<Guid> ExtractImageId(HttpResponseMessage response)
+    private async Task<Guid> AddImageAndGetId(HttpClient client, Guid petId, string fileName)
     {
+        var response = await client.PostAsync(
+            $"/v1/pets/{petId}/images",
+            BuildBatchFormData([(fileName, "image/jpeg")]));
+        response.EnsureSuccessStatusCode();
+
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.GetProperty("imageId").GetGuid();
+        return doc.RootElement
+            .GetProperty("results")[0]
+            .GetProperty("imageId")
+            .GetGuid();
     }
 
-    private static MultipartFormDataContent BuildImageFormData(string fileName, string contentType)
+    private static MultipartFormDataContent BuildBatchFormData(
+        IEnumerable<(string FileName, string ContentType)> files)
     {
-        var fakeImageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10 }; // JPEG SOI marker
+        var fakeImageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10 };
+        var form = new MultipartFormDataContent();
+
+        foreach (var (fileName, contentType) in files)
+        {
+            var content = new ByteArrayContent(fakeImageBytes);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            form.Add(content, "files", fileName);
+        }
+
+        return form;
+    }
+
+    private static MultipartFormDataContent BuildSingleFormData(string fileName, string contentType)
+    {
+        var fakeImageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10 };
         var content = new ByteArrayContent(fakeImageBytes);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
-
         var form = new MultipartFormDataContent();
         form.Add(content, "file", fileName);
         return form;

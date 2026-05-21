@@ -29,6 +29,10 @@ public class PetImageConfiguration : IEntityTypeConfiguration<PetImage>
         builder.Property(pi => pi.DisplayOrder)
             .IsRequired();
 
+        builder.Property(pi => pi.IsFeaturedImage)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasOne(pi => pi.Pet)
             .WithMany(p => p.Images)
             .HasForeignKey(pi => pi.PetId)

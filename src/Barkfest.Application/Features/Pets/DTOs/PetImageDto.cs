@@ -5,4 +5,5 @@ public record PetImageDto(
     string BlobName,
     string ContentType,
     int DisplayOrder,
+    bool IsFeaturedImage,
     DateTime CreatedAt);
