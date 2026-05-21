@@ -7,6 +7,7 @@ public class PetImageBuilder
     private string _blobName = "pets/test/gallery/photo.jpg";
     private string _contentType = "image/jpeg";
     private int _displayOrder = 0;
+    private bool _isFeaturedImage = false;
 
     public PetImageBuilder WithBlobName(string blobName)
     {
@@ -26,8 +27,17 @@ public class PetImageBuilder
         return this;
     }
 
+    public PetImageBuilder AsFeatured()
+    {
+        _isFeaturedImage = true;
+        return this;
+    }
+
     public PetImage Build()
     {
-        return PetImage.Create(_blobName, _contentType, _displayOrder);
+        var image = PetImage.Create(_blobName, _contentType, _displayOrder);
+        if (_isFeaturedImage)
+            image.SetAsFeatured();
+        return image;
     }
 }

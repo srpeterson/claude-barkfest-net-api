@@ -10,8 +10,15 @@ public class PetBuilder
     private string? _description = null;
     private DateOnly? _dateOfBirth = null;
     private PetType _petType = PetType.Dog;
-    private (string BlobName, string ContentType)? _profileImage = null;
+    private Breed _breed = DefaultDogBreed();
     private readonly List<PetImage> _images = [];
+
+    private static Breed DefaultDogBreed()
+    {
+        var breed = new DogBreedInfo();
+        breed.SetDogBreed(DogBreed.Beagle);
+        return breed;
+    }
 
     public PetBuilder WithOwnerId(Guid ownerId)
     {
@@ -43,9 +50,10 @@ public class PetBuilder
         return this;
     }
 
-    public PetBuilder WithProfileImage(string blobName, string contentType)
+    public PetBuilder WithBreed(Breed breed)
     {
-        _profileImage = (blobName, contentType);
+        ArgumentNullException.ThrowIfNull(breed);
+        _breed = breed;
         return this;
     }
 
@@ -57,9 +65,7 @@ public class PetBuilder
 
     public Pet Build()
     {
-        var pet = Pet.Create(_ownerId, _name, _petType, _description, _dateOfBirth);
-        if (_profileImage.HasValue)
-            pet.SetProfileImage(_profileImage.Value.BlobName, _profileImage.Value.ContentType);
+        var pet = Pet.Create(_ownerId, _name, _petType, _breed, _description, _dateOfBirth);
         foreach (var image in _images)
             pet.AddImage(image);
         return pet;

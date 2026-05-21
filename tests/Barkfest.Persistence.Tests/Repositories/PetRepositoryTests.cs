@@ -70,7 +70,7 @@ public class PetRepositoryTests(DatabaseFixture fixture)
         var (owner2, _) = await SeedOwner("bob@example.com");
         await _petRepository.AddAsync(BuildPet(owner1.Id, "Buddy", PetType.Dog));
         await _petRepository.AddAsync(BuildPet(owner1.Id, "Milo", PetType.Cat));
-        await _petRepository.AddAsync(BuildPet(owner2.Id, "Shadow", PetType.Other));
+        await _petRepository.AddAsync(BuildPet(owner2.Id, "Shadow", PetType.Dog));
         await _context.SaveChangesAsync();
 
         var result = await _petRepository.GetByOwnerIdAsync(owner1.Id);
@@ -132,21 +132,6 @@ public class PetRepositoryTests(DatabaseFixture fixture)
         result.Images.First().BlobName.ShouldBe("pets/abc/gallery/photo.jpg");
     }
 
-    [Fact]
-    public async Task AddAsync_When_PetHasProfileImage_Persists_Image()
-    {
-        var (owner, _) = await SeedOwner();
-        var pet = BuildPet(owner.Id, "Coco", PetType.Cat);
-        pet.SetProfileImage("pets/abc/profile/photo.png", "image/png");
-        await _petRepository.AddAsync(pet);
-        await _context.SaveChangesAsync();
-
-        var result = await _petRepository.GetByIdAsync(pet.Id);
-
-        result!.ProfileImage.ShouldNotBeNull();
-        result.ProfileImage.BlobName.ShouldBe("pets/abc/profile/photo.png");
-    }
-
     private async Task<(Owner owner, OwnerRepository repo)> SeedOwner(string email = "owner@example.com")
     {
         var ownerRepo = new OwnerRepository(_context);
@@ -162,9 +147,20 @@ public class PetRepositoryTests(DatabaseFixture fixture)
 
     private static Pet BuildPet(Guid ownerId, string name, PetType petType)
     {
-        var pet = new Pet(ownerId);
-        pet.SetName(name);
-        pet.SetPetType(petType);
-        return pet;
+        Breed breed;
+        if (petType == PetType.Dog)
+        {
+            var dogBreed = new DogBreedInfo();
+            dogBreed.SetDogBreed(DogBreed.Beagle);
+            breed = dogBreed;
+        }
+        else
+        {
+            var catBreed = new CatBreedInfo();
+            catBreed.SetCatBreed(CatBreed.Siamese);
+            breed = catBreed;
+        }
+
+        return Pet.Create(ownerId, name, petType, breed);
     }
 }

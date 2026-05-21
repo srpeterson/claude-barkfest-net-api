@@ -14,6 +14,7 @@ public class PetImage
     public string BlobName { get; private set; } = string.Empty;
     public string ContentType { get; private set; } = string.Empty;
     public int DisplayOrder { get; private set; }
+    public bool IsFeaturedImage { get; private set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
     public static PetImage Create(string blobName, string contentType, int displayOrder)
@@ -46,4 +47,8 @@ public class PetImage
 
         DisplayOrder = order;
     }
+
+    public void SetAsFeatured() => IsFeaturedImage = true;
+
+    public void UnsetAsFeatured() => IsFeaturedImage = false;
 }

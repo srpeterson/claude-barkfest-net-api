@@ -27,7 +27,7 @@ public class CreatePetCommandHandlerTests
         _currentUserService.OwnerId.Returns((Guid?)owner.Id);
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
 
-        var command = new CreatePetCommand("Buddy", null, null, "Dog");
+        var command = new CreatePetCommand("Buddy", null, null, "Dog", "Beagle");
 
         var result = await _createPetCommandHandler.Handle(command, CancellationToken.None);
 
@@ -42,7 +42,7 @@ public class CreatePetCommandHandlerTests
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
 
         var dob = new DateOnly(2020, 6, 15);
-        var command = new CreatePetCommand("Max", "A good boy", dob, "Dog");
+        var command = new CreatePetCommand("Max", "A good boy", dob, "Dog", "Beagle");
 
         await _createPetCommandHandler.Handle(command, CancellationToken.None);
 
@@ -63,7 +63,7 @@ public class CreatePetCommandHandlerTests
         _currentUserService.OwnerId.Returns((Guid?)ownerId);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        var command = new CreatePetCommand("Buddy", null, null, "Dog");
+        var command = new CreatePetCommand("Buddy", null, null, "Dog", "Beagle");
 
         await Should.ThrowAsync<NotFoundException>(() => _createPetCommandHandler.Handle(command, CancellationToken.None));
     }

@@ -11,7 +11,8 @@ public record CreatePetCommand(
     string Name,
     string? Description,
     DateOnly? DateOfBirth,
-    string PetType) : IRequest<Guid>;
+    string PetType,
+    string Breed) : IRequest<Guid>;
 
 public class CreatePetCommandHandler(
     IOwnerRepository ownerRepository,
@@ -32,7 +33,21 @@ public class CreatePetCommandHandler(
 
         var petType = PetType.FromName(request.PetType);
 
-        var pet = Pet.Create(ownerId, request.Name, petType, request.Description, request.DateOfBirth);
+        Breed breed;
+        if (petType == PetType.Dog)
+        {
+            var dogBreedInfo = new DogBreedInfo();
+            dogBreedInfo.SetDogBreed(DogBreed.FromName(request.Breed));
+            breed = dogBreedInfo;
+        }
+        else
+        {
+            var catBreedInfo = new CatBreedInfo();
+            catBreedInfo.SetCatBreed(CatBreed.FromName(request.Breed));
+            breed = catBreedInfo;
+        }
+
+        var pet = Pet.Create(ownerId, request.Name, petType, breed, request.Description, request.DateOfBirth);
 
         await petRepository.AddAsync(pet, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

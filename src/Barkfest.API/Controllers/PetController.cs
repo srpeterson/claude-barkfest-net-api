@@ -1,10 +1,10 @@
-using Barkfest.Application.Features.Pets.Commands.AddPetImage;
+using Barkfest.Application.Features.Pets.Commands.AddPetImages;
+using Barkfest.Application.Features.Pets.Commands.BatchDeletePetImages;
 using Barkfest.Application.Features.Pets.Commands.CreatePet;
 using Barkfest.Application.Features.Pets.Commands.DeletePet;
 using Barkfest.Application.Features.Pets.Commands.RemovePetImage;
-using Barkfest.Application.Features.Pets.Commands.RemovePetProfileImage;
+using Barkfest.Application.Features.Pets.Commands.SetFeaturedImage;
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
-using Barkfest.Application.Features.Pets.Commands.UploadPetProfileImage;
 using Barkfest.Application.Features.Pets.Queries.GetPetById;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +28,7 @@ public class PetController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Create(CreatePetRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(
-            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetType),
+            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetType, request.Breed),
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, null);
@@ -51,35 +51,35 @@ public class PetController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/profile-image")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadProfileImage(Guid id, IFormFile file, CancellationToken cancellationToken)
-    {
-        await using var stream = file.OpenReadStream();
-        await mediator.Send(
-            new UploadPetProfileImageCommand(id, file.FileName, stream, file.ContentType),
-            cancellationToken);
-
-        return NoContent();
-    }
-
-    [HttpDelete("{id:guid}/profile-image")]
-    public async Task<IActionResult> RemoveProfileImage(Guid id, CancellationToken cancellationToken)
-    {
-        await mediator.Send(new RemovePetProfileImageCommand(id), cancellationToken);
-        return NoContent();
-    }
-
     [HttpPost("{id:guid}/images")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> AddImage(Guid id, IFormFile file, CancellationToken cancellationToken)
+    public async Task<IActionResult> AddImages(Guid id, IFormFileCollection files, CancellationToken cancellationToken)
     {
-        await using var stream = file.OpenReadStream();
-        var imageId = await mediator.Send(
-            new AddPetImageCommand(id, file.FileName, stream, file.ContentType),
-            cancellationToken);
+        var uploads = files
+            .Select(f => new PetImageUpload(f.FileName, f.OpenReadStream(), f.ContentType))
+            .ToList();
 
-        return CreatedAtAction(nameof(GetById), new { id }, new { imageId });
+        var result = await mediator.Send(new AddPetImagesCommand(id, uploads), cancellationToken);
+
+        if (result.Results.Any(r => !r.Success))
+            return StatusCode(207, result);
+
+        return StatusCode(201, result);
+    }
+
+    [HttpPost("{id:guid}/images/batch-delete")]
+    public async Task<IActionResult> BatchDeleteImages(
+        Guid id, BatchDeleteImagesRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new BatchDeletePetImagesCommand(id, request.ImageIds), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/images/{imageId:guid}/featured")]
+    public async Task<IActionResult> SetFeaturedImage(Guid id, Guid imageId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new SetFeaturedImageCommand(id, imageId), cancellationToken);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}/images/{imageId:guid}")]
@@ -90,5 +90,6 @@ public class PetController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);
+public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType, string Breed);
 public record UpdatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);
+public record BatchDeleteImagesRequest(IReadOnlyList<Guid> ImageIds);

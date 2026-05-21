@@ -71,7 +71,6 @@ public class UpdatePetCommandValidatorTests
     [Theory]
     [InlineData("Dog")]
     [InlineData("Cat")]
-    [InlineData("Other")]
     public void Validate_When_PetTypeIsKnown_Passes(string petType)
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType);
@@ -86,6 +85,17 @@ public class UpdatePetCommandValidatorTests
     public void Validate_When_PetTypeIsEmptyOrNull_Fails_ForPetType(string? petType)
     {
         var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType!);
+
+        var result = _updatePetCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PetType));
+    }
+
+    [Fact]
+    public void Validate_When_PetTypeIsUnknown_Fails_ForPetType()
+    {
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, "Other");
 
         var result = _updatePetCommandValidator.Validate(command);
 

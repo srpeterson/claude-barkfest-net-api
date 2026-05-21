@@ -96,6 +96,39 @@ public class PetImageTests
     }
 
     // -----------------------------------------------------------------------
+    // SetAsFeatured / UnsetAsFeatured
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void SetAsFeatured_When_Called_Sets_IsFeaturedImageTrue()
+    {
+        var image = new PetImage();
+
+        image.SetAsFeatured();
+
+        image.IsFeaturedImage.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void UnsetAsFeatured_When_Called_Sets_IsFeaturedImageFalse()
+    {
+        var image = new PetImage();
+        image.SetAsFeatured();
+
+        image.UnsetAsFeatured();
+
+        image.IsFeaturedImage.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void NewPetImage_When_Instantiated_IsFeaturedImage_Is_False()
+    {
+        var image = new PetImage();
+
+        image.IsFeaturedImage.ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
     // Id default
     // -----------------------------------------------------------------------
 

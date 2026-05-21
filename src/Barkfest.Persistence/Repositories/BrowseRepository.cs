@@ -1,6 +1,5 @@
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Browse.DTOs;
-using Barkfest.Application.Features.Pets.DTOs;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +36,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         pi.Id,
         pi.BlobName,
         pi.ContentType,
+        pi.IsFeaturedImage,
         pi.CreatedAt,
         $"{pi.Pet.Owner.FirstName} {pi.Pet.Owner.LastName}",
         pi.Pet.Id,
@@ -50,10 +50,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             DogBreedInfo dog => dog.DogBreed.Name,
             CatBreedInfo cat => cat.CatBreed.Name,
             _ => null
-        },
-        pi.Pet.ProfileImage is null
-            ? null
-            : new ProfileImageDto(pi.Pet.ProfileImage.BlobName, pi.Pet.ProfileImage.ContentType));
+        });
 
     private static bool MatchesBreed(Breed? breed, string breedName) =>
         breed switch

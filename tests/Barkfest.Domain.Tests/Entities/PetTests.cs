@@ -166,17 +166,13 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetBreed_When_Null_Clears_Breed()
+    public void SetBreed_When_Null_Throws_DomainException()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Dog);
-        var dogBreed = new DogBreedInfo();
-        dogBreed.SetDogBreed(DogBreed.Beagle);
-        pet.SetBreed(dogBreed);
 
-        pet.SetBreed(null);
-
-        pet.Breed.ShouldBeNull();
+        Should.Throw<DomainException>(() => pet.SetBreed(null!))
+            .Message.ShouldBe("Breed is required.");
     }
 
     [Fact]
@@ -227,41 +223,56 @@ public class PetTests
             .Message.ShouldBe("Cat pet type requires a cat breed.");
     }
 
-    [Fact]
-    public void SetBreed_When_BreedSetAndTypeIsOther_Throws_DomainException()
-    {
-        var pet = BuildPet();
-        pet.SetPetType(PetType.Other);
-        var dogBreed = new DogBreedInfo();
-
-        Should.Throw<DomainException>(() => pet.SetBreed(dogBreed))
-            .Message.ShouldBe("Other pet type cannot have a breed.");
-    }
-
     // -----------------------------------------------------------------------
-    // SetProfileImage / RemoveProfileImage
+    // SetFeaturedImage
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetProfileImage_When_ArgsAreValid_Sets_ProfileImage()
+    public void SetFeaturedImage_When_ImageExists_Sets_IsFeaturedImageTrue()
     {
         var pet = BuildPet();
+        var image = new PetImageBuilder().Build();
+        pet.AddImage(image);
 
-        pet.SetProfileImage("pets/abc/profile.jpg", "image/jpeg");
+        pet.SetFeaturedImage(image.Id);
 
-        pet.ProfileImage.ShouldNotBeNull();
-        pet.ProfileImage!.BlobName.ShouldBe("pets/abc/profile.jpg");
+        pet.FeaturedImage.ShouldNotBeNull();
+        pet.FeaturedImage!.Id.ShouldBe(image.Id);
+        image.IsFeaturedImage.ShouldBeTrue();
     }
 
     [Fact]
-    public void RemoveProfileImage_When_ImageIsSet_Clears_ProfileImage()
+    public void SetFeaturedImage_When_AlreadyFeaturedImageExists_Replaces_Featured()
     {
         var pet = BuildPet();
-        pet.SetProfileImage("pets/abc/profile.jpg", "image/jpeg");
+        var first = new PetImageBuilder().WithDisplayOrder(0).Build();
+        var second = new PetImageBuilder().WithDisplayOrder(1).Build();
+        pet.AddImage(first);
+        pet.AddImage(second);
+        pet.SetFeaturedImage(first.Id);
 
-        pet.RemoveProfileImage();
+        pet.SetFeaturedImage(second.Id);
 
-        pet.ProfileImage.ShouldBeNull();
+        first.IsFeaturedImage.ShouldBeFalse();
+        second.IsFeaturedImage.ShouldBeTrue();
+        pet.FeaturedImage!.Id.ShouldBe(second.Id);
+    }
+
+    [Fact]
+    public void SetFeaturedImage_When_ImageNotFound_Throws_DomainException()
+    {
+        var pet = BuildPet();
+
+        Should.Throw<DomainException>(() => pet.SetFeaturedImage(Guid.NewGuid()))
+            .Message.ShouldBe("Image not found.");
+    }
+
+    [Fact]
+    public void FeaturedImage_When_NoImages_Returns_Null()
+    {
+        var pet = BuildPet();
+
+        pet.FeaturedImage.ShouldBeNull();
     }
 
     // -----------------------------------------------------------------------
@@ -299,6 +310,32 @@ public class PetTests
             .Message.ShouldBe("Image is required.");
     }
 
+    [Fact]
+    public void AddImage_When_FirstImage_AutoSets_IsFeaturedImage()
+    {
+        var pet = BuildPet();
+        var image = new PetImageBuilder().Build();
+
+        pet.AddImage(image);
+
+        image.IsFeaturedImage.ShouldBeTrue();
+        pet.FeaturedImage!.Id.ShouldBe(image.Id);
+    }
+
+    [Fact]
+    public void AddImage_When_SecondImage_DoesNotAutoFeature()
+    {
+        var pet = BuildPet();
+        var first = new PetImageBuilder().WithDisplayOrder(0).Build();
+        var second = new PetImageBuilder().WithDisplayOrder(1).Build();
+        pet.AddImage(first);
+
+        pet.AddImage(second);
+
+        second.IsFeaturedImage.ShouldBeFalse();
+        pet.FeaturedImage!.Id.ShouldBe(first.Id);
+    }
+
     // -----------------------------------------------------------------------
     // RemoveImage
     // -----------------------------------------------------------------------
@@ -322,6 +359,52 @@ public class PetTests
 
         Should.Throw<DomainException>(() => pet.RemoveImage(Guid.NewGuid()))
             .Message.ShouldBe("Image not found.");
+    }
+
+    // -----------------------------------------------------------------------
+    // RemoveImages (batch)
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void RemoveImages_When_AllExist_Removes_All()
+    {
+        var pet = BuildPet();
+        var first = new PetImageBuilder().WithDisplayOrder(0).Build();
+        var second = new PetImageBuilder().WithDisplayOrder(1).Build();
+        var third = new PetImageBuilder().WithDisplayOrder(2).Build();
+        pet.AddImage(first);
+        pet.AddImage(second);
+        pet.AddImage(third);
+
+        pet.RemoveImages([first.Id, second.Id]);
+
+        pet.Images.Count.ShouldBe(1);
+        pet.Images.ShouldContain(i => i.Id == third.Id);
+    }
+
+    [Fact]
+    public void RemoveImages_When_AnyNotFound_Throws_DomainException()
+    {
+        var pet = BuildPet();
+        var image = new PetImageBuilder().Build();
+        pet.AddImage(image);
+
+        Should.Throw<DomainException>(() => pet.RemoveImages([image.Id, Guid.NewGuid()]))
+            .Message.ShouldBe("One or more images were not found.");
+    }
+
+    [Fact]
+    public void RemoveImages_When_FeaturedImageIncluded_FeaturedImage_Becomes_Null()
+    {
+        var pet = BuildPet();
+        var first = new PetImageBuilder().WithDisplayOrder(0).Build();
+        var second = new PetImageBuilder().WithDisplayOrder(1).Build();
+        pet.AddImage(first);
+        pet.AddImage(second);
+
+        pet.RemoveImages([first.Id]);
+
+        pet.FeaturedImage.ShouldBeNull();
     }
 
     // -----------------------------------------------------------------------

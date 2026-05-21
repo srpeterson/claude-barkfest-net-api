@@ -32,19 +32,7 @@ public class PetConfiguration : IEntityTypeConfiguration<Pet>
             .IsRequired();
 
         builder.Ignore(p => p.Age);
-
-        builder.OwnsOne(p => p.ProfileImage, pi =>
-        {
-            pi.Property(p => p.BlobName)
-                .HasColumnName("ProfileImageBlobName")
-                .HasMaxLength(500)
-                .IsRequired(false);
-
-            pi.Property(p => p.ContentType)
-                .HasColumnName("ProfileImageContentType")
-                .HasMaxLength(100)
-                .IsRequired(false);
-        });
+        builder.Ignore(p => p.FeaturedImage);
 
         builder.HasOne(p => p.Owner)
             .WithMany(o => o.Pets)

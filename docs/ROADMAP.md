@@ -163,7 +163,35 @@ The exporter self-activates on the connection string presence check in `ServiceD
 
 ---
 
-## 6. Image Moderation
+## 6. Pet Image Descriptions and Batch Update
+
+**Priority:** Low
+**Status:** Not started
+
+### What
+Allow owners to add an optional text description to each pet image. Descriptions
+could be displayed as a caption beneath the image or as a tooltip overlay in the UI.
+
+### Why deferred
+No immediate use case — deferred until UI design confirms how descriptions will
+be surfaced (caption, tooltip, etc.).
+
+### Approach (high level)
+- Add `Description` (`string?`, nullable, max length TBD) to `PetImage`
+- New migration: `AddPetImageDescription`
+- New endpoint: `POST /v1/pets/{id}/images/batch-update` — accepts a list of
+  `{ imageId, description }` pairs; atomic (all succeed or none are saved)
+- Validator: description max length enforced; unknown `imageId`s rejected
+
+### Notes
+- Batch update is preferred over per-image update to match the edit images page
+  UX — owner edits all captions at once and saves in a single action
+- Atomic behaviour matches batch delete: if any `imageId` is invalid, reject the
+  entire request
+
+---
+
+## 7. Image Moderation
 
 **Priority:** Medium
 **Status:** Scaffolded — `IContentModerationService` is wired into all image upload

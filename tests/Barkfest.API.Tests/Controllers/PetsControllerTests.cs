@@ -1,5 +1,7 @@
+using Barkfest.Domain.Entities;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Barkfest.API.Tests.Controllers;
 
@@ -20,7 +22,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petType = "Dog",
+            breed = "Beagle"
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -36,7 +39,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petType = "Dog",
+            breed = "Beagle"
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -54,7 +58,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petType = "Dog",
+            breed = "Beagle"
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -176,6 +181,136 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
+    // POST /v1/pets/{id}/images — batch upload
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task AddImages_When_Unauthenticated_Returns_Unauthorized()
+    {
+        var response = await _unauthenticatedClient.PostAsync(
+            $"/v1/pets/{Guid.NewGuid()}/images",
+            BuildBatchFormData([("photo.jpg", "image/jpeg")]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task AddImages_When_FilesAreValid_Returns_Created()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Luna");
+
+        var response = await client.PostAsync(
+            $"/v1/pets/{petId}/images",
+            BuildBatchFormData([("gallery1.jpg", "image/jpeg"), ("gallery2.png", "image/png")]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var body = await response.Content.ReadAsStringAsync();
+        body.ShouldContain("results");
+    }
+
+    [Fact]
+    public async Task AddImages_When_PetNotFound_Returns_NotFound()
+    {
+        var (client, _) = await RegisterAndGetClient();
+
+        var response = await client.PostAsync(
+            $"/v1/pets/{Guid.NewGuid()}/images",
+            BuildBatchFormData([("gallery1.jpg", "image/jpeg")]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task AddImages_When_ExceedsAvailableSlots_Returns_BadRequest()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Luna");
+
+        for (var i = 0; i < Pet.MaxImages; i++)
+            await client.PostAsync($"/v1/pets/{petId}/images",
+                BuildBatchFormData([($"gallery{i}.jpg", "image/jpeg")]));
+
+        var response = await client.PostAsync(
+            $"/v1/pets/{petId}/images",
+            BuildBatchFormData([("extra.jpg", "image/jpeg")]));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // -----------------------------------------------------------------------
+    // POST /v1/pets/{id}/images/batch-delete
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task BatchDeleteImages_When_AllExist_Returns_NoContent()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+        var imageId = await AddImageAndGetId(client, petId);
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/pets/{petId}/images/batch-delete",
+            new { imageIds = new[] { imageId } });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task BatchDeleteImages_When_AnyNotFound_Returns_BadRequest()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+        var imageId = await AddImageAndGetId(client, petId);
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/pets/{petId}/images/batch-delete",
+            new { imageIds = new[] { imageId, Guid.NewGuid() } });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task BatchDeleteImages_When_EmptyList_Returns_BadRequest()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+
+        var response = await client.PostAsJsonAsync(
+            $"/v1/pets/{petId}/images/batch-delete",
+            new { imageIds = Array.Empty<Guid>() });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // -----------------------------------------------------------------------
+    // PUT /v1/pets/{id}/images/{imageId}/featured
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task SetFeaturedImage_When_ImageExists_Returns_NoContent()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+        var imageId = await AddImageAndGetId(client, petId);
+
+        var response = await client.PutAsync($"/v1/pets/{petId}/images/{imageId}/featured", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task SetFeaturedImage_When_ImageNotFound_Returns_BadRequest()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+
+        var response = await client.PutAsync($"/v1/pets/{petId}/images/{Guid.NewGuid()}/featured", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
@@ -198,18 +333,50 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 
-    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog")
+    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog", string breed = "Beagle")
     {
         var response = await client.PostAsJsonAsync("/v1/pets", new
         {
             name,
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType
+            petType,
+            breed
         });
 
         response.EnsureSuccessStatusCode();
         var location = response.Headers.Location!.ToString();
         return Guid.Parse(location.Split('/').Last());
+    }
+
+    private async Task<Guid> AddImageAndGetId(HttpClient client, Guid petId)
+    {
+        var response = await client.PostAsync(
+            $"/v1/pets/{petId}/images",
+            BuildBatchFormData([("photo.jpg", "image/jpeg")]));
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        return doc.RootElement
+            .GetProperty("results")[0]
+            .GetProperty("imageId")
+            .GetGuid();
+    }
+
+    private static MultipartFormDataContent BuildBatchFormData(
+        IEnumerable<(string FileName, string ContentType)> files)
+    {
+        var fakeImageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10 };
+        var form = new MultipartFormDataContent();
+
+        foreach (var (fileName, contentType) in files)
+        {
+            var content = new ByteArrayContent(fakeImageBytes);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            form.Add(content, "files", fileName);
+        }
+
+        return form;
     }
 }

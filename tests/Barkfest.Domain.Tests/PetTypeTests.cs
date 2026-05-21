@@ -19,22 +19,14 @@ public class PetTypeTests
     }
 
     [Fact]
-    public void PetType_Other_Has_CorrectIntValue()
-    {
-        PetType.Other.ShouldNotBeNull();
-        PetType.Other.Value.ShouldBe(3);
-    }
-
-    [Fact]
     public void PetType_List_Contains_AllDefinedTypes()
     {
-        PetType.List.Count.ShouldBe(3);
+        PetType.List.Count.ShouldBe(2);
     }
 
     [Theory]
     [InlineData("Dog")]
     [InlineData("Cat")]
-    [InlineData("Other")]
     public void FromName_When_NameIsValid_Returns_PetType(string name)
     {
         var result = PetType.FromName(name);
@@ -46,7 +38,6 @@ public class PetTypeTests
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
-    [InlineData(3)]
     public void FromValue_When_ValueIsValid_Returns_PetType(int value)
     {
         var result = PetType.FromValue(value);
@@ -59,6 +50,12 @@ public class PetTypeTests
     public void FromName_When_NameIsInvalid_Throws_Exception()
     {
         Should.Throw<Exception>(() => PetType.FromName("Invalid"));
+    }
+
+    [Fact]
+    public void FromName_When_OtherIsUsed_Throws_Exception()
+    {
+        Should.Throw<Exception>(() => PetType.FromName("Other"));
     }
 
     [Fact]
