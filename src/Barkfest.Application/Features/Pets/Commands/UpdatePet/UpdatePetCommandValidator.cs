@@ -1,4 +1,5 @@
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Enums;
 using FluentValidation;
 
 namespace Barkfest.Application.Features.Pets.Commands.UpdatePet;
@@ -15,6 +16,8 @@ public class UpdatePetCommandValidator : AbstractValidator<UpdatePetCommand>
             .MaximumLength(Pet.NameMaxLength);
 
         RuleFor(x => x.PetType)
-            .NotEmpty();
+            .NotEmpty()
+            .Must(pt => PetType.List.Any(p => p.Name == pt))
+            .WithMessage("Pet type must be 'Dog' or 'Cat'.");
     }
 }

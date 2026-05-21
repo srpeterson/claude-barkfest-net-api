@@ -166,17 +166,13 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetBreed_When_Null_Clears_Breed()
+    public void SetBreed_When_Null_Throws_DomainException()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Dog);
-        var dogBreed = new DogBreedInfo();
-        dogBreed.SetDogBreed(DogBreed.Beagle);
-        pet.SetBreed(dogBreed);
 
-        pet.SetBreed(null);
-
-        pet.Breed.ShouldBeNull();
+        Should.Throw<DomainException>(() => pet.SetBreed(null!))
+            .Message.ShouldBe("Breed is required.");
     }
 
     [Fact]
@@ -225,17 +221,6 @@ public class PetTests
 
         Should.Throw<DomainException>(() => pet.SetBreed(dogBreed))
             .Message.ShouldBe("Cat pet type requires a cat breed.");
-    }
-
-    [Fact]
-    public void SetBreed_When_BreedSetAndTypeIsOther_Throws_DomainException()
-    {
-        var pet = BuildPet();
-        pet.SetPetType(PetType.Other);
-        var dogBreed = new DogBreedInfo();
-
-        Should.Throw<DomainException>(() => pet.SetBreed(dogBreed))
-            .Message.ShouldBe("Other pet type cannot have a breed.");
     }
 
     // -----------------------------------------------------------------------

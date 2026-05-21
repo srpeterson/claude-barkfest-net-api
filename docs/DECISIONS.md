@@ -401,6 +401,21 @@ Application Insights with a single call. The Serilog `ApplicationInsights` sink 
 log events — it has no visibility into traces or metrics. The OpenTelemetry approach is also the
 direction Microsoft is standardising on for Azure Monitor going forward.
 
+---
+
+### Decision: Remove `PetType.Other`; make `Breed` required
+**Choice:** `PetType` is restricted to `Dog` (1) and `Cat` (2). `PetType.Other` (3) is
+removed. `Breed` is a required field on pet creation — it cannot be null or empty.
+`DogBreed.Other` and `CatBreed.Other` are retained as valid breed values within each species.
+
+**Reason:** `PetType.Other` was a dead-end value — it had no breed list, no domain
+behaviour, and no UI meaning. An owner who doesn't know their pet's breed can choose
+`DogBreed.Other` or `CatBreed.Other` rather than leaving the field blank, which is more
+intentional and more useful. Making `Breed` required means every pet in the system has a
+declared breed (even if that breed is "Other"), which is cleaner for filtering and display.
+The `PetType` column stores an `int` — removing value 3 requires no schema migration as
+long as no rows with `PetType = 3` exist in production.
+
 **Why conditional on connection string presence:**
 Activating Azure Monitor unconditionally would break local dev (no connection string available)
 and integration tests (containers have no Azure connectivity). Checking

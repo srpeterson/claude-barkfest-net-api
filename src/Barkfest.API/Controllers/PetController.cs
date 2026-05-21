@@ -28,7 +28,7 @@ public class PetController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Create(CreatePetRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(
-            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetType),
+            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetType, request.Breed),
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, null);
@@ -90,5 +90,5 @@ public class PetController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);
+public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType, string Breed);
 public record UpdatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);

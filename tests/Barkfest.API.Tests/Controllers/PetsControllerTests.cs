@@ -20,7 +20,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petType = "Dog",
+            breed = "Beagle"
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -36,7 +37,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petType = "Dog",
+            breed = "Beagle"
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -54,7 +56,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petType = "Dog",
+            breed = "Beagle"
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -198,14 +201,15 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 
-    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog")
+    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog", string breed = "Beagle")
     {
         var response = await client.PostAsJsonAsync("/v1/pets", new
         {
             name,
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType
+            petType,
+            breed
         });
 
         response.EnsureSuccessStatusCode();

@@ -36,12 +36,14 @@ public class Pet
         Guid ownerId,
         string name,
         PetType petType,
+        Breed breed,
         string? description = null,
         DateOnly? dateOfBirth = null)
     {
         var pet = new Pet(ownerId);
         pet.SetName(name);
         pet.SetPetType(petType);
+        pet.SetBreed(breed);
         pet.SetDescription(description);
         pet.SetDateOfBirth(dateOfBirth);
         return pet;
@@ -77,22 +79,16 @@ public class Pet
         PetType = petType;
     }
 
-    public void SetBreed(Breed? breed)
+    public void SetBreed(Breed breed)
     {
         if (breed is null)
-        {
-            Breed = null;
-            return;
-        }
+            throw new DomainException("Breed is required.");
 
         if (PetType == PetType.Dog && breed is not DogBreedInfo)
             throw new DomainException("Dog pet type requires a dog breed.");
 
         if (PetType == PetType.Cat && breed is not CatBreedInfo)
             throw new DomainException("Cat pet type requires a cat breed.");
-
-        if (PetType == PetType.Other)
-            throw new DomainException("Other pet type cannot have a breed.");
 
         Breed = breed;
     }

@@ -34,7 +34,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
             description = (string?)null,
             dateOfBirth = (string?)null,
             petType = "Dog",
-            breed = (string?)null
+            breed = "Beagle"
         });
 
         petResponse.EnsureSuccessStatusCode();

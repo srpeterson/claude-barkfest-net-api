@@ -312,8 +312,8 @@ validators, tests, EF Core configuration.
 - `Description` — optional, no max length, trimmed if provided
 - `DateOfBirth` — optional `DateOnly`, cannot be in the future
 - `Age` — computed from `DateOfBirth` at runtime, **never stored in the database**
-- `PetType` — required SmartEnum
-- `Breed` — must match `PetType`: Dog → `DogBreedInfo`, Cat → `CatBreedInfo`, Other → null only
+- `PetType` — required SmartEnum; only `Dog` (1) and `Cat` (2) are valid values
+- `Breed` — required; must match `PetType`: Dog → `DogBreedInfo`, Cat → `CatBreedInfo`; "Other" is a valid breed name within each species (same as any named breed)
 - `Images` — maximum `Pet.MaxImages` (6) gallery images
 
 ### Images (applies to all image uploads across the entire application)
@@ -459,7 +459,7 @@ builder classes are available without an explicit `using` in every test file.
 | Builder | Default state |
 |---|---|
 | `OwnerBuilder` | `FirstName="Test"`, `LastName="Owner"`, unique email |
-| `PetBuilder` | `OwnerId=NewGuid`, `Name="Buddy"`, `PetType=Dog` |
+| `PetBuilder` | `OwnerId=NewGuid`, `Name="Buddy"`, `PetType=Dog`, `Breed=DogBreedInfo(Beagle)` |
 | `PetImageBuilder` | `BlobName="pets/test/gallery/photo.jpg"`, `ContentType="image/jpeg"`, `DisplayOrder=0` |
 
 **Rules:**
