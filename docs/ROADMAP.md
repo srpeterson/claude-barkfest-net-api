@@ -44,7 +44,48 @@ needing a real email delivery service.
 
 ---
 
-## 2. Value Object Emails (and Other Validated Strings)
+## 2. Two-Factor Authentication (2FA)
+
+**Priority:** Medium
+**Status:** Not started — depends on Email Verification (item 1) being complete
+
+### What
+Add an optional second factor to the owner login flow. After a valid username and
+password, owners who have enabled 2FA must supply a one-time code before receiving
+a JWT. Two approaches are in scope:
+
+- **Email OTP** — a short-lived numeric code sent to the owner's verified email address.
+  Lower friction, no extra app required.
+- **TOTP (Authenticator App)** — time-based one-time passwords compatible with Google
+  Authenticator, Authy, and similar apps. More secure; preferred long-term.
+
+### Why
+Passwords alone can be compromised through phishing or credential stuffing. A second
+factor significantly reduces the risk of unauthorised account access even when a
+password is known.
+
+### Prerequisites
+- Email Verification (item 1) must be complete — 2FA via email requires a verified,
+  working email address on the account
+- For TOTP: a QR code enrolment flow and a shared secret stored (encrypted) on `Owner`
+
+### Approach (high level)
+1. Add `IsTwoFactorEnabled` (`bool`) and `TwoFactorSecret` (`string?`) to `Owner`
+2. New endpoint: `POST /v1/auth/2fa/enable` — generates and returns a TOTP secret / QR code
+3. New endpoint: `POST /v1/auth/2fa/verify` — confirms enrolment with a valid code
+4. New endpoint: `POST /v1/auth/2fa/disable`
+5. Modify `LoginCommandHandler` — when 2FA is enabled, return a short-lived challenge
+   token instead of a full JWT; require the owner to complete `POST /v1/auth/2fa/challenge`
+   with a valid code to receive the full JWT
+6. Recovery codes — generate a set of single-use backup codes at enrolment
+
+### Local dev note
+2FA should be bypassable in the Testing environment so integration tests are not
+blocked by the second-factor step.
+
+---
+
+## 3. Value Object Emails (and Other Validated Strings)
 
 **Priority:** Low
 **Status:** Not started — kept as plain `string` properties for now
@@ -73,7 +114,7 @@ Until then, the setter guarantee is sufficient.
 
 ---
 
-## 3. Upgrade Microsoft.OpenApi to 3.x
+## 4. Upgrade Microsoft.OpenApi to 3.x
 
 **Priority:** Low
 **Status:** Blocked — pinned to 2.7.4 (latest 2.x)
@@ -95,7 +136,7 @@ with `Microsoft.OpenApi` 3.x. Once confirmed, remove the pin in
 
 ---
 
-## 4. Application Insights — Provision and Connect
+## 5. Application Insights — Provision and Connect
 
 **Priority:** High (before first Azure deployment)
 **Status:** Code complete — `Azure.Monitor.OpenTelemetry.AspNetCore` wired into `ServiceDefaults`. Activates automatically when `APPLICATIONINSIGHTS_CONNECTION_STRING` is present.
@@ -122,7 +163,7 @@ The exporter self-activates on the connection string presence check in `ServiceD
 
 ---
 
-## 5. Image Moderation
+## 6. Image Moderation
 
 **Priority:** Medium
 **Status:** Scaffolded — `IContentModerationService` is wired into all image upload
