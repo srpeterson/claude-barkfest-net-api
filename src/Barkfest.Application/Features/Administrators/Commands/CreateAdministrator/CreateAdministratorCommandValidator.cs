@@ -29,6 +29,10 @@ public class CreateAdministratorCommandValidator : AbstractValidator<CreateAdmin
             .WithMessage("Phone number must be in E.164 format (e.g. +15555555555).");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.");
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(AccountConstraints.PasswordMinLength)
+            .WithMessage($"Password must be at least {AccountConstraints.PasswordMinLength} characters.")
+            .MaximumLength(AccountConstraints.PasswordMaxLength)
+            .WithMessage($"Password cannot exceed {AccountConstraints.PasswordMaxLength} characters.");
     }
 }

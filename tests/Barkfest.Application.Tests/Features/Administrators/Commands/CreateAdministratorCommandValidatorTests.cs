@@ -125,4 +125,28 @@ public class CreateAdministratorCommandValidatorTests
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.Password));
     }
+
+    [Fact]
+    public void Fails_ForPassword_When_BelowMinLength()
+    {
+        var shortPassword = new string('a', AccountConstraints.PasswordMinLength - 1);
+
+        var result = _createAdministratorCommandValidator.Validate(
+            new CreateAdministratorCommand("newadmin", "New Admin", "new@barkfest.dev", "+15555550100", shortPassword));
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.Password));
+    }
+
+    [Fact]
+    public void Fails_ForPassword_When_ExceedsMaxLength()
+    {
+        var longPassword = new string('a', AccountConstraints.PasswordMaxLength + 1);
+
+        var result = _createAdministratorCommandValidator.Validate(
+            new CreateAdministratorCommand("newadmin", "New Admin", "new@barkfest.dev", "+15555550100", longPassword));
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.Password));
+    }
 }
