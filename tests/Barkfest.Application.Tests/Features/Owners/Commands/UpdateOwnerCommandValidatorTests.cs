@@ -159,6 +159,18 @@ public class UpdateOwnerCommandValidatorTests
     }
 
     [Fact]
+    public void Fails_ForPhoneNumber_When_ExceedsMaxLength()
+    {
+        var longPhone = new string('1', E164PhoneNumber.MaxLength + 1);
+        var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", longPhone);
+
+        var result = _updateOwnerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PhoneNumber));
+    }
+
+    [Fact]
     public void Validate_When_PhoneNumberIsNull_Passes()
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null);

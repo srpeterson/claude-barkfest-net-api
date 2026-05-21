@@ -114,6 +114,18 @@ public class CreateAdministratorCommandValidatorTests
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.PhoneNumber));
     }
 
+    [Fact]
+    public void Fails_ForPhoneNumber_When_ExceedsMaxLength()
+    {
+        var longPhone = new string('1', E164PhoneNumber.MaxLength + 1);
+
+        var result = _createAdministratorCommandValidator.Validate(
+            new CreateAdministratorCommand("newadmin", "New Admin", "new@barkfest.dev", longPhone, "pass"));
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.PhoneNumber));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

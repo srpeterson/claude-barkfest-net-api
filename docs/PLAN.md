@@ -982,7 +982,7 @@ traces, and health for all resources. The API URL is listed there.
 - [x] `ExceptionHandlingMiddleware` — `ForbiddenException` → 403
 - [x] `appsettings.json` / `appsettings.Development.json` / `appsettings.Testing.json`
 
-### Tests (647 total — all passing)
+### Tests (650 total — all passing)
 
 - [x] `JwtTestHelper.GenerateToken(Guid ownerId)` in `Barkfest.Tests.Common`
 - [x] `CreateAuthenticatedClient(Guid ownerId)` in `BarkfestApiFactory` and `IntegrationApiFactory`

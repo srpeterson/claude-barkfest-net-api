@@ -304,7 +304,7 @@ validators, tests, EF Core configuration.
 - `FirstName` — required, max `Owner.FirstNameMaxLength` chars, trimmed
 - `LastName` — required, max `Owner.LastNameMaxLength` chars, trimmed
 - `Email` — required, valid email format, max `Owner.EmailMaxLength` chars, lowercased and trimmed, unique (contact only — not used for login)
-- `PhoneNumber` — optional, no max length constraint
+- `PhoneNumber` — optional, E.164 format if provided, max `E164PhoneNumber.MaxLength` chars
 - Login uses `Username` + password; `Email` is a contact field only
 
 ### Pet

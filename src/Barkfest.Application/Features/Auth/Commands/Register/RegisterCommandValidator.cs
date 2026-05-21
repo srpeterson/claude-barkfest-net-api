@@ -30,6 +30,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .EmailAddress().WithMessage("Email must be a valid email address.");
 
         RuleFor(x => x.PhoneNumber)
+            .MaximumLength(E164PhoneNumber.MaxLength)
+            .WithMessage($"Phone number cannot exceed {E164PhoneNumber.MaxLength} characters.")
             .Matches(E164PhoneNumber.Pattern)
             .WithMessage("Phone number must be in E.164 format (e.g. +15555555555).")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));

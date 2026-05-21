@@ -171,6 +171,18 @@ public class RegisterCommandValidatorTests
     }
 
     [Fact]
+    public void Validate_When_PhoneNumberExceedsMaxLength_Fails_ForPhoneNumber()
+    {
+        var longPhone = new string('1', E164PhoneNumber.MaxLength + 1);
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", longPhone, "SecurePass1!");
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PhoneNumber));
+    }
+
+    [Fact]
     public void Validate_When_PhoneNumberIsNull_Passes()
     {
         var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", null, "SecurePass1!");
