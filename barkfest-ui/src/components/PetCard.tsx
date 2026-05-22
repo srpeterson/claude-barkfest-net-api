@@ -1,10 +1,11 @@
 import { Calendar } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { Pet } from '@/types/pet'
+import { getBlobImageUrl } from '@/lib/imageUrl'
+import type { BrowseImageDto } from '@/types/browse'
 
 interface PetCardProps {
-  pet: Pet
+  pet: BrowseImageDto
   index: number
 }
 
@@ -18,8 +19,8 @@ export function PetCard({ pet, index }: PetCardProps) {
         {/* Image */}
         <div className="aspect-square overflow-hidden">
           <img
-            src={pet.image_url}
-            alt={pet.name}
+            src={getBlobImageUrl(pet.blobName)}
+            alt={pet.petName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         </div>
@@ -27,19 +28,23 @@ export function PetCard({ pet, index }: PetCardProps) {
         {/* Body */}
         <div className="p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="font-heading text-lg font-semibold">{pet.name}</h3>
-            {pet.age && (
+            <h3 className="font-heading text-lg font-semibold">{pet.petName}</h3>
+            {pet.age != null && (
               <Badge variant="secondary" className="gap-1 text-xs font-sans">
                 <Calendar size={12} />
-                {pet.age}
+                {pet.age}y
               </Badge>
             )}
           </div>
 
-          {pet.description && (
+          {pet.petDescription && (
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-              {pet.description}
+              {pet.petDescription}
             </p>
+          )}
+
+          {pet.breed && (
+            <p className="text-xs text-muted-foreground">{pet.breed}</p>
           )}
         </div>
       </Card>

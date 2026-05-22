@@ -6,8 +6,8 @@ import { Navbar } from '@/components/Navbar'
 import { HeroSection } from '@/components/HeroSection'
 import { FilterBar } from '@/components/FilterBar'
 import { PetGrid } from '@/components/PetGrid'
-import { api } from '@/lib/api'
-import type { Pet } from '@/types/pet'
+import { getBrowseImages } from '@/lib/api'
+import type { BrowseImageDto, PagedResult } from '@/types/browse'
 
 const PAGE_SIZE = 6
 
@@ -16,18 +16,20 @@ export function HomePage() {
   const [petType, setPetType] = useState('All')
   const [breed, setBreed]     = useState('')
 
-  const { data: pets = [], isLoading } = useQuery<Pet[]>({
-    queryKey: ['pets', page, petType, breed],
-    queryFn: () => {
-      const params = new URLSearchParams({
-        page:     String(page),
-        pageSize: String(PAGE_SIZE),
-        ...(petType !== 'All' && { type: petType }),
-        ...(breed             && { breed }),
-      })
-      return api.get<Pet[]>(`/pets?${params}`)
-    },
+  const { data, isLoading } = useQuery<PagedResult<BrowseImageDto>>({
+    queryKey: ['browse', 'images', page, petType, breed],
+    queryFn: () => getBrowseImages({
+      page,
+      pageSize: PAGE_SIZE,
+      ...(petType !== 'All' && { petType }),
+      ...(breed             && { breed }),
+    }),
   })
+
+  const pets             = data?.items ?? []
+  const hasMore          = data?.hasMore ?? false
+  const hasPrev          = page > 1
+  const hasActiveFilters = petType !== 'All' || breed !== ''
 
   const handleTypeChange = (val: string) => {
     setPetType(val)
@@ -35,8 +37,10 @@ export function HomePage() {
     setPage(1)
   }
 
-  const hasNext = pets.length === PAGE_SIZE
-  const hasPrev = page > 1
+  const handleBreedChange = (val: string) => {
+    setBreed(val)
+    setPage(1)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,15 +49,15 @@ export function HomePage() {
         petType={petType}
         onPetTypeChange={handleTypeChange}
         breed={breed}
-        onBreedChange={setBreed}
+        onBreedChange={handleBreedChange}
       />
       <div className="-mt-12">
         <HeroSection />
       </div>
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-10">
-        <PetGrid pets={pets} isLoading={isLoading} />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6">
+        <PetGrid pets={pets} isLoading={isLoading} hasActiveFilters={hasActiveFilters} />
 
-        {pets.length > 0 && (
+        {(hasPrev || hasMore) && (
           <div className="flex items-center justify-center gap-3 pt-4">
             <Button
               variant="outline"
@@ -72,7 +76,7 @@ export function HomePage() {
               variant="outline"
               size="sm"
               onClick={() => setPage(p => p + 1)}
-              disabled={!hasNext}
+              disabled={!hasMore}
               className="gap-1.5"
             >
               Next

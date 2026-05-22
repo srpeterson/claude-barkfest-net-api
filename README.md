@@ -100,15 +100,16 @@ restarts — SQL Server and Azurite volumes survive `docker stop` and machine re
 
 ### Frontend environment variables
 
-When running via Aspire, **no `.env` file is needed** — Aspire injects `VITE_API_BASE_URL`
-directly into the Vite dev server process using service discovery. The frontend automatically
-points at the correct API URL.
+When running via Aspire, **no `.env` file is needed** — Aspire injects both
+`VITE_API_BASE_URL` and `VITE_BLOB_BASE_URL` directly into the Vite dev server process
+using service discovery. The frontend automatically points at the correct API and
+Blob Storage URLs.
 
 If you ever want to run the frontend standalone (outside Aspire):
 
 ```bash
 cd barkfest-ui
-cp .env.example .env   # then edit VITE_API_BASE_URL to match your API port
+cp .env.example .env   # then edit VITE_API_BASE_URL and VITE_BLOB_BASE_URL
 pnpm dev
 ```
 
