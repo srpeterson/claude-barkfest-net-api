@@ -26,10 +26,6 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
 
         if (!string.IsNullOrWhiteSpace(breed))
         {
-            // Resolve breed name → SmartEnum integer value for DB-level filtering.
-            // Using EF.Property against the shared "BreedValue" TPH column avoids
-            // loading all rows into memory before applying the breed predicate,
-            // which is required for correct server-side pagination counts.
             var dogBreed = DogBreed.List.FirstOrDefault(b =>
                 b.Name.Equals(breed, StringComparison.OrdinalIgnoreCase));
 
@@ -41,10 +37,23 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             if (dogBreed is null && catBreed is null)
                 return new PagedResult<BrowseImageDto>([], page, pageSize, 0);
 
-            var breedValue = dogBreed?.Value ?? catBreed!.Value;
-            baseQuery = baseQuery.Where(pi =>
-                pi.Pet.Breed != null &&
-                EF.Property<int>(pi.Pet.Breed, "BreedValue") == breedValue);
+            // EF.Property cannot navigate through a relationship to reach a shadow
+            // property on a related entity. Instead, query the typed set directly
+            // and use Contains — EF Core translates this to a WHERE PetId IN (subquery).
+            if (dogBreed is not null)
+            {
+                var matchedPetIds = context.Set<DogBreedInfo>()
+                    .Where(d => d.DogBreed == dogBreed)
+                    .Select(d => d.PetId);
+                baseQuery = baseQuery.Where(pi => matchedPetIds.Contains(pi.Pet.Id));
+            }
+            else
+            {
+                var matchedPetIds = context.Set<CatBreedInfo>()
+                    .Where(c => c.CatBreed == catBreed)
+                    .Select(c => c.PetId);
+                baseQuery = baseQuery.Where(pi => matchedPetIds.Contains(pi.Pet.Id));
+            }
         }
 
         var totalCount = await baseQuery.CountAsync(cancellationToken);

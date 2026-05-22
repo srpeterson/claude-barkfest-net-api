@@ -209,6 +209,31 @@ be surfaced (caption, tooltip, etc.).
 
 ---
 
+## 8. UI Component Tests — React Testing Library Setup
+
+**Priority:** Medium
+**Status:** Not started — pure utility functions are tested; component tests deferred
+
+### What
+Establish a full React Testing Library setup and write component-level tests for
+the landing page components: `FilterBar`, `PetGrid`, `PetCard`, and `HomePage`.
+
+### Why deferred
+Setting up React Testing Library correctly (mocking `useQuery`, the API module,
+and environment variables) is a one-time investment that should be done in a single
+dedicated session rather than piecemeal alongside feature work. Doing it once
+ensures a consistent pattern across all component tests.
+
+### Scope when started
+- Install and configure `@testing-library/react` and `@testing-library/user-event`
+- Set up `msw` (Mock Service Worker) for API mocking, or use `vi.mock` for the `api` module
+- Test `PetGrid` — loading state, empty state (no filters), empty state (filters active), renders cards
+- Test `PetCard` — renders pet name, age badge, description, constructs image URL correctly
+- Test `FilterBar` — renders pet type options from mocked API, breed dropdown appears/disappears
+- Test `HomePage` — pagination buttons show/hide based on `hasMore` and `hasPrev`
+
+---
+
 ## 7. Image Moderation
 
 **Priority:** Medium

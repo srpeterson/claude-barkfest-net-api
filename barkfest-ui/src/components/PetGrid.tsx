@@ -1,13 +1,14 @@
 import { Loader2, PawPrint } from 'lucide-react'
 import { PetCard } from '@/components/PetCard'
-import type { Pet } from '@/types/pet'
+import type { BrowseImageDto } from '@/types/browse'
 
 interface PetGridProps {
-  pets: Pet[]
+  pets: BrowseImageDto[]
   isLoading: boolean
+  hasActiveFilters: boolean
 }
 
-export function PetGrid({ pets, isLoading }: PetGridProps) {
+export function PetGrid({ pets, isLoading, hasActiveFilters }: PetGridProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -17,10 +18,14 @@ export function PetGrid({ pets, isLoading }: PetGridProps) {
   }
 
   if (!pets || pets.length === 0) {
+    const message = hasActiveFilters
+      ? 'No furry friends here yet. Try a different breed or pet type!'
+      : 'No pets posted yet. Be the first!'
+
     return (
       <div className="flex flex-col items-center gap-3 py-20 text-muted-foreground">
         <PawPrint className="w-12 h-12" />
-        <p className="text-lg">No pets posted yet. Be the first!</p>
+        <p className="text-lg">{message}</p>
       </div>
     )
   }
@@ -28,7 +33,7 @@ export function PetGrid({ pets, isLoading }: PetGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {pets.map((pet, index) => (
-        <PetCard key={pet.id} pet={pet} index={index} />
+        <PetCard key={pet.imageId} pet={pet} index={index} />
       ))}
     </div>
   )

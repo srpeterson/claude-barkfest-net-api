@@ -121,6 +121,58 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
     }
 
     // -----------------------------------------------------------------------
+    // Pet type filter
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetBrowseImagesAsync_When_PetTypeFilterApplied_Returns_OnlyMatchingType()
+    {
+        var owner = await SeedOwnerAsync();
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "DogPet", PetType.Dog, BuildDogBreed(DogBreed.Beagle)));
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "CatPet", PetType.Cat, BuildCatBreed(CatBreed.Persian)));
+        await _context.SaveChangesAsync();
+
+        var result = await _browseRepository.GetBrowseImagesAsync(
+            PetType.Dog, null, page: 1, pageSize: 10, CancellationToken.None);
+
+        result.Items.Any(i => i.PetName == "DogPet").ShouldBeTrue();
+        result.Items.Any(i => i.PetName == "CatPet").ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
+    // Breed filter
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetBrowseImagesAsync_When_BreedFilterApplied_Returns_OnlyMatchingBreed()
+    {
+        var owner = await SeedOwnerAsync();
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "BeaglePet",    PetType.Dog, BuildDogBreed(DogBreed.Beagle)));
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "LabradorPet",  PetType.Dog, BuildDogBreed(DogBreed.LabradorRetriever)));
+        await _context.SaveChangesAsync();
+
+        var result = await _browseRepository.GetBrowseImagesAsync(
+            null, "Beagle", page: 1, pageSize: 10, CancellationToken.None);
+
+        result.Items.Any(i => i.PetName == "BeaglePet").ShouldBeTrue();
+        result.Items.Any(i => i.PetName == "LabradorPet").ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task GetBrowseImagesAsync_When_BreedIsUnrecognised_Returns_EmptyResult()
+    {
+        var owner = await SeedOwnerAsync();
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "Buddy"));
+        await _context.SaveChangesAsync();
+
+        var result = await _browseRepository.GetBrowseImagesAsync(
+            null, "not-a-real-breed", page: 1, pageSize: 10, CancellationToken.None);
+
+        result.Items.ShouldBeEmpty();
+        result.TotalCount.ShouldBe(0);
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
@@ -138,18 +190,31 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
     }
 
     private static Pet BuildPetWithFeaturedImage(Guid ownerId, string name)
+        => BuildPetWithFeaturedImage(ownerId, name, PetType.Dog, BuildDogBreed(DogBreed.Beagle));
+
+    private static Pet BuildPetWithFeaturedImage(Guid ownerId, string name, PetType petType, Breed breed)
     {
-        var pet   = BuildPet(ownerId, name);
+        var pet   = Pet.Create(ownerId, name, petType, breed);
         var image = BuildImage($"pets/{ownerId}/gallery/{Guid.NewGuid()}.jpg", isFeatured: true);
         pet.AddImage(image);
         return pet;
     }
 
     private static Pet BuildPet(Guid ownerId, string name)
+        => Pet.Create(ownerId, name, PetType.Dog, BuildDogBreed(DogBreed.Beagle));
+
+    private static DogBreedInfo BuildDogBreed(DogBreed dogBreed)
     {
-        var dogBreed = new DogBreedInfo();
-        dogBreed.SetDogBreed(DogBreed.Beagle);
-        return Pet.Create(ownerId, name, PetType.Dog, dogBreed);
+        var breed = new DogBreedInfo();
+        breed.SetDogBreed(dogBreed);
+        return breed;
+    }
+
+    private static CatBreedInfo BuildCatBreed(CatBreed catBreed)
+    {
+        var breed = new CatBreedInfo();
+        breed.SetCatBreed(catBreed);
+        return breed;
     }
 
     private static PetImage BuildImage(string blobName, bool isFeatured)
