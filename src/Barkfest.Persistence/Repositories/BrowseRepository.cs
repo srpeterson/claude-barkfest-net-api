@@ -1,4 +1,5 @@
 using Barkfest.Application.Common.Interfaces;
+using Barkfest.Application.Common.Models;
 using Barkfest.Application.Features.Browse.DTOs;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
@@ -8,28 +9,58 @@ namespace Barkfest.Persistence.Repositories;
 
 public class BrowseRepository(AppDbContext context) : IBrowseRepository
 {
-    public async Task<IEnumerable<BrowseImageDto>> GetBrowseImagesAsync(
-        PetType? petType, string? breed, CancellationToken cancellationToken)
+    public async Task<PagedResult<BrowseImageDto>> GetBrowseImagesAsync(
+        PetType? petType, string? breed, int page, int pageSize, CancellationToken cancellationToken)
     {
-        var query = context.PetImages
-            .AsSplitQuery()
+        var baseQuery = context.PetImages
             .Include(pi => pi.Pet)
                 .ThenInclude(p => p.Owner)
             .Include(pi => pi.Pet)
                 .ThenInclude(p => p.Breed)
+            .Where(pi => pi.IsFeaturedImage)
             .Where(pi => pi.Pet.Owner.Active && pi.Pet.Owner.IsVisible)
-            .OrderByDescending(pi => pi.CreatedAt)
             .AsQueryable();
 
         if (petType is not null)
-            query = query.Where(pi => pi.Pet.PetType == petType);
-
-        var images = await query.ToListAsync(cancellationToken);
+            baseQuery = baseQuery.Where(pi => pi.Pet.PetType == petType);
 
         if (!string.IsNullOrWhiteSpace(breed))
-            images = images.Where(pi => MatchesBreed(pi.Pet.Breed, breed)).ToList();
+        {
+            // Resolve breed name → SmartEnum integer value for DB-level filtering.
+            // Using EF.Property against the shared "BreedValue" TPH column avoids
+            // loading all rows into memory before applying the breed predicate,
+            // which is required for correct server-side pagination counts.
+            var dogBreed = DogBreed.List.FirstOrDefault(b =>
+                b.Name.Equals(breed, StringComparison.OrdinalIgnoreCase));
 
-        return images.Select(ToDto);
+            var catBreed = dogBreed is null
+                ? CatBreed.List.FirstOrDefault(b =>
+                    b.Name.Equals(breed, StringComparison.OrdinalIgnoreCase))
+                : null;
+
+            if (dogBreed is null && catBreed is null)
+                return new PagedResult<BrowseImageDto>([], page, pageSize, 0);
+
+            var breedValue = dogBreed?.Value ?? catBreed!.Value;
+            baseQuery = baseQuery.Where(pi =>
+                pi.Pet.Breed != null &&
+                EF.Property<int>(pi.Pet.Breed, "BreedValue") == breedValue);
+        }
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var images = await baseQuery
+            .OrderByDescending(pi => pi.Pet.CreatedAt)
+            .AsSplitQuery()
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<BrowseImageDto>(
+            images.Select(ToDto).ToList(),
+            page,
+            pageSize,
+            totalCount);
     }
 
     private static BrowseImageDto ToDto(PetImage pi) => new(
@@ -51,12 +82,4 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             CatBreedInfo cat => cat.CatBreed.Name,
             _ => null
         });
-
-    private static bool MatchesBreed(Breed? breed, string breedName) =>
-        breed switch
-        {
-            DogBreedInfo dog => dog.DogBreed.Name.Equals(breedName, StringComparison.OrdinalIgnoreCase),
-            CatBreedInfo cat => cat.CatBreed.Name.Equals(breedName, StringComparison.OrdinalIgnoreCase),
-            _ => false
-        };
 }
