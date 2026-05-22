@@ -314,7 +314,7 @@ validators, tests, EF Core configuration.
 - `Age` — computed from `DateOfBirth` at runtime, **never stored in the database**
 - `PetType` — required SmartEnum; only `Dog` (1) and `Cat` (2) are valid values
 - `Breed` — required; must match `PetType`: Dog → `DogBreedInfo`, Cat → `CatBreedInfo`; "Other" is a valid breed name within each species (same as any named breed)
-- `Images` — minimum 1 image required at creation; maximum `Pet.MaxImages` (6) images total; any one can be designated `IsFeaturedImage = true`; only one may be featured at a time
+- `Images` — maximum `Pet.MaxImages` (6) images total; any one can be designated `IsFeaturedImage = true`; only one may be featured at a time; the UI enforces a minimum of 1 image at creation — the API does not enforce this at the endpoint level
 
 ### Images (applies to all image uploads across the entire application)
 - Allowed content types: `image/jpeg`, `image/jpg`, `image/png`

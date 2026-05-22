@@ -163,32 +163,21 @@ The exporter self-activates on the connection string presence check in `ServiceD
 
 ---
 
-## 6. Require Minimum One Image on Pet Creation
+## 6. Require Minimum One Image on Pet Creation (API-level enforcement)
 
-**Priority:** High
-**Status:** Not started — currently a UI-only convention; API allows zero-image pets
+**Priority:** Low — only relevant if the API is opened to third-party clients
+**Status:** Deferred — UI enforces this rule; API intentionally does not
 
-### What
-Enforce the "minimum 1 image" rule at the API layer by combining pet creation and
-initial image upload into a single atomic `POST /v1/pets` multipart request.
+### Decision
+The minimum 1 image rule is enforced at the UI layer only. The two-step flow
+(create pet → upload images) is better UX and keeping them separate avoids
+significant API and test complexity for no practical benefit while the only
+consumer is the controlled `barkfest-ui` client.
 
-### Why
-A pet without an image is an incomplete record. Enforcing this at the API layer
-prevents the rule from being bypassed by any client (mobile, third-party, curl).
-The UI convention alone is insufficient.
-
-### Approach
-- Change `POST /v1/pets` to accept `multipart/form-data` — pet metadata fields +
-  at least 1 image file (max `Pet.MaxImages`)
-- Update `CreatePetCommand` to include image uploads
-- Update `CreatePetCommandHandler` to upload images + create pet atomically
-- Update `CreatePetCommandValidator` to require at least 1 image file
-- Update `PetController.CreatePet` to bind `IFormFileCollection`
-- Update all tests that call `CreatePet` to include at least one image
-- The separate `POST /v1/pets/{id}/images` endpoint remains for adding more images
-
-### Branch
-`feature/require-pet-image-on-create`
+### When to revisit
+If the API is ever opened to third-party clients (mobile apps, integrations),
+enforce this at the API layer by combining `POST /v1/pets` into a single
+multipart request that requires at least 1 image file.
 
 ---
 
