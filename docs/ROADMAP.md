@@ -163,7 +163,36 @@ The exporter self-activates on the connection string presence check in `ServiceD
 
 ---
 
-## 6. Pet Image Descriptions and Batch Update
+## 6. Require Minimum One Image on Pet Creation
+
+**Priority:** High
+**Status:** Not started — currently a UI-only convention; API allows zero-image pets
+
+### What
+Enforce the "minimum 1 image" rule at the API layer by combining pet creation and
+initial image upload into a single atomic `POST /v1/pets` multipart request.
+
+### Why
+A pet without an image is an incomplete record. Enforcing this at the API layer
+prevents the rule from being bypassed by any client (mobile, third-party, curl).
+The UI convention alone is insufficient.
+
+### Approach
+- Change `POST /v1/pets` to accept `multipart/form-data` — pet metadata fields +
+  at least 1 image file (max `Pet.MaxImages`)
+- Update `CreatePetCommand` to include image uploads
+- Update `CreatePetCommandHandler` to upload images + create pet atomically
+- Update `CreatePetCommandValidator` to require at least 1 image file
+- Update `PetController.CreatePet` to bind `IFormFileCollection`
+- Update all tests that call `CreatePet` to include at least one image
+- The separate `POST /v1/pets/{id}/images` endpoint remains for adding more images
+
+### Branch
+`feature/require-pet-image-on-create`
+
+---
+
+## 7. Pet Image Descriptions and Batch Update
 
 **Priority:** Low
 **Status:** Not started
