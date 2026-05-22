@@ -1,6 +1,6 @@
 # Progress — Bootstrap Home Page
 
-## Status: In Progress
+## Status: Complete
 
 ---
 
@@ -9,9 +9,9 @@
 | Milestone | Status |
 |---|---|
 | Branch and docs created | ✅ Done |
-| Handoff imported | ⬜ Pending |
-| CSS conflicts resolved | ⬜ Pending |
-| Home page wired into routing | ⬜ Pending |
-| Visual verification passed | ⬜ Pending |
-| Tests passing | ⬜ Pending |
-| Committed and pushed | ⬜ Pending |
+| Handoff imported | ✅ Done |
+| CSS conflicts resolved | ✅ Done |
+| Home page wired into routing | ✅ Done |
+| Visual verification passed | ✅ Done |
+| Tests passing | ✅ Done |
+| Committed and pushed | ✅ Done |
