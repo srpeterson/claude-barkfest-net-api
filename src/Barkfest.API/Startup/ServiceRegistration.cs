@@ -81,6 +81,17 @@ public static class ServiceRegistration
                 // "sub" stays "sub" (not ClaimTypes.NameIdentifier) for CurrentUserService.
                 options.MapInboundClaims = false;
 
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var cookie = context.Request.Cookies["barkfest_auth"];
+                        if (!string.IsNullOrEmpty(cookie))
+                            context.Token = cookie;
+                        return Task.CompletedTask;
+                    }
+                };
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

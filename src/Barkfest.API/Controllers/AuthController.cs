@@ -12,6 +12,8 @@ namespace Barkfest.API.Controllers;
 [AllowAnonymous]
 public class AuthController(IMediator mediator) : ControllerBase
 {
+    private const string CookieName = "barkfest_auth";
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterCommand command, CancellationToken cancellationToken)
     {
@@ -23,13 +25,38 @@ public class AuthController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
-        return Ok(result);
+
+        Response.Cookies.Append(CookieName, result.AccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure    = true,
+            SameSite  = SameSiteMode.Strict,
+            Expires   = result.ExpiresAt
+        });
+
+        return Ok(new { result.AccountId, result.ExpiresAt });
     }
 
     [HttpPost("admin/login")]
     public async Task<IActionResult> AdminLogin([FromBody] AdminLoginCommand command, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
-        return Ok(result);
+
+        Response.Cookies.Append(CookieName, result.AccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure    = true,
+            SameSite  = SameSiteMode.Strict,
+            Expires   = result.ExpiresAt
+        });
+
+        return Ok(new { result.AccountId, result.ExpiresAt });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete(CookieName);
+        return NoContent();
     }
 }
