@@ -643,6 +643,26 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure 
 
 ---
 
+## Phase 15 — Handoff Home Page ✅ Complete
+
+- Claude Design handoff imported into `barkfest-ui`
+- CSS conflicts resolved — merged CSS variables, aligned `@theme`, fixed collisions
+- Font stack replaced: Geist → DM Sans Variable (body) + Playfair Display (headings)
+- Home page wired into routing in `App.tsx`
+- Visual verification passed, tests passing
+
+---
+
+## Phase 16 — Home Page Wire Filter ✅ Complete
+
+- `FilterBar.tsx` Pet Type and Breed dropdowns hydrated from the browse API
+- Pet types driven by `GET /v1/browse/pet-types`; "All" is a synthetic UI option; display labels via `src/config/petTypes.ts`
+- Breeds driven by `GET /v1/browse/breeds?petType=`; disabled when "All" selected
+- `staleTime: Infinity` for both queries — lists only change with a deployment
+- Unit tests for `getBlobImageUrl` and `getPetTypeLabel` (9/9 passing)
+
+---
+
 ## Next
 
-Phase 15 — Bootstrap Home Page
+Phase 17 — Authentication UI (Login + Register screens with HttpOnly cookie flow)

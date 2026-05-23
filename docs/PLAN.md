@@ -1179,6 +1179,22 @@ Extend the public browse API to support server-side pagination, featured-image-o
 
 ---
 
+## Phase 15 — Handoff Home Page
+
+See [`docs/features/handoff-home-page/PLAN.md`](features/handoff-home-page/PLAN.md),
+[`PROGRESS.md`](features/handoff-home-page/PROGRESS.md), and
+[`DECISIONS.md`](features/handoff-home-page/DECISIONS.md).
+
+---
+
+## Phase 16 — Home Page Wire Filter
+
+See [`docs/features/home-page-wire-filter/PLAN.md`](features/home-page-wire-filter/PLAN.md),
+[`PROGRESS.md`](features/home-page-wire-filter/PROGRESS.md), and
+[`DECISIONS.md`](features/home-page-wire-filter/DECISIONS.md).
+
+---
+
 ## General Rules — Always Follow These
 
 - Target framework: `.NET 10`
