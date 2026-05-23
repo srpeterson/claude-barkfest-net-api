@@ -462,7 +462,7 @@ ships a compatible version.
 auto-generated code (`OpenApiXmlCommentSupport.generated.cs`), producing a `CS0200`
 build error. This is a Microsoft tooling gap — the two packages are published by the
 same team but their versions are not yet aligned. A warning comment in
-`Directory.Packages.props` documents this constraint. ROADMAP item 3 tracks when to
+`Directory.Packages.props` documents this constraint. ROADMAP item 7 tracks when to
 revisit.
 
 ---
@@ -495,18 +495,6 @@ intentional and more useful. Making `Breed` required means every pet in the syst
 declared breed (even if that breed is "Other"), which is cleaner for filtering and display.
 The `PetType` column stores an `int` — removing value 3 requires no schema migration as
 long as no rows with `PetType = 3` exist in production.
-
-**Why conditional on connection string presence:**
-Activating Azure Monitor unconditionally would break local dev (no connection string available)
-and integration tests (containers have no Azure connectivity). Checking
-`APPLICATIONINSIGHTS_CONNECTION_STRING` at startup means the exporter self-activates in any
-environment where it is configured and stays silent everywhere else. No code changes required
-when deploying to Azure — just set the environment variable.
-
-**How to activate in production:**
-Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure App Service
-(Settings → Environment variables) or via Key Vault reference. Never commit this value to source
-control or `appsettings.json`.
 
 ---
 
@@ -965,6 +953,8 @@ correct default for any application handling authenticated sessions.
 **Implementation split:**
 - Phase 12: CORS configuration (needed for any frontend → API communication)
 - Phase 13: HttpOnly cookie login/logout + frontend auth context
+- Phase 17 (Authentication UI feature): full UI layer — `AuthContext`, `LoginModal`, `RegisterModal`,
+  `Navbar`, `ProtectedRoute`, 401 interception. All three bullet points above are now implemented.
 
 ---
 
@@ -983,10 +973,10 @@ controller endpoint that accidentally omits the attribute.
 
 ---
 
-### Decision: Password length constraints (min 8, max 72)
-**Choice:** All password validators enforce `MinimumLength(AccountConstraints.PasswordMinLength)` (8) and `MaximumLength(AccountConstraints.PasswordMaxLength)` (72). Applies to owner registration, administrator creation, and administrator password updates. Login validators are excluded.
+### Decision: Password length constraints (min 10, max 72)
+**Choice:** All password validators enforce `MinimumLength(AccountConstraints.PasswordMinLength)` (10) and `MaximumLength(AccountConstraints.PasswordMaxLength)` (72). Applies to owner registration, administrator creation, and administrator password updates. Login validators are excluded.
 
-**Reason for minimum (8):** Provides a baseline against trivially weak passwords. The backend is the authoritative enforcement point — frontend validation can be bypassed by calling the API directly.
+**Reason for minimum (10):** Provides a baseline against trivially weak passwords. The backend is the authoritative enforcement point — frontend validation can be bypassed by calling the API directly. The minimum was raised from 8 to 10 during Phase 17 (authentication UI) to align with the frontend strength meter guidance — a password that short is weak by any measure.
 
 **Reason for maximum (72):** BCrypt silently truncates input at 72 bytes — any characters beyond that are ignored during hashing. A 73-character password sharing the first 72 characters with another would produce identical hashes, which is a subtle security flaw. Capping at 72 makes the truncation behaviour explicit and prevents it entirely.
 

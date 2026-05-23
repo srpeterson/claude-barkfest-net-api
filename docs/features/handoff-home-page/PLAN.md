@@ -13,9 +13,9 @@ wiring in this phase — UI only.
 | # | Step | Status |
 |---|---|---|
 | 1 | Create branch `feature/handoff-home-page` and docs folder | ✅ Done |
-| 2 | Import the Claude Design handoff file | ⬜ Pending |
-| 3 | Audit what landed — CSS variables, fonts, components, new files | ⬜ Pending |
-| 4 | Resolve conflicts — merge CSS, align `@theme`, fix collisions | ⬜ Pending |
-| 5 | Wire home page into routing in `App.tsx` | ⬜ Pending |
-| 6 | Verify — `npm run dev` visual check + `npm test` | ⬜ Pending |
-| 7 | Update docs and commit | ⬜ Pending |
+| 2 | Import the Claude Design handoff file | ✅ Done |
+| 3 | Audit what landed — CSS variables, fonts, components, new files | ✅ Done |
+| 4 | Resolve conflicts — merge CSS, align `@theme`, fix collisions | ✅ Done |
+| 5 | Wire home page into routing in `App.tsx` | ✅ Done |
+| 6 | Verify — `npm run dev` visual check + `npm test` | ✅ Done |
+| 7 | Update docs and commit | ✅ Done |
