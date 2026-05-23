@@ -385,6 +385,26 @@ simultaneously. User Secrets are not used — Aspire injects all connection stri
 
 ---
 
+### Decision: Aspire `AddDatabase()` required for a named user database
+**Choice:** `AppHost.cs` calls `sql.AddDatabase("barkfest")` and the API project references
+the database resource (`db`) instead of the server resource (`sql`). `DependencyInjection.cs`
+reads `configuration.GetConnectionString("barkfest")` to match.
+
+**Reason:** `AddSqlServer` without `AddDatabase` provides a server-level connection string with
+no `Initial Catalog`. EF Core connects to the `sa` user's default database — `master` — and
+runs all migrations there. The application works, but all tables (Owners, Pets, etc.) land
+inside `master` alongside SQL Server's own system objects. Any developer opening SSMS sees no
+user databases at all, which is deeply unintuitive. Adding `AddDatabase("barkfest")` causes
+Aspire to inject a connection string with `Database=barkfest`, EF Core creates and migrates a
+proper named database, and the database appears where every developer expects it.
+
+**Discovery:** Caught during Phase 17 development when SSMS showed only System Databases after
+confirming the API was running and creating data successfully. Traced to the missing `AddDatabase`
+call. Fix required deleting the `barkfest-sql-data` Docker volume to clear the data that had
+accumulated in `master`, then restarting Aspire.
+
+---
+
 ### Decision: Testcontainers for all integration tests
 **Choice:** `Testcontainers.MsSql` for SQL Server and `Testcontainers.Azurite`
 for Azure Blob Storage in all integration and API tests.

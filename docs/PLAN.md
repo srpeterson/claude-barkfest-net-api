@@ -444,7 +444,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 - [ ] Create `Barkfest.Persistence/DependencyInjection.cs`
   - `AddPersistence(IServiceCollection, IConfiguration)` extension method
-  - Registers `AppDbContext` with SQL Server using `services.AddDbContext<AppDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("barkfest-sql")))`
+  - Registers `AppDbContext` with SQL Server using `services.AddDbContext<AppDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("barkfest")))`
   - Registers `IOwnerRepository` → `OwnerRepository`
   - Registers `IPetRepository` → `PetRepository`
   - Registers `IUnitOfWork` → `UnitOfWork`
@@ -748,15 +748,20 @@ var sql = builder.AddSqlServer("barkfest-sql")
                  .WithLifetime(ContainerLifetime.Persistent)
                  .WithDataVolume("barkfest-sql-data");
 
-var blobs = builder.AddAzureStorage("barkfest-storage")
-                   .RunAsEmulator(e => e
-                       .WithLifetime(ContainerLifetime.Persistent)
-                       .WithDataVolume("barkfest-blobs-data"))
-                   .AddBlobs("barkfest-blobs");
+var db = sql.AddDatabase("barkfest");
+
+var storage = builder.AddAzureStorage("barkfest-storage")
+                     .RunAsEmulator(e => e
+                         .WithLifetime(ContainerLifetime.Persistent)
+                         .WithDataVolume("barkfest-blobs-data"));
+
+var blobs = storage.AddBlobs("barkfest-blobs");
 
 builder.AddProject<Projects.Barkfest_API>("barkfest-api")
-       .WithReference(sql)
-       .WithReference(blobs);
+       .WithReference(db)
+       .WithReference(blobs)
+       .WaitFor(sql)
+       .WaitFor(blobs);
 
 builder.Build().Run();
 ```
@@ -798,15 +803,15 @@ User Secrets are no longer used.
 services.AddDbContext<AppDbContext>(opts =>
     opts.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
-// After (barkfest-sql key, standard EF Core AddDbContext):
+// After (barkfest key, standard EF Core AddDbContext):
 services.AddDbContext<AppDbContext>(opts =>
-    opts.UseSqlServer(config.GetConnectionString("barkfest-sql")));
+    opts.UseSqlServer(config.GetConnectionString("barkfest")));
 ```
 
 Standard `AddDbContext` is intentionally used instead of Aspire's `AddSqlServerDbContext`.
 `WebApplicationFactory.ConfigureAppConfiguration` cannot reliably inject configuration with
 the correct priority in .NET 10's minimal hosting model — see DECISIONS.md for details.
-The Aspire AppHost still injects `ConnectionStrings__barkfest-sql` at runtime; no Aspire
+The Aspire AppHost still injects `ConnectionStrings__barkfest` at runtime (via `AddDatabase("barkfest")`); no Aspire
 extension method is required for that injection to work.
 
 **`Barkfest.Infrastructure/DependencyInjection.cs`** — switch to Aspire-aware registration:
