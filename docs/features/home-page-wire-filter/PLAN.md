@@ -2,9 +2,9 @@
 
 ## Goal
 
-Connect the Barkfest landing page UI to the browse API endpoints introduced in
-`feature/browse-api-enhancements`. Replace all hardcoded data, stub types, and
-client-side pagination with real API calls.
+Wire the Pet Type and Breed filter dropdowns on the home page to the browse API,
+replacing hardcoded values with real data from `GET /v1/browse/pet-types` and
+`GET /v1/browse/breeds?petType=`.
 
 ---
 

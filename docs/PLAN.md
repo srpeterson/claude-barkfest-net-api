@@ -1067,6 +1067,118 @@ barkfest-ui/
 
 ---
 
+## Phase 13 — Deployment Pipeline
+
+### Azure Resources (`infra/main.bicep`)
+
+| Resource | Type | Purpose |
+|---|---|---|
+| Resource Group | `Microsoft.Resources/resourceGroups` | Logical container for all Barkfest resources |
+| Azure Container Registry | `Microsoft.ContainerRegistry/registries` | Stores Docker images built by GitHub Actions |
+| Container Apps Environment | `Microsoft.App/managedEnvironments` | Shared hosting environment for Container Apps |
+| Container App | `Microsoft.App/containerApps` | Hosts the .NET 10 API |
+| SQL Server + Database | `Microsoft.Sql/servers` + `databases` | Production SQL Server (Basic SKU) |
+| Storage Account + Blob Container | `Microsoft.Storage/storageAccounts` | Production Blob Storage (`barkfest-blobs` container) |
+| Application Insights | `Microsoft.Insights/components` | Telemetry |
+| Log Analytics Workspace | `Microsoft.OperationalInsights/workspaces` | Backend for Application Insights + container logs |
+| Static Web App | `Microsoft.Web/staticSites` | Hosts the React frontend (Free SKU) |
+
+Provisioning command:
+```bash
+az deployment sub create \
+  --name barkfest-resources \
+  --location centralus \
+  --template-file infra/main.bicep \
+  --parameters sqlAdminLogin=<username> sqlAdminPassword=<password>
+```
+
+### GitHub Secrets
+
+18 secrets stored in GitHub repository Settings → Secrets and variables → Actions:
+
+`AZURE_CREDENTIALS`, `CONTAINER_APP_NAME`, `REGISTRY_LOGIN_SERVER`, `REGISTRY_USERNAME`,
+`REGISTRY_PASSWORD`, `API_URL`, `STATIC_WEB_APP_NAME`, `AZURE_STATIC_WEB_APPS_API_TOKEN`,
+`SQL_CONNECTION_STRING`, `BLOB_CONNECTION_STRING`, `APPINSIGHTS_CONNECTION_STRING`,
+`JWT_SECRET_KEY`, `ADMIN_USERNAME`, `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PHONE_NUMBER`,
+`ADMIN_PASSWORD`, `CORS_ALLOWED_ORIGIN`
+
+### API Pipeline (`.github/workflows/api.yml`)
+
+Triggers on push to `main`. Steps: checkout → setup .NET 10 → restore → build → test → Docker login → Docker build + push to ACR (tagged with `github.sha` and `latest`) → `az containerapp update` with new image and env vars.
+
+### Frontend Pipeline (`.github/workflows/ui.yml`)
+
+Triggers on push to `main`. Steps: checkout → setup Node + pnpm → `pnpm install` → `pnpm test` → `pnpm build` (with `VITE_API_BASE_URL` from `API_URL` secret) → deploy `dist/` to Azure Static Web Apps.
+
+---
+
+## Phase 14 — Browse API Enhancements
+
+### Goal
+
+Extend the public browse API to support server-side pagination, featured-image-only filtering, and two new dropdown hydration endpoints.
+
+### Scope
+
+| # | Change | Layer |
+|---|---|---|
+| 1 | `PagedResult<T>` generic wrapper | Application |
+| 2 | Featured-image-only filter on `GetBrowseImagesAsync` | Persistence |
+| 3 | Server-side pagination on `GetBrowseImagesAsync` | Persistence + Application |
+| 4 | Breed filter pushed to DB (`EF.Property` on TPH column) | Persistence |
+| 5 | `GET /v1/browse/pet-types` — returns SmartEnum values | Application + API |
+| 6 | `GET /v1/browse/breeds?petType=Dog` — returns breed names | Application + API |
+| 7 | Tests for all new/modified behaviour | Application.Tests + Persistence.Tests + API.Tests |
+
+### Step 1 — `PagedResult<T>`
+
+- `Barkfest.Application/Common/Models/PagedResult.cs`
+- `record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount)`
+- Computed `bool HasMore => Page * PageSize < TotalCount`
+
+### Step 2 — Update `IBrowseRepository`
+
+- Return type: `PagedResult<BrowseImageDto>` (was `IEnumerable<BrowseImageDto>`)
+- New params: `int page, int pageSize`
+
+### Step 3 — Update `BrowseRepository`
+
+- Add `.Where(pi => pi.IsFeaturedImage)` — one card per pet
+- Move breed filter to DB using `EF.Property<int>(pi.Pet.Breed, "BreedValue")`
+- `CountAsync` + `Skip/Take` for pagination
+- Return `PagedResult<BrowseImageDto>`
+
+### Step 4 — Update `GetBrowseImagesQuery`
+
+- Add `int Page, int PageSize` params; return type `PagedResult<BrowseImageDto>`
+- Unknown `petType` returns `PagedResult` with empty items
+
+### Step 5 — `GetBrowsePetTypesQuery`
+
+- Handler reads from `PetType.List` — no DB call
+- Returns `IReadOnlyList<string>`
+
+### Step 6 — `GetBrowseBreedsQuery`
+
+- Handler reads from `DogBreed.List` or `CatBreed.List`, ordered by `SmartEnum.Value`
+- Unknown `petType` returns empty list
+
+### Step 7 — Update `BrowseController`
+
+- `GetImages`: add `page` (default 1) and `pageSize` (default 6) query params
+- New `GET /v1/browse/pet-types`
+- New `GET /v1/browse/breeds?petType=`
+
+### Step 8 — Tests
+
+- `GetBrowseImagesQueryHandlerTests` — updated for new signature and `PagedResult` return type
+- `GetBrowsePetTypesQueryHandlerTests` — new
+- `GetBrowseBreedsQueryHandlerTests` — new
+- `BrowseRepositoryTests` — ordering, featured filter, pagination
+- `BrowseControllerTests` — updated for paged response shape, new endpoint tests
+
+---
+
 ## General Rules — Always Follow These
 
 - Target framework: `.NET 10`

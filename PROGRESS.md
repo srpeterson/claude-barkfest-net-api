@@ -591,6 +591,58 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure 
 
 ---
 
+## Phase 13 — Deployment Pipeline ✅ Complete
+
+### Step 1 — Bicep Infrastructure (`infra/main.bicep`)
+
+- Azure Container Registry, Container Apps Environment, Container App, SQL Server + Database, Storage Account + Blob Container, Application Insights, Log Analytics Workspace, Static Web App
+- `Dockerfile` (multi-stage build) and `.dockerignore`
+- Bicep compiled and verified (`az bicep build`)
+- Resources provisioned to Azure (`az deployment sub create --location centralus`)
+
+### Step 2 — GitHub Secrets
+
+- Service Principal created (`az ad sp create-for-rbac`) with subscription-level Contributor
+- All 18 secrets added to GitHub repository Settings → Secrets and variables → Actions
+
+### Step 3 — API Pipeline (`.github/workflows/api.yml`)
+
+- Triggers on merge to `main`
+- Build, test, Docker build/push to ACR, set Container App env vars from secrets, deploy
+
+### Step 4 — Frontend Pipeline (`.github/workflows/ui.yml`)
+
+- Triggers on merge to `main`
+- Install, test, build React frontend, deploy to Azure Static Web Apps
+
+### Step 5 — Verified
+
+- API live at `https://ca-barkfest.greenisland-212561c8.centralus.azurecontainerapps.io`
+- Frontend live at `https://gray-rock-0394ee50f.7.azurestaticapps.net`
+- Container App set to `minReplicas=1` — always warm, no cold starts
+
+### Notes
+
+- Service Principal requires subscription-level Contributor (not just resource group) for Container Apps
+- `Microsoft.App` provider registration was stuck — fixed via Azure Portal re-register
+- `az containerapp` commands require the containerapp CLI extension (`az extension add --name containerapp`)
+
+---
+
+## Phase 14 — Browse API Enhancements ✅ Complete
+
+- `PagedResult<T>` generic wrapper (`Page`, `PageSize`, `TotalCount`, computed `HasMore`)
+- `IBrowseRepository` updated — return type changed to `PagedResult<BrowseImageDto>`, `page` and `pageSize` params added
+- `BrowseRepository` updated — `.Where(pi => pi.IsFeaturedImage)` filter (one card per pet), breed filter pushed to DB via `EF.Property<int>(pi.Pet.Breed, "BreedValue")` on TPH column, `CountAsync` + `Skip/Take` pagination
+- `GetBrowseImagesQuery` updated — `Page` and `PageSize` params, `PagedResult<BrowseImageDto>` return type; unknown `petType` returns empty `PagedResult`
+- `GetBrowsePetTypesQuery` + handler — reads from `PetType.List`, no DB call
+- `GetBrowseBreedsQuery` + handler — reads from `DogBreed.List` / `CatBreed.List`, ordered by SmartEnum value, no DB call
+- `BrowseController` updated — `page` + `pageSize` query params on `GetImages`; new `GET /v1/browse/pet-types` and `GET /v1/browse/breeds?petType=` endpoints
+- `BrowseRepositoryTests` added — ordering, featured filter, pagination
+- 704 tests — all passing
+
+---
+
 ## Next
 
-Phase 13 — Authentication UI (Login + Register screens with HttpOnly cookie flow)
+Phase 15 — Bootstrap Home Page

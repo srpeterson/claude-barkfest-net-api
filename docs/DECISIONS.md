@@ -971,3 +971,89 @@ controller endpoint that accidentally omits the attribute.
 **Reason for maximum (72):** BCrypt silently truncates input at 72 bytes — any characters beyond that are ignored during hashing. A 73-character password sharing the first 72 characters with another would produce identical hashes, which is a subtle security flaw. Capping at 72 makes the truncation behaviour explicit and prevents it entirely.
 
 **Reason no complexity rules are enforced:** NIST SP 800-63B recommends against mandatory complexity requirements (uppercase, numbers, special characters). They cause predictable substitutions (`Password1!`) without meaningfully improving security, and penalise strong passphrases that happen to lack symbols. Complexity guidance is left to the frontend (strength meter) where it can inform without hard-blocking.
+
+---
+
+### Decision: Email validated with `Matches` regex, not `EmailAddress()`
+**Choice:** Email rules in `RegisterCommandValidator` and `UpdateOwnerCommandValidator`
+use `Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")` instead of FluentValidation's built-in
+`EmailAddress()`.
+
+**Reason:** FluentValidation's `EmailAddress()` only checks for the presence of `@` and
+a dot in the domain — it does not reject spaces in the local part (e.g.
+`"space in@example.com"` passes). That is not a valid email address. The regex correctly
+rejects it and is no more complex than the built-in validator for our purposes.
+
+---
+
+## Deployment
+
+### Decision: GitHub Actions for CI/CD
+**Choice:** GitHub Actions for both the API and frontend release pipelines.
+
+**Reason:** The repository is already on GitHub. GitHub Actions requires no additional tooling, is free for public repositories, and has first-class Azure deployment actions maintained by Microsoft. Azure DevOps Pipelines would require a separate service and additional setup for no meaningful benefit at this project scale.
+
+---
+
+### Decision: Azure Container Apps for the .NET API
+**Choice:** Azure Container Apps to host the .NET 10 API via a Docker container.
+
+**Reason:** App Service was the original choice but was abandoned after hitting subscription-level VM quota restrictions (0 quota on a fresh MSDN subscription) that blocked all deployments regardless of SKU. Container Apps uses a completely different resource provider (`Microsoft.App`) with no VM quota restrictions. Beyond unblocking the deployment, Container Apps is the better modern choice: it scales to zero when idle, scales out automatically under load, and is the direction Microsoft is pushing new containerised workloads. The `Dockerfile` uses a multi-stage build: SDK image for build/publish, ASP.NET runtime image for the final layer.
+
+---
+
+### Decision: Azure Static Web Apps (Free SKU) for the React frontend
+**Choice:** Azure Static Web Apps Free SKU to host the Vite/React frontend.
+
+**Reason:** Static Web Apps is purpose-built for SPAs — global CDN, automatic TLS, free custom domain support, and a GitHub Actions deployment action that handles the entire build and deploy in one step. The Free SKU (100 GB/month bandwidth) is sufficient for a dev/demo project.
+
+---
+
+### Decision: Bicep for infrastructure as code
+**Choice:** A single `infra/main.bicep` file defines all Azure resources.
+
+**Reason:** Infrastructure as code means the entire production environment is reproducible from a single command. If resources are accidentally deleted or a new environment is needed, `az deployment sub create` recreates everything identically. Bicep is the modern Azure-native IaC language — simpler than ARM templates, no third-party tooling required. A single file is sufficient at this scale.
+
+---
+
+### Decision: All secrets stored in GitHub Secrets — never in source control
+**Choice:** All production credentials (SQL password, JWT secret, admin seed credentials, Azure service principal) are stored as GitHub repository secrets and injected into the pipeline at runtime.
+
+**Reason:** Non-negotiable security practice. Secrets in source control are permanently compromised — even after deletion, they exist in git history. GitHub Secrets are encrypted at rest, masked in logs, and only accessible to workflow runs on the correct branch.
+
+---
+
+### Decision: `centralus` as the Azure region
+**Choice:** Central US (Iowa) as the deployment region for all resources.
+
+**Reason:** `eastus` was the original choice but was switched to `centralus` during the initial provisioning attempt to troubleshoot quota availability. `centralus` has broad service availability and is geographically reasonable for a US-based project.
+
+---
+
+## Browse API
+
+### Decision: Breed filter pushed to DB via `EF.Property`
+**Choice:** `EF.Property<int>(pi.Pet.Breed, "BreedValue") == breedValue` filters breeds at the DB level. The breed string is resolved to its SmartEnum integer value first; unknown breed names return an empty `PagedResult` immediately with no DB query issued.
+
+**Reason:** Correct server-side pagination requires count and skip/take to operate on the already-filtered dataset. In-memory breed filtering after a DB load would give wrong pagination counts and load unnecessary rows.
+
+---
+
+### Decision: `GetBrowsePetTypesQuery` and `GetBrowseBreedsQuery` read from SmartEnum — no repository
+**Choice:** Pet type and breed lists come directly from `PetType.List`, `DogBreed.List`, and `CatBreed.List`. No repository interface, no DB query.
+
+**Reason:** These lists are defined in code and can only change with a deployment. A DB query would add latency and complexity for data that is always in sync with the running binary.
+
+---
+
+### Decision: Breed ordering by SmartEnum value (insertion order)
+**Choice:** Breeds are returned ordered by `SmartEnum.Value` ascending, matching the order they were defined in the SmartEnum class.
+
+**Reason:** SmartEnum values were assigned in a deliberate order (most popular breeds first within each species). Preserving that order gives the best UX out of the box without a separate sort configuration.
+
+---
+
+### Decision: `PagedResult<T>` placed in `Application/Common/Models`
+**Choice:** `PagedResult<T>` lives in `Barkfest.Application/Common/Models/`.
+
+**Reason:** It is a generic application-layer construct, not domain logic. Keeping it in `Common/Models` makes it available to any feature handler without creating a dependency on a specific feature namespace.

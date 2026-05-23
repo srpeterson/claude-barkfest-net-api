@@ -12,7 +12,7 @@ wiring in this phase — UI only.
 
 | # | Step | Status |
 |---|---|---|
-| 1 | Create branch `feature/bootstrap-home-page` and docs folder | ✅ Done |
+| 1 | Create branch `feature/handoff-home-page` and docs folder | ✅ Done |
 | 2 | Import the Claude Design handoff file | ⬜ Pending |
 | 3 | Audit what landed — CSS variables, fonts, components, new files | ⬜ Pending |
 | 4 | Resolve conflicts — merge CSS, align `@theme`, fix collisions | ⬜ Pending |
