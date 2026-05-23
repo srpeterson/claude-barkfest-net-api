@@ -693,16 +693,15 @@ is simpler, more readable, and does not require any workaround.
 
 ---
 
-### Decision: FluentValidation `EmailAddress()` does not reject spaces in the local part
-**Choice:** The test case `"space in@example.com"` is not included in the invalid email
-theory data for validator tests.
+### Decision: Email validated with `Matches` regex, not `EmailAddress()`
+**Choice:** Email rules in `RegisterCommandValidator` and `UpdateOwnerCommandValidator`
+use `Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")` instead of FluentValidation's built-in
+`EmailAddress()`.
 
-**Reason:** FluentValidation's built-in `EmailAddress()` validator only checks for the
-presence of `@` and a dot in the domain — it does not reject spaces in the local part of
-the address. This is by design in FluentValidation. Adding a custom regex to reject spaces
-was considered but rejected as over-engineering for a dev learning project. If stricter
-email validation is needed in future, replace `EmailAddress()` with
-`Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")` or a dedicated email validation library.
+**Reason:** FluentValidation's `EmailAddress()` only checks for the presence of `@` and
+a dot in the domain — it does not reject spaces in the local part (e.g.
+`"space in@example.com"` passes). That is not a valid email address. The regex correctly
+rejects it and is no more complex than the built-in validator for our purposes.
 
 ---
 

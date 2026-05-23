@@ -240,6 +240,7 @@ public static class OwnerMappings
 - Pipeline behaviours: `ValidationBehavior` (runs first), `LoggingBehavior`
 - Commands that return nothing use `IRequest` (not `IRequest<Unit>`)
 - Commands that create a resource return `IRequest<Guid>` (the new entity Id)
+- **The handler class is always defined in the same file as its command or query — never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreateOwnerCommand.cs`, `LoginCommand.cs`, etc.
 
 ---
 
@@ -271,9 +272,10 @@ public class CreateOwnerCommandValidator : AbstractValidator<CreateOwnerCommand>
 .MaximumLength(50)
 ```
 
-**Note:** FluentValidation's `EmailAddress()` does not reject spaces in the local
-part of an email address (e.g. `"space in@example.com"` passes). This is by design
-in FluentValidation. Do not write test cases expecting it to fail.
+**Note:** Email validation uses `Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")` rather than
+FluentValidation's built-in `EmailAddress()`. The built-in validator does not reject
+spaces in the local part (e.g. `"space in@example.com"` would pass it). The regex
+correctly rejects such addresses.
 
 ---
 

@@ -27,7 +27,7 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .NotEmpty().WithMessage("Email is required.")
             .MaximumLength(AccountConstraints.EmailMaxLength)
             .WithMessage($"Email cannot exceed {AccountConstraints.EmailMaxLength} characters.")
-            .EmailAddress().WithMessage("Email must be a valid email address.");
+            .Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").WithMessage("Email must be a valid email address.");
 
         RuleFor(x => x.PhoneNumber)
             .MaximumLength(E164PhoneNumber.MaxLength)

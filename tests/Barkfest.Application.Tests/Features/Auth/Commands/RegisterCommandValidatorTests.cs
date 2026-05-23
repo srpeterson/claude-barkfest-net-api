@@ -128,10 +128,12 @@ public class RegisterCommandValidatorTests
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Email));
     }
 
-    [Fact]
-    public void Validate_When_EmailIsInvalidFormat_Fails_ForEmail()
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("space in@example.com")]
+    public void Validate_When_EmailIsInvalidFormat_Fails_ForEmail(string email)
     {
-        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "not-an-email", null, "pass");
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", email, null, "pass");
 
         var result = _registerCommandValidator.Validate(command);
 

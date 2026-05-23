@@ -21,7 +21,7 @@ public class UpdateOwnerCommandValidator : AbstractValidator<UpdateOwnerCommand>
 
         RuleFor(x => x.Email)
             .NotEmpty()
-            .EmailAddress()
+            .Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").WithMessage("Email must be a valid email address.")
             .MaximumLength(AccountConstraints.EmailMaxLength);
 
         RuleFor(x => x.PhoneNumber)

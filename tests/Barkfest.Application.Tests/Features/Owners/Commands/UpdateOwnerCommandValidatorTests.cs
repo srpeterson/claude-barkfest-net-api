@@ -117,6 +117,7 @@ public class UpdateOwnerCommandValidatorTests
     [InlineData("notanemail")]
     [InlineData("@nodomain.com")]
     [InlineData("missing@")]
+    [InlineData("space in@example.com")]
     public void Validate_When_EmailFormatIsInvalid_Fails_ForEmail(string email)
     {
         var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", email, null);
