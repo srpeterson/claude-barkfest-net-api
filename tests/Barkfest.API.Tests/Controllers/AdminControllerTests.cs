@@ -145,7 +145,7 @@ public class AdminControllerTests(BarkfestApiFactory factory)
     {
         var response = await _unauthenticatedClient.PatchAsJsonAsync(
             $"/v1/admin/admins/{Guid.NewGuid()}/password",
-            new { newPassword = "NewPass1!" });
+            new { newPassword = "NewPass1!!" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -157,7 +157,7 @@ public class AdminControllerTests(BarkfestApiFactory factory)
 
         var response = await ownerClient.PatchAsJsonAsync(
             $"/v1/admin/admins/{Guid.NewGuid()}/password",
-            new { newPassword = "NewPass1!" });
+            new { newPassword = "NewPass1!!" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -169,7 +169,7 @@ public class AdminControllerTests(BarkfestApiFactory factory)
 
         var response = await adminClient.PatchAsJsonAsync(
             $"/v1/admin/admins/{Guid.NewGuid()}/password",
-            new { newPassword = "NewPass1!" });
+            new { newPassword = "NewPass1!!" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -187,14 +187,14 @@ public class AdminControllerTests(BarkfestApiFactory factory)
             name = "Target Admin",
             email = $"target-{Guid.NewGuid():N}@barkfest.dev",
             phoneNumber = "+15555550100",
-            password = "OldPass1!"
+            password = "OldPass1!!"
         });
         createResponse.EnsureSuccessStatusCode();
         var targetId = Guid.Parse(createResponse.Headers.Location!.ToString().Split('/').Last());
 
         var response = await adminClient.PatchAsJsonAsync(
             $"/v1/admin/admins/{targetId}/password",
-            new { newPassword = "NewPass1!" });
+            new { newPassword = "NewPass1!!" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
