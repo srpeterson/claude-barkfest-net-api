@@ -663,6 +663,22 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure 
 
 ---
 
-## Next
+## Phase 17 — Authentication UI ✅ Complete
 
-Phase 17 — Authentication UI (Login + Register screens with HttpOnly cookie flow)
+### API — HttpOnly Cookie Auth
+- Login endpoints (`/v1/auth/login`, `/v1/auth/admin/login`) set a `barkfest_auth` HttpOnly cookie (`Secure`, `SameSite=Strict`) instead of returning the token in the response body
+- `POST /v1/auth/logout` endpoint added — clears the cookie
+- `AddJwtBearer` updated to read the token from the cookie via `OnMessageReceived`
+- Password minimum length raised from 8 → 10 characters (aligned with frontend strength meter guidance); `AccountConstraints.PasswordMinLength` updated
+- All API tests updated and passing
+
+### UI — Auth Context, Modals, Navbar
+- `AuthContext.tsx` — auth state, `signIn`, `signOut`, modal open/close state
+- `useAuth.ts` hook
+- `api.ts` — `credentials: 'include'` on all requests, `setUnauthorizedHandler`, `login`, `adminLogin`, `logout` helpers
+- `LoginModal.tsx` — username + password fields, admin checkbox (UI present, disabled — admin login available via Scalar), validation, resets on close
+- `RegisterModal.tsx` — full registration form with zxcvbn password strength meter and confirm password field
+- `Navbar.tsx` — three-state render: unauthenticated (Sign In), owner (Post a Pet + Sign Out), admin (label + Sign Out)
+- `ProtectedRoute.tsx` — owner-only gate; unauthenticated users redirected to home page with login modal triggered
+- `App.tsx` — 401 interception handler registered; expired token signs user out and re-prompts login
+- TypeScript check clean, UI smoke tested

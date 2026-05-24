@@ -425,3 +425,57 @@ management UI is fully built and users are doing longer authenticated sessions.
 - `api.ts` intercepts `401`, attempts silent refresh, retries the original request
 - On refresh failure (expired or revoked refresh token), fall back to current 401 handler (sign out + login modal)
 - Refresh token rotation: each use issues a new refresh token and invalidates the old one
+
+---
+
+## 15. Aspire Container Host-Port Pinning
+
+**Priority:** Low
+**Status:** Investigated and deferred — not feasible with Aspire 13.x (package 9.x)
+
+### What
+Pin the Docker host-side port mappings for the SQL Server and Azurite containers to
+fixed values so that local SSMS and Azure Storage Explorer connection strings remain
+stable across container restarts and recreations.
+
+Target mappings investigated:
+- SQL Server: host `62905` → container `1433`
+- Azurite Blob: host `62902` → container `10000`
+- Azurite Queue: host `62903` → container `10001`
+- Azurite Table: host `62904` → container `10002`
+
+### Why deferred
+
+All approaches tried produced random host ports when containers were deleted and
+recreated from scratch. The ports were only stable while the original containers
+persisted from first creation; fresh containers always received new random bindings.
+
+**Approaches tried:**
+
+1. **Hardcoded `port:` parameters** — `AddSqlServer("barkfest-sql", port: 62905)` and
+   `WithBlobPort(62902).WithQueuePort(62903).WithTablePort(62904)` on the Azurite emulator.
+   Compiled and ran cleanly but port mappings remained random on new container creation.
+
+2. **`appsettings.json` / `appsettings.Development.json`** — Considered but rejected.
+   These files are under source control. Per-developer overrides would risk reaching `main`.
+
+3. **User Secrets with fallback defaults** — Added SQL and Azurite port keys to the
+   AppHost's User Secrets file (`d33f7c7c-6286-410c-a3dc-1393eb108232`) and read them in
+   `AppHost.cs` via `builder.Configuration.GetValue<int>("SqlPort", 62905)`. Two issues
+   arose: (a) `Microsoft.Extensions.Configuration.Binder` is not transitively available in
+   the Aspire AppHost, causing `GetValue<int>` to silently return `0` instead of the
+   supplied default; (b) even after working around that with `int.TryParse` fallback,
+   port mappings were still random on fresh container creation.
+
+**Root cause:** Aspire 13.x DCP (Developer Control Plane) does not honour the `port:`
+parameter of `AddSqlServer()` or the `WithBlobPort/QueuePort/TablePort` extension
+methods when creating containers for the first time. The values are accepted by the API
+surface without error but are not applied to the Docker host binding.
+
+### When to revisit
+
+Check the Aspire release notes for a fix to host-port pinning for `AddSqlServer` and
+Azurite emulator ports. The GitHub issue tracker for `dotnet/aspire` is the right place
+to watch. Once the DCP honours the port parameter, the simplest fix would be to restore
+hardcoded defaults in `AppHost.cs` (no User Secrets needed for a purely local-dev
+convenience feature).
