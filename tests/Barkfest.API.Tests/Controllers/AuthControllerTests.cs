@@ -86,7 +86,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Login_When_CredentialsAreValid_Returns_Ok_WithToken()
+    public async Task Login_When_CredentialsAreValid_Returns_Ok()
     {
         var username = $"bob{Guid.NewGuid():N}";
         const string password = "SecurePass1!";
@@ -101,18 +101,18 @@ public class AuthControllerTests(BarkfestApiFactory factory)
             password
         });
 
-        var response = await _client.PostAsJsonAsync("/v1/auth/login", new
-        {
-            username,
-            password
-        });
+        var response = await _client.PostAsJsonAsync("/v1/auth/login", new { username, password });
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
+        // Token must be in the cookie, not the body
+        response.Headers.TryGetValues("Set-Cookie", out var cookies).ShouldBeTrue();
+        cookies!.ShouldContain(c => c.StartsWith("barkfest_auth="));
+
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
-        doc.RootElement.TryGetProperty("accessToken", out _).ShouldBeTrue();
         doc.RootElement.TryGetProperty("accountId", out _).ShouldBeTrue();
+        doc.RootElement.TryGetProperty("accessToken", out _).ShouldBeFalse();
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task AdminLogin_When_CredentialsAreValid_Returns_Ok_WithToken()
+    public async Task AdminLogin_When_CredentialsAreValid_Returns_Ok()
     {
         var adminClient = factory.CreateAuthenticatedAdminClient(Guid.NewGuid());
         var username = $"a{Guid.NewGuid():N}";
@@ -175,10 +175,14 @@ public class AuthControllerTests(BarkfestApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
+        // Token must be in the cookie, not the body
+        response.Headers.TryGetValues("Set-Cookie", out var cookies).ShouldBeTrue();
+        cookies!.ShouldContain(c => c.StartsWith("barkfest_auth="));
+
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
-        doc.RootElement.TryGetProperty("accessToken", out _).ShouldBeTrue();
         doc.RootElement.TryGetProperty("accountId", out _).ShouldBeTrue();
+        doc.RootElement.TryGetProperty("accessToken", out _).ShouldBeFalse();
     }
 
     [Fact]
@@ -213,5 +217,26 @@ public class AuthControllerTests(BarkfestApiFactory factory)
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    // -----------------------------------------------------------------------
+    // POST /v1/auth/logout
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Logout_When_Called_Returns_NoContent()
+    {
+        var response = await _client.PostAsync("/v1/auth/logout", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Logout_When_Called_Returns_ExpiredCookie()
+    {
+        var response = await _client.PostAsync("/v1/auth/logout", null);
+
+        response.Headers.TryGetValues("Set-Cookie", out var cookies).ShouldBeTrue();
+        cookies!.ShouldContain(c => c.StartsWith("barkfest_auth="));
     }
 }

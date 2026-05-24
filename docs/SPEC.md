@@ -7,6 +7,7 @@ Barkfest is a pet management API allowing owners to register themselves and show
 ## Actors
 
 - **Owner** — a person who registers an account and manages their pets
+- **Administrator** — a platform moderator who can view all owners and manage admin accounts
 
 ## Features
 
@@ -46,12 +47,25 @@ Barkfest is a pet management API allowing owners to register themselves and show
 
 RESTful HTTP API. All endpoints return JSON.
 
+### Authentication
+
+The API issues a JWT on login as an **HttpOnly cookie** (`barkfest_auth`). The cookie is:
+- `HttpOnly` — not accessible to JavaScript
+- `Secure` — HTTPS only in production
+- `SameSite=Strict` — not sent on cross-site requests
+
+Frontend clients must include `credentials: 'include'` on all API requests so the browser
+sends the cookie cross-origin. The `LoginResponse` body contains only `accountId` and
+`expiresAt` — the token itself never touches client-side storage.
+
 ### Key endpoints
 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/v1/auth/register` | Register a new owner |
-| `POST` | `/v1/auth/login` | Login and receive JWT |
+| `POST` | `/v1/auth/login` | Owner login — sets HttpOnly auth cookie |
+| `POST` | `/v1/auth/admin/login` | Admin login — sets HttpOnly auth cookie |
+| `POST` | `/v1/auth/logout` | Clear auth cookie (no auth required) |
 | `GET` | `/v1/owners/{id}` | Get owner by ID |
 | `PUT` | `/v1/owners/{id}` | Update owner |
 | `DELETE` | `/v1/owners/{id}` | Delete owner |
@@ -65,7 +79,9 @@ RESTful HTTP API. All endpoints return JSON.
 | `DELETE` | `/v1/pets/{id}/images/{imageId}` | Remove single image |
 | `POST` | `/v1/pets/{id}/images/batch-delete` | Batch delete images (atomic) |
 | `PUT` | `/v1/pets/{id}/images/{imageId}/featured` | Set featured image |
-| `GET` | `/v1/browse/images` | Browse all pet images (public) |
+| `GET` | `/v1/browse/images` | Browse all pet images (public, paginated) |
+| `GET` | `/v1/browse/pet-types` | List available pet types (public) |
+| `GET` | `/v1/browse/breeds?petType=` | List breeds for a pet type (public) |
 
 ## Constraints
 
@@ -75,3 +91,18 @@ RESTful HTTP API. All endpoints return JSON.
 - Date of birth is optional; the UI may back-calculate it from an age the owner enters
 - Breed is required and must match pet type (Dog → dog breed, Cat → cat breed)
 - All resource endpoints require a valid owner JWT; ownership enforced in handlers
+- `GET /v1/owners` and `GET /v1/admin/admins` require an admin JWT
+- Passwords: minimum 10 characters, maximum 72 characters (BCrypt limit); no mandatory complexity rules
+- Owner login uses `Username` + password; `Email` is a contact field only
+- Administrators and owners are distinct identities — separate tables, separate JWT claims
+
+## UI
+
+The `barkfest-ui` React SPA provides:
+
+- **Home page** — browse pet images, filter by pet type and breed, paginated
+- **Login modal** — username + password; admin checkbox (currently disabled; admin login available via Scalar)
+- **Register modal** — full registration form with password strength meter and confirm password field
+- **Navbar** — three states: unauthenticated (Sign In), owner (Post a Pet + Sign Out), admin (label + Sign Out)
+- **Protected routes** — owner-only; unauthenticated users are redirected to the home page and prompted to log in
+- **401 interception** — any expired token automatically signs the user out and re-prompts login

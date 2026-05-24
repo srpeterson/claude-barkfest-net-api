@@ -29,7 +29,7 @@ the API layer so it is enforced regardless of how the API is called.
 at least 1 image). Deferred to `feature/require-pet-image-on-create` to keep this
 feature branch focused on UI bootstrapping only.
 
-**Tracked in:** `docs/ROADMAP.md` item 6.
+**Tracked in:** `docs/ROADMAP.md` item 9.
 
 ---
 

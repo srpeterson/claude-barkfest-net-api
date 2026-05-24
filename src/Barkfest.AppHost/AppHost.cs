@@ -4,6 +4,8 @@ var sql = builder.AddSqlServer("barkfest-sql")
                  .WithLifetime(ContainerLifetime.Persistent)
                  .WithDataVolume("barkfest-sql-data");
 
+var db = sql.AddDatabase("barkfest");
+
 var storage = builder.AddAzureStorage("barkfest-storage")
                      .RunAsEmulator(e => e
                          .WithLifetime(ContainerLifetime.Persistent)
@@ -12,7 +14,7 @@ var storage = builder.AddAzureStorage("barkfest-storage")
 var blobs = storage.AddBlobs("barkfest-blobs");
 
 var api = builder.AddProject<Projects.Barkfest_API>("barkfest-api")
-                 .WithReference(sql)
+                 .WithReference(db)
                  .WithReference(blobs)
                  .WaitFor(sql)
                  .WaitFor(blobs);

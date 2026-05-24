@@ -1,24 +1,43 @@
+import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import { LoginPage }    from '@/features/auth/LoginPage'
-import { RegisterPage } from '@/features/auth/RegisterPage'
-import { OwnersPage }   from '@/features/owners/OwnersPage'
-import { PetsPage }     from '@/features/pets/PetsPage'
-import { ShellLayout }  from '@/layouts/ShellLayout'
-import { HomePage }     from '@/pages/HomePage'
+import { OwnersPage }      from '@/features/owners/OwnersPage'
+import { PetsPage }        from '@/features/pets/PetsPage'
+import { ShellLayout }     from '@/layouts/ShellLayout'
+import { ProtectedRoute }  from '@/components/ProtectedRoute'
+import { LoginModal }      from '@/components/LoginModal'
+import { RegisterModal }   from '@/components/RegisterModal'
+import { HomePage }        from '@/pages/HomePage'
+import { useAuth }         from '@/hooks/useAuth'
+import { setUnauthorizedHandler } from '@/lib/api'
 
 export function App() {
-  return (
-    <Routes>
-      {/* Public home — has its own Navbar */}
-      <Route index element={<HomePage />} />
+  const { signOut, openLoginModal } = useAuth()
 
-      {/* Internal/auth pages — wrapped in ShellLayout */}
-      <Route element={<ShellLayout />}>
-        <Route path="login"    element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
-        <Route path="owners"   element={<OwnersPage />} />
-        <Route path="pets"     element={<PetsPage />} />
-      </Route>
-    </Routes>
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      signOut()
+      openLoginModal()
+    })
+  }, [signOut, openLoginModal])
+
+  return (
+    <>
+      <Routes>
+        {/* Public home — has its own Navbar */}
+        <Route index element={<HomePage />} />
+
+        {/* Protected pages — redirect to / if not authenticated */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<ShellLayout />}>
+            <Route path="owners" element={<OwnersPage />} />
+            <Route path="pets"   element={<PetsPage />} />
+          </Route>
+        </Route>
+      </Routes>
+
+      {/* Auth modals — rendered over any page */}
+      <LoginModal />
+      <RegisterModal />
+    </>
   )
 }
