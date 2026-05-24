@@ -1,12 +1,37 @@
 # ROADMAP.md — Barkfest
 
 This file captures features that are desirable but out of scope for the initial
-build. Items are listed in priority order. When starting a new phase, read this
+MVP. Items are listed in priority order. When starting a new phase, read this
 file alongside `PROGRESS.md` to decide what to tackle next.
 
 ---
 
-## 1. Owner Profile Page
+## 1. Add Pet Dialog
+
+**Priority:** High
+**Status:** Not started
+
+### What
+A modal dialog that allows an authenticated owner to add a new pet, covering both
+the pet details and image upload in a single guided flow:
+- Pet info form (name, pet type, breed, date of birth, description)
+- Breed dropdown updates dynamically based on selected pet type
+- Image upload step — minimum 1 image enforced by the UI
+- Designate a featured image before saving
+
+### Why
+The Owner Pet Management Page (item 3) depends on this dialog. Building it as a
+standalone component first keeps the work focused before it is embedded in the
+full management page.
+
+### Approach (high level)
+- Multi-step dialog: step 1 — pet details form; step 2 — image upload with preview
+- On submit: `POST /v1/pets` → `POST /v1/pets/{id}/images`
+- On success: close dialog and refresh the pet list
+
+---
+
+## 2. Owner Profile Page
 
 **Priority:** High
 **Status:** Not started
@@ -31,7 +56,7 @@ Owners currently have no self-service way to update their account after registra
 
 ---
 
-## 2. Owner Pet Management Page
+## 3. Owner Pet Management Page
 
 **Priority:** High
 **Status:** Not started
@@ -56,7 +81,7 @@ Owners register and log in but currently have no UI to actually add or manage th
 
 ---
 
-## 3. Landing Page — Full Wire-Up
+## 4. Landing Page — Full Wire-Up
 
 **Priority:** High
 **Status:** Partially implemented — browse API, pet type filter, and breed filter are wired; pagination exists. Needs real pet data flowing end-to-end with owners actively posting pets.
@@ -82,7 +107,7 @@ The browse API and filter UI exist but have only been tested with seeded/test da
 
 ---
 
-## 4. Email Verification & Password Reset
+## 5. Email Verification & Password Reset
 
 **Priority:** High
 **Status:** Partially scaffolded — `IsEmailVerified` and `VerificationToken` on `Owner`, migration ready. `IEmailService` and all endpoints deferred until this phase is started.
@@ -147,10 +172,10 @@ delivery service.
 
 ---
 
-## 5. Two-Factor Authentication (2FA)
+## 6. Two-Factor Authentication (2FA)
 
 **Priority:** Medium
-**Status:** Not started — depends on item 4 (Email Verification & Password Reset) being complete
+**Status:** Not started — depends on item 5 (Email Verification & Password Reset) being complete
 
 ### What
 Add an optional second factor to the owner login flow. After a valid username and
@@ -168,7 +193,7 @@ factor significantly reduces the risk of unauthorised account access even when a
 password is known.
 
 ### Prerequisites
-- Item 4 (Email Verification & Password Reset) must be complete — 2FA via email requires a
+- Item 5 (Email Verification & Password Reset) must be complete — 2FA via email requires a
   verified, working email address on the account
 - For TOTP: a QR code enrolment flow and a shared secret stored (encrypted) on `Owner`
 
@@ -188,7 +213,7 @@ blocked by the second-factor step.
 
 ---
 
-## 6. Value Object Emails (and Other Validated Strings)
+## 7. Value Object Emails (and Other Validated Strings)
 
 **Priority:** Low
 **Status:** Not started — kept as plain `string` properties for now
@@ -217,7 +242,7 @@ Until then, the setter guarantee is sufficient.
 
 ---
 
-## 7. Upgrade Microsoft.OpenApi to 3.x
+## 8. Upgrade Microsoft.OpenApi to 3.x
 
 **Priority:** Low
 **Status:** Blocked — pinned to 2.7.4 (latest 2.x)
@@ -239,7 +264,7 @@ with `Microsoft.OpenApi` 3.x. Once confirmed, remove the pin in
 
 ---
 
-## 8. Application Insights — Provision and Connect
+## 9. Application Insights — Provision and Connect
 
 **Priority:** High (before first Azure deployment)
 **Status:** Code complete — `Azure.Monitor.OpenTelemetry.AspNetCore` wired into `ServiceDefaults`. Activates automatically when `APPLICATIONINSIGHTS_CONNECTION_STRING` is present.
@@ -266,7 +291,7 @@ The exporter self-activates on the connection string presence check in `ServiceD
 
 ---
 
-## 9. Require Minimum One Image on Pet Creation (API-level enforcement)
+## 10. Require Minimum One Image on Pet Creation (API-level enforcement)
 
 **Priority:** Low — only relevant if the API is opened to third-party clients
 **Status:** Deferred — UI enforces this rule; API intentionally does not
@@ -284,7 +309,7 @@ multipart request that requires at least 1 image file.
 
 ---
 
-## 10. Pet Image Descriptions and Batch Update
+## 11. Pet Image Descriptions and Batch Update
 
 **Priority:** Low
 **Status:** Not started
@@ -312,7 +337,7 @@ be surfaced (caption, tooltip, etc.).
 
 ---
 
-## 11. UI Component Tests — React Testing Library Setup
+## 12. UI Component Tests — React Testing Library Setup
 
 **Priority:** Medium
 **Status:** Not started — pure utility functions are tested; component tests deferred
@@ -337,7 +362,7 @@ ensures a consistent pattern across all component tests.
 
 ---
 
-## 12. Image Moderation
+## 13. Image Moderation
 
 **Priority:** Medium
 **Status:** Scaffolded — `IContentModerationService` is wired into all image upload
@@ -370,7 +395,7 @@ site.
 
 ---
 
-## 13. Password-Protected Scalar in Production
+## 14. Password-Protected Scalar in Production
 
 **Priority:** Medium
 **Status:** Not started — Scalar is currently disabled in production (`IsDevelopment()` gate)
@@ -398,7 +423,7 @@ or connect directly to the database. A password-protected Scalar avoids both.
 
 ---
 
-## 14. Rolling JWT Expiry
+## 15. Rolling JWT Expiry
 
 **Priority:** Low
 **Status:** Not started — current token is fixed 60-minute expiry with 401 interception handling expiry gracefully in the UI
@@ -428,7 +453,7 @@ management UI is fully built and users are doing longer authenticated sessions.
 
 ---
 
-## 15. Aspire Container Host-Port Pinning
+## 16. Aspire Container Host-Port Pinning
 
 **Priority:** Low
 **Status:** Investigated and deferred — not feasible with Aspire 13.x (package 9.x)
