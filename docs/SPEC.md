@@ -49,14 +49,18 @@ RESTful HTTP API. All endpoints return JSON.
 
 ### Authentication
 
-The API issues a JWT on login as an **HttpOnly cookie** (`barkfest_auth`). The cookie is:
-- `HttpOnly` — not accessible to JavaScript
-- `Secure` — HTTPS only in production
-- `SameSite=Strict` — not sent on cross-site requests
+The API issues a JWT on login returned in the response body as `accessToken`. The frontend
+stores the token in `sessionStorage` and attaches it to every authenticated request as an
+`Authorization: Bearer <token>` header.
 
-Frontend clients must include `credentials: 'include'` on all API requests so the browser
-sends the cookie cross-origin. The `LoginResponse` body contains only `accountId` and
-`expiresAt` — the token itself never touches client-side storage.
+- Token expiry: 8 hours (`Jwt:ExpiryMinutes = 480`)
+- `sessionStorage` is tab-scoped and cleared on browser close — no persistent session risk
+- On 401, the UI signs the user out and re-prompts login via the login modal
+- The HttpOnly cookie approach was trialled but abandoned — `SameSite=Strict` prevented
+  cookie delivery between the frontend (`http://localhost:5173`) and API (`https://localhost:7001`)
+  because Chrome treats different schemes as cross-site; the same mismatch applies on Azure
+  (different domains). Bearer tokens sidestep the SameSite problem entirely and are immune
+  to CSRF. See `docs/features/add-pet-dialog/DECISIONS.md` for full reasoning.
 
 ### Key endpoints
 

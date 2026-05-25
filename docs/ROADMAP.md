@@ -9,7 +9,7 @@ file alongside `PROGRESS.md` to decide what to tackle next.
 ## 1. Add Pet Dialog
 
 **Priority:** High
-**Status:** In progress — branch `feature/add-pet-dialog`
+**Status:** Complete — merged via PR #9
 
 ### What
 A modal dialog that allows an authenticated owner to add a new pet, covering both
