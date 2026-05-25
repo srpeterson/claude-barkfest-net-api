@@ -105,14 +105,14 @@ public class AuthControllerTests(BarkfestApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        // Token must be in the cookie, not the body
-        response.Headers.TryGetValues("Set-Cookie", out var cookies).ShouldBeTrue();
-        cookies!.ShouldContain(c => c.StartsWith("barkfest_auth="));
+        // Token must be in the response body, not a cookie
+        response.Headers.TryGetValues("Set-Cookie", out _).ShouldBeFalse();
 
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
         doc.RootElement.TryGetProperty("accountId", out _).ShouldBeTrue();
-        doc.RootElement.TryGetProperty("accessToken", out _).ShouldBeFalse();
+        doc.RootElement.TryGetProperty("accessToken", out var token).ShouldBeTrue();
+        token.GetString().ShouldNotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -175,14 +175,14 @@ public class AuthControllerTests(BarkfestApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        // Token must be in the cookie, not the body
-        response.Headers.TryGetValues("Set-Cookie", out var cookies).ShouldBeTrue();
-        cookies!.ShouldContain(c => c.StartsWith("barkfest_auth="));
+        // Token must be in the response body, not a cookie
+        response.Headers.TryGetValues("Set-Cookie", out _).ShouldBeFalse();
 
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
         doc.RootElement.TryGetProperty("accountId", out _).ShouldBeTrue();
-        doc.RootElement.TryGetProperty("accessToken", out _).ShouldBeFalse();
+        doc.RootElement.TryGetProperty("accessToken", out var token).ShouldBeTrue();
+        token.GetString().ShouldNotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -231,12 +231,4 @@ public class AuthControllerTests(BarkfestApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
-    [Fact]
-    public async Task Logout_When_Called_Returns_ExpiredCookie()
-    {
-        var response = await _client.PostAsync("/v1/auth/logout", null);
-
-        response.Headers.TryGetValues("Set-Cookie", out var cookies).ShouldBeTrue();
-        cookies!.ShouldContain(c => c.StartsWith("barkfest_auth="));
-    }
 }

@@ -4,10 +4,11 @@ interface AuthState {
   isAuthenticated: boolean
   accountId: string | null
   accountType: 'owner' | 'admin' | null
+  token: string | null
 }
 
 interface AuthContextValue extends AuthState {
-  signIn: (accountId: string, accountType: 'owner' | 'admin') => void
+  signIn: (accountId: string, accountType: 'owner' | 'admin', token: string) => void
   signOut: () => void
   modal: 'login' | 'register' | null
   openLoginModal: () => void
@@ -22,19 +23,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!sessionStorage.getItem('barkfest_authenticated'),
     accountId: sessionStorage.getItem('barkfest_account_id'),
     accountType: (sessionStorage.getItem('barkfest_account_type') as AuthState['accountType']) ?? null,
+    token: sessionStorage.getItem('barkfest_token'),
   })
   const [modal, setModal] = useState<'login' | 'register' | null>(null)
 
-  function signIn(accountId: string, accountType: 'owner' | 'admin') {
+  function signIn(accountId: string, accountType: 'owner' | 'admin', token: string) {
     sessionStorage.setItem('barkfest_authenticated', 'true')
     sessionStorage.setItem('barkfest_account_id', accountId)
     sessionStorage.setItem('barkfest_account_type', accountType)
-    setAuth({ isAuthenticated: true, accountId, accountType })
+    sessionStorage.setItem('barkfest_token', token)
+    setAuth({ isAuthenticated: true, accountId, accountType, token })
   }
 
   function signOut() {
     sessionStorage.clear()
-    setAuth({ isAuthenticated: false, accountId: null, accountType: null })
+    setAuth({ isAuthenticated: false, accountId: null, accountType: null, token: null })
   }
 
   return (

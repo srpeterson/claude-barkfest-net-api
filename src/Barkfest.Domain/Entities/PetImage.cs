@@ -7,6 +7,7 @@ public class PetImage
 {
     public const int BlobNameMaxLength = 500;
     public const int ContentTypeMaxLength = 100;
+    public const long MaxImageSizeBytes = 10 * 1024 * 1024; // 10 MB
 
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     public Guid PetId { get; private set; }

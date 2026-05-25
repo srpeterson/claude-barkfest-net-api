@@ -7,7 +7,7 @@ using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Commands.AddPetImages;
 
-public record PetImageUpload(string FileName, Stream Content, string ContentType);
+public record PetImageUpload(string FileName, Stream Content, string ContentType, long Length);
 
 public record PetImageUploadResult(string FileName, bool Success, Guid? ImageId, string? FailureReason);
 

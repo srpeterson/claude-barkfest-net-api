@@ -135,8 +135,8 @@ public class AddPetImagesCommandHandlerTests
 
         var uploads = new List<PetImageUpload>
         {
-            new("photo1.jpg", new MemoryStream([0xFF, 0xD8]), "image/jpeg"),
-            new("bad.jpg", failStream, "image/jpeg")
+            new("photo1.jpg", new MemoryStream([0xFF, 0xD8]), "image/jpeg", 1024),
+            new("bad.jpg", failStream, "image/jpeg", 1024)
         };
         var command = new AddPetImagesCommand(pet.Id, uploads);
 
@@ -187,6 +187,6 @@ public class AddPetImagesCommandHandlerTests
 
     private static AddPetImagesCommand BuildCommand(Guid petId, IEnumerable<string> fileNames) =>
         new(petId, fileNames
-            .Select(n => new PetImageUpload(n, new MemoryStream([0xFF, 0xD8]), "image/jpeg"))
+            .Select(n => new PetImageUpload(n, new MemoryStream([0xFF, 0xD8]), "image/jpeg", 1024))
             .ToList());
 }

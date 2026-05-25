@@ -296,6 +296,7 @@ validators, tests, EF Core configuration.
 | `Pet.MaxImages` | 6 | `Pet.cs` |
 | `PetImage.BlobNameMaxLength` | 500 | `PetImage.cs` |
 | `PetImage.ContentTypeMaxLength` | 100 | `PetImage.cs` |
+| `PetImage.MaxImageSizeBytes` | 10 MB (10 × 1024 × 1024) | `PetImage.cs` |
 
 ---
 
@@ -321,6 +322,8 @@ validators, tests, EF Core configuration.
 ### Images (applies to all image uploads across the entire application)
 - Allowed content types: `image/jpeg`, `image/jpg`, `image/png`
 - Allowed extensions: `.jpeg`, `.jpg`, `.png`
+- Maximum file size: `PetImage.MaxImageSizeBytes` (10 MB) per file — enforced in `AddPetImagesCommandValidator` and on the frontend via react-dropzone `maxSize`
+- Maximum request body: 65 MB — enforced by `[RequestSizeLimit]` and `[RequestFormLimits]` on the `AddImages` action in `PetController`
 - Validated by `SupportedImageType` static class in `Barkfest.Domain`
 - Enforced at two layers: Domain (entity methods) and Application (FluentValidation)
 - Binary files stored in Azure Blob Storage — SQL Server stores only `BlobName` and `ContentType`

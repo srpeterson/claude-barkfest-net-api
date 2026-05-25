@@ -64,7 +64,7 @@ export function RegisterModal() {
         password: form.password,
       })
       const result = await login(form.username, form.password)
-      signIn(result.accountId, 'owner')
+      signIn(result.accountId, 'owner', result.accessToken)
       closeModal()
     } catch {
       setError('Woof! Something went wrong! Check your details and try again.')

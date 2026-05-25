@@ -1,20 +1,27 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { LogOut, PawPrint, Plus, UserCircle } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { logout } from '@/lib/api'
+import { AddPetDialog } from '@/components/AddPetDialog'
 
 export function Navbar() {
   const { isAuthenticated, accountType, signOut, openLoginModal } = useAuth()
-  const navigate = useNavigate()
+  const [addPetOpen, setAddPetOpen] = useState(false)
 
   async function handleSignOut() {
     await logout()
     signOut()
   }
 
+  async function handlePostAPet() {
+    setAddPetOpen(true)
+  }
+
   return (
+    <>
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-primary/20 border-b border-primary/30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -41,7 +48,7 @@ export function Navbar() {
         ) : isAuthenticated && accountType === 'owner' ? (
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/pets')}
+              onClick={handlePostAPet}
               className={cn(
                 buttonVariants({ size: 'sm' }),
                 'gap-1.5 font-medium'
@@ -79,5 +86,8 @@ export function Navbar() {
         )}
       </div>
     </nav>
+
+    {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} />}
+  </>
   )
 }
