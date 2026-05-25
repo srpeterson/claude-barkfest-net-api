@@ -108,7 +108,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     }
 
     [Fact]
-    public async Task GetImages_When_ResponseContainsImage_Includes_OwnerName_And_PetProperties()
+    public async Task GetImages_When_ResponseContainsImage_Includes_DisplayName_And_PetProperties()
     {
         await RegisterOwnerAndAddFeaturedPetImageAsync();
 
@@ -117,7 +117,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
         using var doc = JsonDocument.Parse(body);
 
         var first = doc.RootElement.GetProperty("items").EnumerateArray().First();
-        first.TryGetProperty("ownerName", out _).ShouldBeTrue();
+        first.TryGetProperty("displayName", out _).ShouldBeTrue();
         first.TryGetProperty("petName", out _).ShouldBeTrue();
         first.TryGetProperty("petType", out _).ShouldBeTrue();
         first.TryGetProperty("blobName", out _).ShouldBeTrue();

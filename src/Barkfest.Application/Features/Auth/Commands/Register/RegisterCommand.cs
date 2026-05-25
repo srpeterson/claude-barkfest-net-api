@@ -12,7 +12,8 @@ public record RegisterCommand(
     string LastName,
     string Email,
     string? PhoneNumber,
-    string Password) : IRequest<Guid>;
+    string Password,
+    string? DisplayName = null) : IRequest<Guid>;
 
 public class RegisterCommandHandler(
     IOwnerRepository ownerRepository,
@@ -36,6 +37,8 @@ public class RegisterCommandHandler(
             request.Email,
             passwordHasher.Hash(request.Password),
             request.PhoneNumber);
+
+        owner.SetDisplayName(request.DisplayName);
 
         await ownerRepository.AddAsync(owner, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -9,6 +9,7 @@ public class OwnerBuilder
     private string _lastName = "Owner";
     private string _email = $"test.{Guid.NewGuid():N}@example.com";
     private string? _phoneNumber = null;
+    private string? _displayName = null;
     private string _passwordHash = "hashed-password";
     private (string BlobName, string ContentType)? _profileImage = null;
 
@@ -42,6 +43,12 @@ public class OwnerBuilder
         return this;
     }
 
+    public OwnerBuilder WithDisplayName(string? displayName)
+    {
+        _displayName = displayName;
+        return this;
+    }
+
     public OwnerBuilder WithPasswordHash(string passwordHash)
     {
         _passwordHash = passwordHash;
@@ -57,6 +64,8 @@ public class OwnerBuilder
     public Owner Build()
     {
         var owner = Owner.Create(_username, _firstName, _lastName, _email, _passwordHash, _phoneNumber);
+        if (_displayName is not null)
+            owner.SetDisplayName(_displayName);
         if (_profileImage.HasValue)
             owner.SetProfileImage(_profileImage.Value.BlobName, _profileImage.Value.ContentType);
         return owner;

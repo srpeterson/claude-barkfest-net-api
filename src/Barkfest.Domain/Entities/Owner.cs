@@ -5,11 +5,13 @@ namespace Barkfest.Domain.Entities;
 
 public class Owner
 {
+    public const int DisplayNameMaxLength = 25;
     public const int FirstNameMaxLength = 50;
     public const int LastNameMaxLength = 100;
 
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     public string Username { get; private set; } = string.Empty;
+    public string? DisplayName { get; private set; }
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
@@ -36,6 +38,20 @@ public class Owner
             throw new DomainException($"Username cannot exceed {AccountConstraints.UsernameMaxLength} characters.");
 
         Username = trimmed;
+    }
+
+    public void SetDisplayName(string? displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            DisplayName = null;
+            return;
+        }
+
+        if (displayName.Trim().Length > DisplayNameMaxLength)
+            throw new DomainException($"Display name cannot exceed {DisplayNameMaxLength} characters.");
+
+        DisplayName = displayName.Trim();
     }
 
     public void SetFirstName(string firstName)

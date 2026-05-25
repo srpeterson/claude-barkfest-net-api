@@ -37,7 +37,9 @@ export function PetCard({ pet, index }: PetCardProps) {
             )}
           </div>
 
-          <p className="text-xs text-muted-foreground">by {pet.ownerName}</p>
+          {pet.displayName && (
+            <p className="text-xs text-muted-foreground">by {pet.displayName}</p>
+          )}
 
           {pet.petDescription && (
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">

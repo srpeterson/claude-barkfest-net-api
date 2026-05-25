@@ -42,5 +42,10 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .WithMessage($"Password must be at least {AccountConstraints.PasswordMinLength} characters.")
             .MaximumLength(AccountConstraints.PasswordMaxLength)
             .WithMessage($"Password cannot exceed {AccountConstraints.PasswordMaxLength} characters.");
+
+        RuleFor(x => x.DisplayName)
+            .MaximumLength(Owner.DisplayNameMaxLength)
+            .WithMessage($"Display name cannot exceed {Owner.DisplayNameMaxLength} characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.DisplayName));
     }
 }

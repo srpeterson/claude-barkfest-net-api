@@ -30,5 +30,10 @@ public class UpdateOwnerCommandValidator : AbstractValidator<UpdateOwnerCommand>
             .Matches(E164PhoneNumber.Pattern)
             .WithMessage("Phone number must be in E.164 format (e.g. +15555555555).")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
+
+        RuleFor(x => x.DisplayName)
+            .MaximumLength(Owner.DisplayNameMaxLength)
+            .WithMessage($"Display name cannot exceed {Owner.DisplayNameMaxLength} characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.DisplayName));
     }
 }

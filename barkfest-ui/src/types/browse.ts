@@ -4,7 +4,7 @@ export interface BrowseImageDto {
   contentType: string
   isFeaturedImage: boolean
   createdAt: string
-  ownerName: string
+  displayName: string | null
   petId: string
   petName: string
   petDescription?: string

@@ -78,7 +78,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         pi.ContentType,
         pi.IsFeaturedImage,
         pi.CreatedAt,
-        $"{pi.Pet.Owner.FirstName} {pi.Pet.Owner.LastName}",
+        pi.Pet.Owner.DisplayName,
         pi.Pet.Id,
         pi.Pet.Name,
         pi.Pet.Description,

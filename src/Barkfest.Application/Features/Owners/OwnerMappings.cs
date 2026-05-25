@@ -9,6 +9,7 @@ public static class OwnerMappings
     public static OwnerDto ToDto(this Owner owner) => new(
         owner.Id,
         owner.Username,
+        owner.DisplayName,
         owner.FirstName,
         owner.LastName,
         owner.Email,

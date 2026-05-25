@@ -43,6 +43,26 @@ public class OwnerConfigurationTests
     }
 
     // -----------------------------------------------------------------------
+    // DisplayName
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void DisplayName_HasCorrectMaxLength()
+    {
+        _owner.FindProperty(nameof(Owner.DisplayName))!
+              .GetMaxLength()
+              .ShouldBe(Owner.DisplayNameMaxLength);
+    }
+
+    [Fact]
+    public void DisplayName_IsNullable()
+    {
+        _owner.FindProperty(nameof(Owner.DisplayName))!
+              .IsNullable
+              .ShouldBeTrue();
+    }
+
+    // -----------------------------------------------------------------------
     // Username
     // -----------------------------------------------------------------------
 

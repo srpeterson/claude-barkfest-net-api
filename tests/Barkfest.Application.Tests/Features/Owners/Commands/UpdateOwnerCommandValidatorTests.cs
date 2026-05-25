@@ -186,4 +186,39 @@ public class UpdateOwnerCommandValidatorTests
 
         _updateOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
+
+    // -----------------------------------------------------------------------
+    // DisplayName
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Fails_ForDisplayName_When_ExceedsMaxLength()
+    {
+        var command = new UpdateOwnerCommand(
+            Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null,
+            new string('x', Owner.DisplayNameMaxLength + 1));
+
+        var result = _updateOwnerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.DisplayName));
+    }
+
+    [Fact]
+    public void Validate_When_DisplayNameIsNull_Passes()
+    {
+        var command = new UpdateOwnerCommand(Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null);
+
+        _updateOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_When_DisplayNameIsAtMaxLength_Passes()
+    {
+        var command = new UpdateOwnerCommand(
+            Guid.NewGuid(), "Alice", "Smith", "alice@example.com", null,
+            new string('x', Owner.DisplayNameMaxLength));
+
+        _updateOwnerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
 }

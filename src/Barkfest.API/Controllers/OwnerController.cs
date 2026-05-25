@@ -42,7 +42,7 @@ public class OwnerController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Update(Guid id, UpdateOwnerRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(
-            new UpdateOwnerCommand(id, request.FirstName, request.LastName, request.Email, request.PhoneNumber),
+            new UpdateOwnerCommand(id, request.FirstName, request.LastName, request.Email, request.PhoneNumber, request.DisplayName),
             cancellationToken);
 
         return NoContent();
@@ -82,5 +82,5 @@ public class OwnerController(IMediator mediator) : ControllerBase
     }
 }
 
-public record UpdateOwnerRequest(string FirstName, string LastName, string Email, string? PhoneNumber);
+public record UpdateOwnerRequest(string FirstName, string LastName, string Email, string? PhoneNumber, string? DisplayName = null);
 public record SetOwnerVisibilityRequest(bool IsVisible);

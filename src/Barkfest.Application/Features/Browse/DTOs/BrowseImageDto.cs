@@ -6,7 +6,7 @@ public record BrowseImageDto(
     string ContentType,
     bool IsFeaturedImage,
     DateTime CreatedAt,
-    string OwnerName,
+    string? DisplayName,
     Guid PetId,
     string PetName,
     string? PetDescription,

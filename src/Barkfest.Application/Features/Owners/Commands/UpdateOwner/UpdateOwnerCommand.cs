@@ -12,7 +12,8 @@ public record UpdateOwnerCommand(
     string FirstName,
     string LastName,
     string Email,
-    string? PhoneNumber) : IRequest;
+    string? PhoneNumber,
+    string? DisplayName = null) : IRequest;
 
 public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     : IRequestHandler<UpdateOwnerCommand>
@@ -31,6 +32,7 @@ public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOf
         owner.SetLastName(request.LastName);
         owner.SetEmail(request.Email);
         owner.SetPhoneNumber(request.PhoneNumber);
+        owner.SetDisplayName(request.DisplayName);
 
         await ownerRepository.UpdateAsync(owner, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

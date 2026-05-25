@@ -7,6 +7,63 @@ namespace Barkfest.Domain.Tests.Entities;
 public class OwnerTests
 {
     // -----------------------------------------------------------------------
+    // SetDisplayName
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void SetDisplayName_When_Valid_Sets_TrimmedDisplayName()
+    {
+        var owner = new Owner();
+
+        owner.SetDisplayName("  FurParent  ");
+
+        owner.DisplayName.ShouldBe("FurParent");
+    }
+
+    [Fact]
+    public void SetDisplayName_When_AtMaxLength_Sets_DisplayName()
+    {
+        var owner = new Owner();
+        var name = new string('x', Owner.DisplayNameMaxLength);
+
+        owner.SetDisplayName(name);
+
+        owner.DisplayName.ShouldBe(name);
+    }
+
+    [Fact]
+    public void SetDisplayName_When_Null_Clears_DisplayName()
+    {
+        var owner = new Owner();
+        owner.SetDisplayName("FurParent");
+
+        owner.SetDisplayName(null);
+
+        owner.DisplayName.ShouldBeNull();
+    }
+
+    [Fact]
+    public void SetDisplayName_When_Whitespace_Clears_DisplayName()
+    {
+        var owner = new Owner();
+        owner.SetDisplayName("FurParent");
+
+        owner.SetDisplayName("   ");
+
+        owner.DisplayName.ShouldBeNull();
+    }
+
+    [Fact]
+    public void SetDisplayName_When_ExceedsMaxLength_Throws_DomainException()
+    {
+        var owner = new Owner();
+        var longName = new string('x', Owner.DisplayNameMaxLength + 1);
+
+        Should.Throw<DomainException>(() => owner.SetDisplayName(longName))
+            .Message.ShouldContain(Owner.DisplayNameMaxLength.ToString());
+    }
+
+    // -----------------------------------------------------------------------
     // SetUsername
     // -----------------------------------------------------------------------
 
