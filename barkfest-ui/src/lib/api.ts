@@ -86,6 +86,7 @@ export interface RegisterRequest {
   email: string
   phoneNumber?: string
   password: string
+  displayName?: string
 }
 
 export function register(data: RegisterRequest): Promise<void> {

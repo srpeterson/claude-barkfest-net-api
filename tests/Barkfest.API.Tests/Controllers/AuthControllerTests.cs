@@ -220,6 +220,71 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
+    // GET /v1/auth/check-display-name
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task CheckDisplayName_When_NameIsAvailable_Returns_Ok_WithAvailableTrue()
+    {
+        var response = await _client.GetAsync($"/v1/auth/check-display-name?value=UniqueName{Guid.NewGuid():N}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("available").GetBoolean().ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task CheckDisplayName_When_NameIsTaken_Returns_Ok_WithAvailableFalse()
+    {
+        var displayName = $"Name{Guid.NewGuid().ToString("N")[..10]}"; // 14 chars — within 25-char limit
+        await _client.PostAsJsonAsync("/v1/auth/register", new
+        {
+            username = $"user{Guid.NewGuid():N}",
+            firstName = "Test",
+            lastName = "User",
+            email = $"taken-{Guid.NewGuid():N}@example.com",
+            phoneNumber = (string?)null,
+            password = "SecurePass1!",
+            displayName
+        });
+
+        var response = await _client.GetAsync($"/v1/auth/check-display-name?value={Uri.EscapeDataString(displayName)}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("available").GetBoolean().ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task CheckDisplayName_When_NameMatchesIgnoringCaseAndSpaces_Returns_Ok_WithAvailableFalse()
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+        var displayName = $"Cool {suffix}"; // 11 chars — within 25-char limit, contains a space
+        await _client.PostAsJsonAsync("/v1/auth/register", new
+        {
+            username = $"user{Guid.NewGuid():N}",
+            firstName = "Test",
+            lastName = "User",
+            email = $"spaces-{Guid.NewGuid():N}@example.com",
+            phoneNumber = (string?)null,
+            password = "SecurePass1!",
+            displayName
+        });
+
+        // Strip spaces and uppercase — the endpoint normalizes to lowercase before comparing,
+        // so sending uppercase verifies case-insensitivity end-to-end.
+        var normalized = displayName.Replace(" ", "").ToUpper();
+        var response = await _client.GetAsync($"/v1/auth/check-display-name?value={Uri.EscapeDataString(normalized)}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("available").GetBoolean().ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
     // POST /v1/auth/logout
     // -----------------------------------------------------------------------
 

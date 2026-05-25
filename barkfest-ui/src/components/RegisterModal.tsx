@@ -20,6 +20,7 @@ export function RegisterModal() {
     lastName: '',
     email: '',
     username: '',
+    displayName: '',
     password: '',
     confirmPassword: '',
   })
@@ -29,8 +30,8 @@ export function RegisterModal() {
 
   const strength = zxcvbn(form.password)
   const allFieldsFilled = form.firstName.trim() !== '' && form.lastName.trim() !== '' &&
-    form.email.trim() !== '' && form.username.trim() !== '' && form.password !== '' &&
-    form.confirmPassword !== ''
+    form.email.trim() !== '' && form.username.trim() !== '' && form.displayName.trim() !== '' &&
+    form.password !== '' && form.confirmPassword !== ''
   const passwordMismatch = form.confirmPassword !== '' && form.password !== form.confirmPassword
   const passwordTooWeak = form.password.length > 0 && strength.score < 2
   const hint = passwordTooWeak
@@ -39,7 +40,7 @@ export function RegisterModal() {
 
   useEffect(() => {
     if (modal !== 'register') {
-      setForm({ firstName: '', lastName: '', email: '', username: '', password: '', confirmPassword: '' })
+      setForm({ firstName: '', lastName: '', email: '', username: '', displayName: '', password: '', confirmPassword: '' })
       setShowPassword(false)
       setError(null)
     }
@@ -62,6 +63,7 @@ export function RegisterModal() {
         lastName: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
+        displayName: form.displayName.trim(),
       })
       const result = await login(form.username, form.password)
       signIn(result.accountId, 'owner', result.accessToken)
@@ -98,13 +100,15 @@ export function RegisterModal() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <ModalField label="First name" id="reg-firstName" name="firstName" autoComplete="given-name" placeholder="Jane" required maxLength={30} value={form.firstName} onChange={handleChange} />
+            <ModalField label="First name" id="reg-firstName" name="firstName" autoComplete="given-name" autoFocus placeholder="Jane" required maxLength={30} value={form.firstName} onChange={handleChange} />
             <ModalField label="Last name" id="reg-lastName" name="lastName" autoComplete="family-name" placeholder="Doe" required maxLength={50} value={form.lastName} onChange={handleChange} />
           </div>
 
           <ModalField label="Email" id="reg-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={75} value={form.email} onChange={handleChange} />
 
           <ModalField label="Username" id="reg-username" name="username" autoComplete="username" placeholder="Pick a username" required maxLength={25} value={form.username} onChange={handleChange} />
+
+          <ModalField label="Display name" id="reg-displayName" name="displayName" autoComplete="nickname" placeholder="e.g. Cool Pet Dad" required maxLength={25} value={form.displayName} onChange={handleChange} />
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="reg-password">
@@ -210,6 +214,7 @@ interface ModalFieldProps {
   name: string
   type?: string
   autoComplete?: string
+  autoFocus?: boolean
   required?: boolean
   maxLength?: number
   value: string
@@ -217,7 +222,7 @@ interface ModalFieldProps {
   placeholder?: string
 }
 
-function ModalField({ label, id, name, type = 'text', autoComplete, required, maxLength, value, onChange, placeholder }: ModalFieldProps) {
+function ModalField({ label, id, name, type = 'text', autoComplete, autoFocus, required, maxLength, value, onChange, placeholder }: ModalFieldProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium" htmlFor={id}>
@@ -228,6 +233,7 @@ function ModalField({ label, id, name, type = 'text', autoComplete, required, ma
         name={name}
         type={type}
         autoComplete={autoComplete}
+        autoFocus={autoFocus}
         required={required}
         maxLength={maxLength}
         value={value}
