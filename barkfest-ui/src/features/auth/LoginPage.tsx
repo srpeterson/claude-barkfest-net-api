@@ -18,7 +18,7 @@ export function LoginPage() {
     setIsLoading(true)
     try {
       const result = await login(username, password)
-      signIn(result.accountId, 'owner')
+      signIn(result.accountId, 'owner', result.accessToken)
       navigate('/owners')
     } catch {
       setError('Invalid username or password.')

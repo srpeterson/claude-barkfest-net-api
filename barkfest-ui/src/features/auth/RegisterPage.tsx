@@ -57,7 +57,7 @@ export function RegisterPage() {
         password: form.password,
       })
       const result = await login(form.username, form.password)
-      signIn(result.accountId, 'owner')
+      signIn(result.accountId, 'owner', result.accessToken)
       navigate('/owners')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.')
