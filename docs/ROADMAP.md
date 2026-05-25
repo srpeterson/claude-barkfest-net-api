@@ -84,7 +84,7 @@ Owners register and log in but currently have no UI to actually add or manage th
 ## 4. Landing Page — Full Wire-Up
 
 **Priority:** High
-**Status:** Partially implemented — browse API, pet type filter, and breed filter are wired; pagination exists. Needs real pet data flowing end-to-end with owners actively posting pets.
+**Status:** In progress — branch `feature/landing-page-wire-up`
 
 ### What
 Ensure the landing page works correctly end-to-end once real owners and pets exist in the database:

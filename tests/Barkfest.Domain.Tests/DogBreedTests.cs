@@ -7,7 +7,7 @@ public class DogBreedTests
     [Fact]
     public void DogBreed_List_Contains_AllDefinedBreeds()
     {
-        DogBreed.List.Count.ShouldBe(30);
+        DogBreed.List.Count.ShouldBe(31);
     }
 
     [Fact]
@@ -26,6 +26,18 @@ public class DogBreedTests
     public void DogBreed_List_Includes_Cockapoo()
     {
         DogBreed.List.ShouldContain(b => b.Name == "Cockapoo");
+    }
+
+    [Fact]
+    public void DogBreed_List_Includes_SaintBernard()
+    {
+        DogBreed.List.ShouldContain(b => b.Name == "St. Bernard");
+    }
+
+    [Fact]
+    public void DogBreed_List_Includes_CockerSpaniel()
+    {
+        DogBreed.List.ShouldContain(b => b.Name == "Cocker Spaniel");
     }
 
     [Fact]

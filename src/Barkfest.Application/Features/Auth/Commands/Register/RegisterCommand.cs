@@ -12,7 +12,8 @@ public record RegisterCommand(
     string LastName,
     string Email,
     string? PhoneNumber,
-    string Password) : IRequest<Guid>;
+    string Password,
+    string? DisplayName = null) : IRequest<Guid>;
 
 public class RegisterCommandHandler(
     IOwnerRepository ownerRepository,
@@ -23,11 +24,11 @@ public class RegisterCommandHandler(
     {
         var existingByUsername = await ownerRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (existingByUsername is not null)
-            throw new DomainException("Username is already in use.");
+            throw new DomainException("That username is already taken.");
 
         var existingByEmail = await ownerRepository.GetByEmailAsync(request.Email, cancellationToken);
         if (existingByEmail is not null)
-            throw new DomainException("Email is already in use.");
+            throw new DomainException("An account with this email address already exists.");
 
         var owner = Owner.Create(
             request.Username,
@@ -36,6 +37,8 @@ public class RegisterCommandHandler(
             request.Email,
             passwordHasher.Hash(request.Password),
             request.PhoneNumber);
+
+        owner.SetDisplayName(request.DisplayName);
 
         await ownerRepository.AddAsync(owner, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

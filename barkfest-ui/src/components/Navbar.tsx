@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LogOut, PawPrint, Plus, UserCircle } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -8,8 +9,14 @@ import { logout } from '@/lib/api'
 import { AddPetDialog } from '@/components/AddPetDialog'
 
 export function Navbar() {
-  const { isAuthenticated, accountType, signOut, openLoginModal } = useAuth()
+  const { isAuthenticated, accountType, signOut, openLoginModal, openRegisterModal } = useAuth()
   const [addPetOpen, setAddPetOpen] = useState(false)
+  const queryClient = useQueryClient()
+
+  function handlePetAdded() {
+    queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+    queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+  }
 
   async function handleSignOut() {
     await logout()
@@ -74,20 +81,31 @@ export function Navbar() {
             </button>
           </div>
         ) : (
-          <button
-            onClick={openLoginModal}
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'font-medium hover:bg-primary/20 hover:text-primary'
-            )}
-          >
-            Sign In
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openLoginModal}
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'font-medium hover:bg-primary/20 hover:text-primary'
+              )}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={openRegisterModal}
+              className={cn(
+                buttonVariants({ size: 'sm' }),
+                'font-medium'
+              )}
+            >
+              Join the Barkfest!
+            </button>
+          </div>
         )}
       </div>
     </nav>
 
-    {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} />}
+    {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} onSuccess={handlePetAdded} />}
   </>
   )
 }

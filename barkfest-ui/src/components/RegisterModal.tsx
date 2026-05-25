@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
 import { useAuth } from '@/hooks/useAuth'
-import { login, register } from '@/lib/api'
+import { ApiError, checkDisplayName, login, register } from '@/lib/api'
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
 const STRENGTH_COLORS = [
@@ -20,17 +20,22 @@ export function RegisterModal() {
     lastName: '',
     email: '',
     username: '',
+    displayName: '',
     password: '',
     confirmPassword: '',
   })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [displayNameAvailable, setDisplayNameAvailable] = useState<boolean | null>(null)
+  const [displayNameChecking, setDisplayNameChecking] = useState(false)
 
   const strength = zxcvbn(form.password)
+  const displayNameStripped = form.displayName.replace(/\s/g, '')
+  const displayNameTooShort = displayNameStripped.length > 0 && displayNameStripped.length < 4
   const allFieldsFilled = form.firstName.trim() !== '' && form.lastName.trim() !== '' &&
-    form.email.trim() !== '' && form.username.trim() !== '' && form.password !== '' &&
-    form.confirmPassword !== ''
+    form.email.trim() !== '' && form.username.trim() !== '' && form.displayName.trim() !== '' &&
+    form.password !== '' && form.confirmPassword !== ''
   const passwordMismatch = form.confirmPassword !== '' && form.password !== form.confirmPassword
   const passwordTooWeak = form.password.length > 0 && strength.score < 2
   const hint = passwordTooWeak
@@ -39,11 +44,37 @@ export function RegisterModal() {
 
   useEffect(() => {
     if (modal !== 'register') {
-      setForm({ firstName: '', lastName: '', email: '', username: '', password: '', confirmPassword: '' })
+      setForm({ firstName: '', lastName: '', email: '', username: '', displayName: '', password: '', confirmPassword: '' })
       setShowPassword(false)
       setError(null)
+      setDisplayNameAvailable(null)
+      setDisplayNameChecking(false)
     }
   }, [modal])
+
+  useEffect(() => {
+    if (!form.displayName.trim() || displayNameTooShort) {
+      setDisplayNameAvailable(null)
+      setDisplayNameChecking(false)
+      return
+    }
+
+    setDisplayNameAvailable(null)
+
+    const timer = setTimeout(async () => {
+      setDisplayNameChecking(true)
+      try {
+        const available = await checkDisplayName(form.displayName)
+        setDisplayNameAvailable(available)
+      } catch {
+        setDisplayNameAvailable(null)
+      } finally {
+        setDisplayNameChecking(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [form.displayName])
 
   if (modal !== 'register') return null
 
@@ -62,12 +93,17 @@ export function RegisterModal() {
         lastName: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
+        displayName: form.displayName.trim(),
       })
       const result = await login(form.username, form.password)
       signIn(result.accountId, 'owner', result.accessToken)
       closeModal()
-    } catch {
-      setError('Woof! Something went wrong! Check your details and try again.')
+    } catch (err) {
+      if (err instanceof ApiError && err.status < 500) {
+        setError(err.message)
+      } else {
+        setError('Woof! Something went wrong. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -98,13 +134,31 @@ export function RegisterModal() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <ModalField label="First name" id="reg-firstName" name="firstName" autoComplete="given-name" placeholder="Jane" required maxLength={30} value={form.firstName} onChange={handleChange} />
+            <ModalField label="First name" id="reg-firstName" name="firstName" autoComplete="given-name" autoFocus placeholder="Jane" required maxLength={30} value={form.firstName} onChange={handleChange} />
             <ModalField label="Last name" id="reg-lastName" name="lastName" autoComplete="family-name" placeholder="Doe" required maxLength={50} value={form.lastName} onChange={handleChange} />
           </div>
 
           <ModalField label="Email" id="reg-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={75} value={form.email} onChange={handleChange} />
 
           <ModalField label="Username" id="reg-username" name="username" autoComplete="username" placeholder="Pick a username" required maxLength={25} value={form.username} onChange={handleChange} />
+
+          <div className="space-y-1">
+            <ModalField label="Display name" id="reg-displayName" name="displayName" autoComplete="nickname" placeholder="e.g. Cool Pet Dad" required maxLength={25} value={form.displayName} onChange={handleChange} />
+            {form.displayName.trim() && (
+              displayNameTooShort ? (
+                <p className="text-xs text-destructive">At least 4 characters required</p>
+              ) : (displayNameChecking || displayNameAvailable !== null) ? (
+                <p className={`text-xs flex items-center gap-1 ${
+                  displayNameChecking ? 'text-muted-foreground' :
+                  displayNameAvailable ? 'text-green-500' : 'text-destructive'
+                }`}>
+                  {displayNameChecking && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {displayNameChecking ? 'Checking…' :
+                   displayNameAvailable ? '✓ Available' : 'Already taken'}
+                </p>
+              ) : null
+            )}
+          </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="reg-password">
@@ -182,7 +236,7 @@ export function RegisterModal() {
 
           <button
             type="submit"
-            disabled={isLoading || !allFieldsFilled || passwordTooWeak || passwordMismatch}
+            disabled={isLoading || !allFieldsFilled || passwordTooWeak || passwordMismatch || displayNameTooShort || displayNameChecking || displayNameAvailable !== true}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -210,6 +264,7 @@ interface ModalFieldProps {
   name: string
   type?: string
   autoComplete?: string
+  autoFocus?: boolean
   required?: boolean
   maxLength?: number
   value: string
@@ -217,7 +272,7 @@ interface ModalFieldProps {
   placeholder?: string
 }
 
-function ModalField({ label, id, name, type = 'text', autoComplete, required, maxLength, value, onChange, placeholder }: ModalFieldProps) {
+function ModalField({ label, id, name, type = 'text', autoComplete, autoFocus, required, maxLength, value, onChange, placeholder }: ModalFieldProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium" htmlFor={id}>
@@ -228,6 +283,7 @@ function ModalField({ label, id, name, type = 'text', autoComplete, required, ma
         name={name}
         type={type}
         autoComplete={autoComplete}
+        autoFocus={autoFocus}
         required={required}
         maxLength={maxLength}
         value={value}

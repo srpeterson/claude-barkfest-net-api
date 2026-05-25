@@ -243,4 +243,39 @@ public class RegisterCommandValidatorTests
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Password));
     }
+
+    // -----------------------------------------------------------------------
+    // DisplayName
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Fails_ForDisplayName_When_ExceedsMaxLength()
+    {
+        var command = new RegisterCommand(
+            "aliceadams", "Alice", "Adams", "alice@example.com", null, "SecurePass1!",
+            new string('x', Owner.DisplayNameMaxLength + 1));
+
+        var result = _registerCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.DisplayName));
+    }
+
+    [Fact]
+    public void Validate_When_DisplayNameIsNull_Passes()
+    {
+        var command = new RegisterCommand("aliceadams", "Alice", "Adams", "alice@example.com", null, "SecurePass1!");
+
+        _registerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_When_DisplayNameIsAtMaxLength_Passes()
+    {
+        var command = new RegisterCommand(
+            "aliceadams", "Alice", "Adams", "alice@example.com", null, "SecurePass1!",
+            new string('x', Owner.DisplayNameMaxLength));
+
+        _registerCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
 }

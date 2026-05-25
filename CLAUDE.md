@@ -289,6 +289,7 @@ validators, tests, EF Core configuration.
 | `AccountConstraints.UsernameMaxLength` | 50 | `ValueObjects/AccountConstraints.cs` |
 | `AccountConstraints.EmailMaxLength` | 75 | `ValueObjects/AccountConstraints.cs` |
 | `E164PhoneNumber.MaxLength` | 25 | `ValueObjects/E164PhoneNumber.cs` |
+| `Owner.DisplayNameMaxLength` | 25 | `Owner.cs` |
 | `Owner.FirstNameMaxLength` | 50 | `Owner.cs` |
 | `Owner.LastNameMaxLength` | 100 | `Owner.cs` |
 | `Administrator.NameMaxLength` | 100 | `Administrator.cs` |
@@ -304,6 +305,7 @@ validators, tests, EF Core configuration.
 
 ### Owner
 - `Username` — required, max `Owner.UsernameMaxLength` chars, trimmed, case-sensitive, unique
+- `DisplayName` — optional, max `Owner.DisplayNameMaxLength` (25) chars, trimmed if provided; shown on pet cards as the public owner attribution; null when not set — no fallback
 - `FirstName` — required, max `Owner.FirstNameMaxLength` chars, trimmed
 - `LastName` — required, max `Owner.LastNameMaxLength` chars, trimmed
 - `Email` — required, valid email format, max `Owner.EmailMaxLength` chars, lowercased and trimmed, unique (contact only — not used for login)

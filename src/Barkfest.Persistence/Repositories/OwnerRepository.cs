@@ -15,6 +15,15 @@ public class OwnerRepository(AppDbContext context) : IOwnerRepository
     public async Task<Owner?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         await context.Owners.FirstOrDefaultAsync(o => o.Email == email.Trim().ToLowerInvariant(), cancellationToken);
 
+    public async Task<bool> IsDisplayNameAvailableAsync(string normalizedValue, CancellationToken cancellationToken = default)
+    {
+        var isTaken = await context.Owners
+            .Where(o => o.DisplayName != null)
+            .AnyAsync(o => o.DisplayName!.Replace(" ", "").ToLower() == normalizedValue, cancellationToken);
+
+        return !isTaken;
+    }
+
     public async Task<IEnumerable<Owner>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await context.Owners.ToListAsync(cancellationToken);
 

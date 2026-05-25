@@ -20,6 +20,9 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
             .HasMaxLength(AccountConstraints.UsernameMaxLength)
             .IsRequired();
 
+        builder.Property(o => o.DisplayName)
+            .HasMaxLength(Owner.DisplayNameMaxLength);
+
         builder.Property(o => o.FirstName)
             .HasMaxLength(Owner.FirstNameMaxLength)
             .IsRequired();

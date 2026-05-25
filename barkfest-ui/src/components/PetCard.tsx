@@ -1,8 +1,24 @@
-import { Calendar } from 'lucide-react'
+import { Calendar, PawPrint } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import type { BrowseImageDto } from '@/types/browse'
+
+function formatAge(dateOfBirth?: string): string | null {
+  if (!dateOfBirth) return null
+
+  const dob = new Date(dateOfBirth)
+  const today = new Date()
+
+  let months = (today.getFullYear() - dob.getFullYear()) * 12
+    + (today.getMonth() - dob.getMonth())
+  if (today.getDate() < dob.getDate()) months--
+  months = Math.max(months, 0)
+
+  if (months < 12) return months === 1 ? '1 month' : `${months} months`
+  const years = Math.floor(months / 12)
+  return years === 1 ? '1 year' : `${years} years`
+}
 
 interface PetCardProps {
   pet: BrowseImageDto
@@ -10,32 +26,47 @@ interface PetCardProps {
 }
 
 export function PetCard({ pet, index }: PetCardProps) {
+  const age = formatAge(pet.dateOfBirth)
+
   return (
     <div
       className="animate-fade-in-up"
       style={{ animationDelay: `${index * 0.06}s`, opacity: 0 }}
     >
       <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-shadow duration-500 bg-card">
-        {/* Image */}
-        <div className="aspect-square overflow-hidden">
+
+        {/* Image with gradient overlay */}
+        <div className="aspect-[4/5] overflow-hidden relative">
           <img
             src={getBlobImageUrl(pet.blobName)}
             alt={pet.petName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
-        </div>
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {/* Body */}
-        <div className="p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-heading text-lg font-semibold">{pet.petName}</h3>
-            {pet.age != null && (
-              <Badge variant="secondary" className="gap-1 text-xs font-sans">
+          {/* Name + age pinned to bottom of image */}
+          <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 flex items-end justify-between">
+            <h3 className="font-heading text-lg font-semibold text-white drop-shadow">
+              {pet.petName}
+            </h3>
+            {age && (
+              <Badge className="gap-1 text-xs font-sans bg-white/20 text-white border-white/30 backdrop-blur-sm shrink-0">
                 <Calendar size={12} />
-                {pet.age}y
+                {age}
               </Badge>
             )}
           </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-4 pt-3 pb-4 space-y-1.5">
+          {pet.displayName && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <PawPrint size={11} className="text-primary shrink-0" />
+              {pet.displayName}
+            </p>
+          )}
 
           {pet.petDescription && (
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
@@ -44,7 +75,9 @@ export function PetCard({ pet, index }: PetCardProps) {
           )}
 
           {pet.breed && (
-            <p className="text-xs text-muted-foreground">{pet.breed}</p>
+            <Badge variant="secondary" className="text-xs font-sans font-normal">
+              {pet.breed}
+            </Badge>
           )}
         </div>
       </Card>
