@@ -1,24 +1,24 @@
 import { getBlobImageUrl } from './imageUrl'
 
-const BLOB_BASE = 'http://127.0.0.1:10000/devstoreaccount1'
+const API_BASE = 'https://localhost:7001'
 
 describe('getBlobImageUrl', () => {
   beforeEach(() => {
-    vi.stubEnv('VITE_BLOB_BASE_URL', BLOB_BASE)
+    vi.stubEnv('VITE_API_BASE_URL', API_BASE)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  it('constructs a full blob URL from a blobName', () => {
+  it('constructs a proxied image URL from a blobName', () => {
     const result = getBlobImageUrl('pets/abc/gallery/photo.jpg')
-    expect(result).toBe(`${BLOB_BASE}/pet-images/pets/abc/gallery/photo.jpg`)
+    expect(result).toBe(`${API_BASE}/v1/images/pet-images/pets/abc/gallery/photo.jpg`)
   })
 
   it('includes the pet-images container segment', () => {
     const result = getBlobImageUrl('pets/abc/gallery/photo.jpg')
-    expect(result).toContain('/pet-images/')
+    expect(result).toContain('/v1/images/pet-images/')
   })
 
   it('appends the blobName verbatim', () => {
@@ -27,9 +27,9 @@ describe('getBlobImageUrl', () => {
     expect(result).toContain(blobName)
   })
 
-  it('falls back to empty string when VITE_BLOB_BASE_URL is not set', () => {
-    vi.stubEnv('VITE_BLOB_BASE_URL', '')
+  it('falls back to empty string when VITE_API_BASE_URL is not set', () => {
+    vi.stubEnv('VITE_API_BASE_URL', '')
     const result = getBlobImageUrl('pets/abc/gallery/photo.jpg')
-    expect(result).toBe('/pet-images/pets/abc/gallery/photo.jpg')
+    expect(result).toBe('/v1/images/pet-images/pets/abc/gallery/photo.jpg')
   })
 })

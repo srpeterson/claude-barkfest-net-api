@@ -26,9 +26,11 @@
 
 | # | Milestone | Status |
 |---|---|---|
-| 1 | `api.ts` — `displayName` added to register payload | ⬜ Not started |
-| 2 | `RegisterModal.tsx` — optional `displayName` input field added | ⬜ Not started |
-| 3 | Verified: DisplayName stored and shown on pet cards | ⬜ Not started |
+| 1 | `api.ts` — `displayName` added to register payload, `ApiError` class, `checkDisplayName()` | ✅ Complete |
+| 2 | `RegisterModal.tsx` — display name field (required, max 25, debounced availability check, min-length UI guard) | ✅ Complete |
+| 3 | `GET /v1/auth/check-display-name` — availability endpoint, `CheckDisplayNameQuery` | ✅ Complete |
+| 4 | Error handling — `ApiError` surfaces 4xx messages verbatim; duplicate email/username conflicts caught pre-save | ✅ Complete |
+| 5 | Verified: DisplayName stored and shown on pet cards | ✅ Complete |
 
 ---
 
@@ -54,7 +56,8 @@
 |---|---|---|
 | 1 | `AddPetDialog.tsx` — `onSuccess` prop added | ✅ Complete |
 | 2 | `Navbar.tsx` — `useQueryClient` + `invalidateQueries(['browse', 'images'])` wired | ✅ Complete |
-| 3 | Verified: new pet appears on home page immediately after dialog closes | ⬜ Not started |
+| 3 | `Navbar.tsx` — also invalidates `['browse', 'hero-strip']` so count + thumbnails refresh on pet add | ✅ Complete |
+| 4 | Verified: new pet appears on home page immediately after dialog closes | ✅ Complete |
 
 ---
 
@@ -63,7 +66,7 @@
 | # | Milestone | Status |
 |---|---|---|
 | 1 | `PetCard.tsx` — conditional `ownerName` line (null-safe) | ✅ Complete |
-| 2 | Visually verified on real data | ⬜ Not started |
+| 2 | Visually verified on real data | ✅ Complete |
 
 ---
 
@@ -71,7 +74,14 @@
 
 | # | Milestone | Status |
 |---|---|---|
-| 1 | Issues from smoke test addressed | ⬜ Not started |
+| 1 | **Image proxy** — `ImagesController` (`GET /v1/images/{container}/{*blob}`) routes images through API; removes Azurite port instability; `VITE_BLOB_BASE_URL` removed, `imageUrl.ts` updated | ✅ Complete |
+| 2 | **PetCard redesign** — gradient overlay, `aspect-[4/5]` portrait ratio, age display in months/years (`formatAge`), breed badge, paw icon owner attribution | ✅ Complete |
+| 3 | **Navbar** — "Join the Barkfest!" primary button for unauthenticated users | ✅ Complete |
+| 4 | **HeroSection** — filter-aware social proof strip (circular pet thumbnails + pet count), staggered entrance animations, badge removed, spacing tightened | ✅ Complete |
+| 5 | **AddPetDialog** — date picker click-only (`onKeyDown` blocks typing), date + age pickers side-by-side with radio selection, highlighted border on active control, improved label copy ("How old is [name]?", "I know exactly!", "Rescue / Not sure") | ✅ Complete |
+| 6 | **Pagination** — restyled with primary-coloured border/text on active buttons, page indicator as pill badge | ✅ Complete |
+| 7 | **DogBreed** — added St. Bernard (31), replaced Cavalier King Charles Spaniel with Cocker Spaniel (12); tests updated | ✅ Complete |
+| 8 | **README** — frontend environment variables section updated (image proxy, no `VITE_BLOB_BASE_URL`) | ✅ Complete |
 
 ---
 

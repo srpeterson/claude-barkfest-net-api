@@ -15,7 +15,7 @@ public sealed class DogBreed : SmartEnum<DogBreed>
     public static readonly DogBreed GermanShorthairedPointer  = new("German Shorthaired Pointer", 9);
     public static readonly DogBreed Bulldog                   = new("Bulldog", 10);
     public static readonly DogBreed CaneCorsо                 = new("Cane Corso", 11);
-    public static readonly DogBreed CavalierKingCharlesSpaniel = new("Cavalier King Charles Spaniel", 12);
+    public static readonly DogBreed CockerSpaniel               = new("Cocker Spaniel", 12);
     public static readonly DogBreed YorkshireTerrier          = new("Yorkshire Terrier", 13);
     public static readonly DogBreed AustralianShepherd        = new("Australian Shepherd", 14);
     public static readonly DogBreed DobermanPinscher          = new("Doberman Pinscher", 15);
@@ -32,6 +32,7 @@ public sealed class DogBreed : SmartEnum<DogBreed>
     public static readonly DogBreed Labradoodle               = new("Labradoodle", 26);
     public static readonly DogBreed Goldendoodle              = new("Goldendoodle", 27);
     public static readonly DogBreed Cockapoo                  = new("Cockapoo", 28);
+    public static readonly DogBreed SaintBernard              = new("St. Bernard", 31);
     public static readonly DogBreed Mixed                     = new("Mixed", 29);
     public static readonly DogBreed Other                     = new("Other", 30);
 

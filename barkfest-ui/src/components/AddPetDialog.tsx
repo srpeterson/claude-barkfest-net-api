@@ -70,8 +70,10 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
   const [success, setSuccess] = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
+  const minDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 21); return d.toISOString().split('T')[0] })()
+  const dateInRange = !dateOfBirth || (dateOfBirth >= minDate && dateOfBirth <= today)
   const step1Valid = name.trim() !== '' && petType !== '' && breed !== '' &&
-    (dobUnknown ? age !== '' : dateOfBirth !== '') && description.trim() !== ''
+    (dobUnknown ? age !== '' : dateOfBirth !== '' && dateInRange) && description.trim() !== ''
   const step2Valid = images.length > 0
 
   // ── Handlers ──────────────────────────────────────────────────────────
@@ -205,85 +207,107 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex flex-row gap-6">
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="radio"
-                    name="dob-mode"
-                    checked={!dobUnknown}
-                    onChange={() => { setDobUnknown(false); setAge('') }}
-                    className="sr-only"
-                  />
-                  <div className={cn(
-                    'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0',
-                    !dobUnknown ? 'border-primary' : 'border-input'
-                  )}>
-                    {!dobUnknown && <div className="w-2 h-2 rounded-full bg-primary" />}
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold block">
+                How old is {name.trim() || 'your pet'}? <span className="text-destructive">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+
+                {/* ── Date of birth column ── */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="dob-mode"
+                      checked={!dobUnknown}
+                      onChange={() => { setDobUnknown(false); setAge('') }}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0',
+                      !dobUnknown ? 'border-primary' : 'border-input'
+                    )}>
+                      {!dobUnknown && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className="text-sm font-semibold">
+                      I know exactly!
+                    </span>
+                  </label>
+                  <div className={cn('relative', dobUnknown && 'opacity-40 pointer-events-none')}>
+                    <input
+                      ref={dateInputRef}
+                      type="date"
+                      min={minDate}
+                      max={today}
+                      value={dateOfBirth}
+                      onKeyDown={e => e.preventDefault()}
+                      onClick={() => dateInputRef.current?.showPicker()}
+                      onChange={e => setDateOfBirth(e.target.value)}
+                      className={cn(
+                        'w-full h-11 rounded-xl border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 [&::-webkit-calendar-picker-indicator]:hidden cursor-pointer',
+                        !dobUnknown && 'ring-2 ring-primary/50'
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => dateInputRef.current?.showPicker()}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                    </button>
                   </div>
-                  <span className="text-sm font-semibold">
-                    I know the date <span className="text-destructive">*</span>
-                  </span>
-                </label>
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="radio"
-                    name="dob-mode"
-                    checked={dobUnknown}
-                    onChange={() => { setDobUnknown(true); setDateOfBirth('') }}
-                    className="sr-only"
-                  />
+                </div>
+
+                {/* ── Approximate age column ── */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="dob-mode"
+                      checked={dobUnknown}
+                      onChange={() => { setDobUnknown(true); setDateOfBirth('') }}
+                      className="sr-only"
+                    />
+                    <div className={cn(
+                      'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0',
+                      dobUnknown ? 'border-primary' : 'border-input'
+                    )}>
+                      {dobUnknown && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className="text-sm font-semibold">
+                      Rescue / Not sure
+                    </span>
+                  </label>
                   <div className={cn(
-                    'w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0',
-                    dobUnknown ? 'border-primary' : 'border-input'
+                    'flex items-center h-11 rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-primary/50',
+                    !dobUnknown && 'opacity-40 pointer-events-none',
+                    dobUnknown && 'ring-2 ring-primary/50'
                   )}>
-                    {dobUnknown && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    <button
+                      type="button"
+                      onClick={() => setAge(String(Math.max(1, Number(age) - 1)))}
+                      disabled={!age || Number(age) <= 1}
+                      className="flex items-center justify-center w-12 h-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className={cn('flex-1 text-center text-sm select-none', !age && 'text-muted-foreground')}>
+                      {age ? `${age} ${Number(age) === 1 ? 'year' : 'years'} old` : 'Tap + to set age'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAge(String(Math.min(21, Number(age || '0') + 1)))}
+                      disabled={Number(age) >= 21}
+                      className="flex items-center justify-center w-12 h-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
                   </div>
-                  <span className="text-sm font-semibold">
-                    Not sure <span className="text-destructive">*</span>
-                  </span>
-                </label>
+                </div>
+
               </div>
-              {dobUnknown ? (
-                <div className="flex items-center h-11 rounded-xl border border-input bg-background">
-                  <button
-                    type="button"
-                    onClick={() => setAge(String(Math.max(1, Number(age) - 1)))}
-                    disabled={!age || Number(age) <= 1}
-                    className="flex items-center justify-center w-12 h-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className={cn('flex-1 text-center text-sm select-none', !age && 'text-muted-foreground')}>
-                    {age ? `${age} ${Number(age) === 1 ? 'year' : 'years'} old` : 'Tap + to set age'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setAge(String(Math.min(21, Number(age || '0') + 1)))}
-                    disabled={Number(age) >= 21}
-                    className="flex items-center justify-center w-12 h-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <input
-                    ref={dateInputRef}
-                    type="date"
-                    max={today}
-                    value={dateOfBirth}
-                    onChange={e => setDateOfBirth(e.target.value)}
-                    className="w-full h-11 rounded-xl border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 [&::-webkit-calendar-picker-indicator]:hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => dateInputRef.current?.showPicker()}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <CalendarDays className="w-4 h-4" />
-                  </button>
-                </div>
+              {dateOfBirth && !dateInRange && (
+                <p className="text-xs text-destructive">Date must be within the last 21 years and not in the future.</p>
               )}
             </div>
 

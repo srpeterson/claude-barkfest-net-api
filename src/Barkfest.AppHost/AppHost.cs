@@ -23,7 +23,6 @@ builder.AddViteApp("barkfest-ui", "../../barkfest-ui")
        .WithPnpm()
        .WithHttpEndpoint(port: 5173, isProxied: false)
        .WithEnvironment("VITE_API_BASE_URL", api.GetEndpoint("https"))
-       .WithEnvironment("VITE_BLOB_BASE_URL", "http://127.0.0.1:10000/devstoreaccount1")
        .WaitFor(api);
 
 builder.Build().Run();

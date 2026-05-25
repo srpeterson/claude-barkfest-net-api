@@ -52,7 +52,7 @@ export function HomePage() {
         onBreedChange={handleBreedChange}
       />
       <div className="-mt-12">
-        <HeroSection />
+        <HeroSection petType={petType} breed={breed} />
       </div>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6">
         <PetGrid pets={pets} isLoading={isLoading} hasActiveFilters={hasActiveFilters} />
@@ -64,12 +64,12 @@ export function HomePage() {
               size="sm"
               onClick={() => setPage(p => p - 1)}
               disabled={!hasPrev}
-              className="gap-1.5"
+              className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary disabled:opacity-30 disabled:border-border disabled:text-muted-foreground"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
-            <span className="text-sm text-muted-foreground font-medium px-2">
+            <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
               Page {page}
             </span>
             <Button
@@ -77,7 +77,7 @@ export function HomePage() {
               size="sm"
               onClick={() => setPage(p => p + 1)}
               disabled={!hasMore}
-              className="gap-1.5"
+              className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary disabled:opacity-30 disabled:border-border disabled:text-muted-foreground"
             >
               Next
               <ChevronRight className="w-4 h-4" />
