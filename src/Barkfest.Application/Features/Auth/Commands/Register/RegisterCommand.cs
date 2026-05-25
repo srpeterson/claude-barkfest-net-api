@@ -24,11 +24,11 @@ public class RegisterCommandHandler(
     {
         var existingByUsername = await ownerRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (existingByUsername is not null)
-            throw new DomainException("Username is already in use.");
+            throw new DomainException("That username is already taken.");
 
         var existingByEmail = await ownerRepository.GetByEmailAsync(request.Email, cancellationToken);
         if (existingByEmail is not null)
-            throw new DomainException("Email is already in use.");
+            throw new DomainException("An account with this email address already exists.");
 
         var owner = Owner.Create(
             request.Username,

@@ -28,6 +28,11 @@ public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOf
         if (owner.Id != currentUserService.OwnerId)
             throw new ForbiddenException();
 
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var existingByEmail = await ownerRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
+        if (existingByEmail is not null && existingByEmail.Id != request.Id)
+            throw new DomainException("An account with this email address already exists.");
+
         owner.SetFirstName(request.FirstName);
         owner.SetLastName(request.LastName);
         owner.SetEmail(request.Email);

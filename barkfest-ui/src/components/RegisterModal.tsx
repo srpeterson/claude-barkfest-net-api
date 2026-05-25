@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
 import { useAuth } from '@/hooks/useAuth'
-import { login, register } from '@/lib/api'
+import { ApiError, checkDisplayName, login, register } from '@/lib/api'
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
 const STRENGTH_COLORS = [
@@ -27,8 +27,12 @@ export function RegisterModal() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [displayNameAvailable, setDisplayNameAvailable] = useState<boolean | null>(null)
+  const [displayNameChecking, setDisplayNameChecking] = useState(false)
 
   const strength = zxcvbn(form.password)
+  const displayNameStripped = form.displayName.replace(/\s/g, '')
+  const displayNameTooShort = displayNameStripped.length > 0 && displayNameStripped.length < 4
   const allFieldsFilled = form.firstName.trim() !== '' && form.lastName.trim() !== '' &&
     form.email.trim() !== '' && form.username.trim() !== '' && form.displayName.trim() !== '' &&
     form.password !== '' && form.confirmPassword !== ''
@@ -43,8 +47,34 @@ export function RegisterModal() {
       setForm({ firstName: '', lastName: '', email: '', username: '', displayName: '', password: '', confirmPassword: '' })
       setShowPassword(false)
       setError(null)
+      setDisplayNameAvailable(null)
+      setDisplayNameChecking(false)
     }
   }, [modal])
+
+  useEffect(() => {
+    if (!form.displayName.trim() || displayNameTooShort) {
+      setDisplayNameAvailable(null)
+      setDisplayNameChecking(false)
+      return
+    }
+
+    setDisplayNameAvailable(null)
+
+    const timer = setTimeout(async () => {
+      setDisplayNameChecking(true)
+      try {
+        const available = await checkDisplayName(form.displayName)
+        setDisplayNameAvailable(available)
+      } catch {
+        setDisplayNameAvailable(null)
+      } finally {
+        setDisplayNameChecking(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [form.displayName])
 
   if (modal !== 'register') return null
 
@@ -68,8 +98,12 @@ export function RegisterModal() {
       const result = await login(form.username, form.password)
       signIn(result.accountId, 'owner', result.accessToken)
       closeModal()
-    } catch {
-      setError('Woof! Something went wrong! Check your details and try again.')
+    } catch (err) {
+      if (err instanceof ApiError && err.status < 500) {
+        setError(err.message)
+      } else {
+        setError('Woof! Something went wrong. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +142,23 @@ export function RegisterModal() {
 
           <ModalField label="Username" id="reg-username" name="username" autoComplete="username" placeholder="Pick a username" required maxLength={25} value={form.username} onChange={handleChange} />
 
-          <ModalField label="Display name" id="reg-displayName" name="displayName" autoComplete="nickname" placeholder="e.g. Cool Pet Dad" required maxLength={25} value={form.displayName} onChange={handleChange} />
+          <div className="space-y-1">
+            <ModalField label="Display name" id="reg-displayName" name="displayName" autoComplete="nickname" placeholder="e.g. Cool Pet Dad" required maxLength={25} value={form.displayName} onChange={handleChange} />
+            {form.displayName.trim() && (
+              displayNameTooShort ? (
+                <p className="text-xs text-destructive">At least 4 characters required</p>
+              ) : (displayNameChecking || displayNameAvailable !== null) ? (
+                <p className={`text-xs flex items-center gap-1 ${
+                  displayNameChecking ? 'text-muted-foreground' :
+                  displayNameAvailable ? 'text-green-500' : 'text-destructive'
+                }`}>
+                  {displayNameChecking && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {displayNameChecking ? 'Checking…' :
+                   displayNameAvailable ? '✓ Available' : 'Already taken'}
+                </p>
+              ) : null
+            )}
+          </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="reg-password">
@@ -186,7 +236,7 @@ export function RegisterModal() {
 
           <button
             type="submit"
-            disabled={isLoading || !allFieldsFilled || passwordTooWeak || passwordMismatch}
+            disabled={isLoading || !allFieldsFilled || passwordTooWeak || passwordMismatch || displayNameTooShort || displayNameChecking || displayNameAvailable !== true}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}

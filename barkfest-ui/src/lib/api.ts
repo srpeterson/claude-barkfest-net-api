@@ -14,6 +14,16 @@ export function setUnauthorizedHandler(fn: () => void) {
   unauthorizedHandler = fn
 }
 
+export class ApiError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -32,15 +42,15 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.()
-      throw new Error('Unauthorized')
+      throw new ApiError('Unauthorized', 401)
     }
     const text = await response.text()
+    let message = text || `HTTP ${response.status}`
     try {
       const problem = JSON.parse(text)
-      throw new Error(problem.detail || problem.title || `HTTP ${response.status}`)
-    } catch {
-      throw new Error(text || `HTTP ${response.status}`)
-    }
+      message = problem.detail || problem.title || message
+    } catch { /* use raw text */ }
+    throw new ApiError(message, response.status)
   }
 
   const text = await response.text()
@@ -94,6 +104,13 @@ export function register(data: RegisterRequest): Promise<void> {
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+export async function checkDisplayName(value: string): Promise<boolean> {
+  const result = await request<{ available: boolean }>(
+    `/v1/auth/check-display-name?value=${encodeURIComponent(value)}`
+  )
+  return result.available
 }
 
 export function logout(): Promise<void> {
