@@ -32,9 +32,10 @@ function ageToDateOfBirth(years: number): string {
 
 interface AddPetDialogProps {
   onClose: () => void
+  onSuccess?: () => void
 }
 
-export function AddPetDialog({ onClose }: AddPetDialogProps) {
+export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
   // ── Navigation ────────────────────────────────────────────────────────
   const [step, setStep] = useState<1 | 2>(1)
 
@@ -109,6 +110,7 @@ export function AddPetDialog({ onClose }: AddPetDialogProps) {
         }
       }
 
+      onSuccess?.()
       setSuccess(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')

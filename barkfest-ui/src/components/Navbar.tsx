@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LogOut, PawPrint, Plus, UserCircle } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -10,6 +11,11 @@ import { AddPetDialog } from '@/components/AddPetDialog'
 export function Navbar() {
   const { isAuthenticated, accountType, signOut, openLoginModal } = useAuth()
   const [addPetOpen, setAddPetOpen] = useState(false)
+  const queryClient = useQueryClient()
+
+  function handlePetAdded() {
+    queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+  }
 
   async function handleSignOut() {
     await logout()
@@ -87,7 +93,7 @@ export function Navbar() {
       </div>
     </nav>
 
-    {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} />}
+    {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} onSuccess={handlePetAdded} />}
   </>
   )
 }

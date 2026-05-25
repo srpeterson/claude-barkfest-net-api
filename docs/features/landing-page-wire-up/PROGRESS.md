@@ -24,8 +24,8 @@
 
 | # | Milestone | Status |
 |---|---|---|
-| 1 | `AddPetDialog.tsx` — `onSuccess` prop added | ⬜ Not started |
-| 2 | `Navbar.tsx` — `useQueryClient` + `invalidateQueries(['browse', 'images'])` wired | ⬜ Not started |
+| 1 | `AddPetDialog.tsx` — `onSuccess` prop added | ✅ Complete |
+| 2 | `Navbar.tsx` — `useQueryClient` + `invalidateQueries(['browse', 'images'])` wired | ✅ Complete |
 | 3 | Verified: new pet appears on home page immediately after dialog closes | ⬜ Not started |
 
 ---
@@ -34,7 +34,7 @@
 
 | # | Milestone | Status |
 |---|---|---|
-| 1 | `PetCard.tsx` — `ownerName` line added | ⬜ Not started |
+| 1 | `PetCard.tsx` — `ownerName` line added | ✅ Complete |
 | 2 | Visually verified on real data | ⬜ Not started |
 
 ---
