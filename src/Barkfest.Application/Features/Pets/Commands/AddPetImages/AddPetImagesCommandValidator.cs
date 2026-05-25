@@ -1,3 +1,4 @@
+using Barkfest.Domain.Entities;
 using Barkfest.Domain.ValueObjects;
 using FluentValidation;
 
@@ -23,6 +24,10 @@ public class AddPetImagesCommandValidator : AbstractValidator<AddPetImagesComman
                 .Must(SupportedImageType.IsFileExtensionSupported)
                 .WithMessage(
                     $"File extension is not supported. Allowed extensions: {string.Join(", ", SupportedImageType.AllowedExtensions)}.");
+
+            image.RuleFor(x => x.Length)
+                .LessThanOrEqualTo(PetImage.MaxImageSizeBytes)
+                .WithMessage($"Each image must be {PetImage.MaxImageSizeBytes / 1024 / 1024} MB or smaller.");
         });
     }
 }

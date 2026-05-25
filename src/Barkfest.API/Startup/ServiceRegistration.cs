@@ -31,7 +31,8 @@ public static class ServiceRegistration
                         builder.Configuration["Cors:AllowedOrigin"] ?? "http://localhost:5173")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials();
+                    .AllowCredentials()
+                    .WithExposedHeaders("Location");
             });
         });
 
@@ -80,17 +81,6 @@ public static class ServiceRegistration
                 // Prevent claim names from being remapped to WS-Federation URIs so that
                 // "sub" stays "sub" (not ClaimTypes.NameIdentifier) for CurrentUserService.
                 options.MapInboundClaims = false;
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        var cookie = context.Request.Cookies["barkfest_auth"];
-                        if (!string.IsNullOrEmpty(cookie))
-                            context.Token = cookie;
-                        return Task.CompletedTask;
-                    }
-                };
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {

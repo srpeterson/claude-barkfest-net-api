@@ -8,13 +8,19 @@ import { LoginModal }      from '@/components/LoginModal'
 import { RegisterModal }   from '@/components/RegisterModal'
 import { HomePage }        from '@/pages/HomePage'
 import { useAuth }         from '@/hooks/useAuth'
-import { setUnauthorizedHandler } from '@/lib/api'
+import { setAuthToken, setUnauthorizedHandler } from '@/lib/api'
 
 export function App() {
-  const { signOut, openLoginModal } = useAuth()
+  const { token, signOut, openLoginModal } = useAuth()
+
+  // Keep the api module's token in sync with auth state
+  useEffect(() => {
+    setAuthToken(token)
+  }, [token])
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      setAuthToken(null)
       signOut()
       openLoginModal()
     })

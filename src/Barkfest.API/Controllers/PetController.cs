@@ -53,10 +53,12 @@ public class PetController(IMediator mediator) : ControllerBase
 
     [HttpPost("{id:guid}/images")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(65 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 65 * 1024 * 1024)]
     public async Task<IActionResult> AddImages(Guid id, IFormFileCollection files, CancellationToken cancellationToken)
     {
         var uploads = files
-            .Select(f => new PetImageUpload(f.FileName, f.OpenReadStream(), f.ContentType))
+            .Select(f => new PetImageUpload(f.FileName, f.OpenReadStream(), f.ContentType, f.Length))
             .ToList();
 
         var result = await mediator.Send(new AddPetImagesCommand(id, uploads), cancellationToken);

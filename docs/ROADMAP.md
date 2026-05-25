@@ -9,7 +9,7 @@ file alongside `PROGRESS.md` to decide what to tackle next.
 ## 1. Add Pet Dialog
 
 **Priority:** High
-**Status:** Not started
+**Status:** In progress — branch `feature/add-pet-dialog`
 
 ### What
 A modal dialog that allows an authenticated owner to add a new pet, covering both
@@ -426,22 +426,22 @@ or connect directly to the database. A password-protected Scalar avoids both.
 ## 15. Rolling JWT Expiry
 
 **Priority:** Low
-**Status:** Not started — current token is fixed 60-minute expiry with 401 interception handling expiry gracefully in the UI
+**Status:** Not started — current token is fixed 8-hour (480-minute) expiry with 401 interception handling expiry gracefully in the UI
 
 ### What
-Replace the fixed 60-minute JWT expiry with a sliding window using refresh tokens. A short-lived
+Replace the fixed 8-hour JWT expiry with a sliding window using refresh tokens. A short-lived
 access token (e.g. 15 minutes) is paired with a longer-lived refresh token (e.g. 7 days). Each
 successful API call silently refreshes the access token, keeping active users logged in
 indefinitely without re-prompting.
 
 ### Why deferred
-The current approach (fixed 60-minute token + 401 interception that signs out and opens the
+The current approach (fixed 8-hour token + 401 interception that signs out and opens the
 login modal) is sufficient for real-world Barkfest usage. Public browsing never triggers a 401.
 Only authenticated actions (posting pets, profile management) are affected by expiry, and those
-are infrequent enough that re-login after 60 minutes is acceptable.
+are infrequent enough that re-login after 8 hours is acceptable for the current user base.
 
 ### When to revisit
-If user feedback indicates the 60-minute timeout is disruptive — particularly once owner pet
+If user feedback indicates the 8-hour timeout is disruptive — particularly once owner pet
 management UI is fully built and users are doing longer authenticated sessions.
 
 ### Approach (high level)

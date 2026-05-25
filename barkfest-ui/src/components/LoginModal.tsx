@@ -33,7 +33,7 @@ export function LoginModal() {
       const result = isAdmin
         ? await adminLogin(username, password)
         : await login(username, password)
-      signIn(result.accountId, isAdmin ? 'admin' : 'owner')
+      signIn(result.accountId, isAdmin ? 'admin' : 'owner', result.accessToken)
       closeModal()
     } catch {
       setError('Invalid username or password.')
@@ -108,13 +108,12 @@ export function LoginModal() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 cursor-not-allowed select-none opacity-40">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={isAdmin}
               onChange={e => setIsAdmin(e.target.checked)}
-              disabled
-              className="w-4 h-4 rounded border-input accent-primary cursor-not-allowed"
+              className="w-4 h-4 rounded border-input accent-primary cursor-pointer"
             />
             <span className="text-sm text-muted-foreground">I am an Administrator</span>
           </label>
