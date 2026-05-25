@@ -591,13 +591,19 @@ await act.ShouldThrowAsync<NotFoundException>();
    - `chore/<name>`   — maintenance tasks (dependency updates, config changes)
    - `test/<name>`    — adding or fixing tests only
 
-3. Stage specific files by name as work progresses. Run both test suites before
-   any `git commit` and confirm all tests pass. Never commit if any tests are failing.
+3. Stage specific files by name as work progresses. Run all three checks before
+   any `git commit` and confirm all pass. Never commit if any are failing.
 
    ```bash
    dotnet test
    npm test --prefix barkfest-ui
+   pnpm --dir barkfest-ui build
    ```
+
+   `pnpm --dir barkfest-ui build` runs `tsc -b && vite build` — the same command
+   the deployment pipeline runs. It catches TypeScript errors across the entire UI
+   project, including files not touched in the current session. Always run it last,
+   after tests, immediately before committing.
 
 4. Commit after each logical milestone is complete and verified.
 
