@@ -15,7 +15,7 @@ public class Pet
     public string? Description { get; private set; }
     public DateOnly? DateOfBirth { get; private set; }
     public PetType PetType { get; private set; } = null!;
-    public Breed? Breed { get; private set; }
+    public int BreedValue { get; private set; }
     public IReadOnlyCollection<PetImage> Images => _images.AsReadOnly();
     public PetImage? FeaturedImage => _images.FirstOrDefault(i => i.IsFeaturedImage);
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
@@ -35,14 +35,14 @@ public class Pet
         Guid ownerId,
         string name,
         PetType petType,
-        Breed breed,
+        int breedValue,
         string? description = null,
         DateOnly? dateOfBirth = null)
     {
         var pet = new Pet(ownerId);
         pet.SetName(name);
         pet.SetPetType(petType);
-        pet.SetBreed(breed);
+        pet.SetBreed(breedValue);
         pet.SetDescription(description);
         pet.SetDateOfBirth(dateOfBirth);
         return pet;
@@ -78,18 +78,15 @@ public class Pet
         PetType = petType;
     }
 
-    public void SetBreed(Breed breed)
+    public void SetBreed(int breedValue)
     {
-        if (breed is null)
-            throw new DomainException("Breed is required.");
+        if (PetType == PetType.Dog && !DogBreed.TryFromValue(breedValue, out _))
+            throw new DomainException("Invalid dog breed value.");
 
-        if (PetType == PetType.Dog && breed is not DogBreedInfo)
-            throw new DomainException("Dog pet type requires a dog breed.");
+        if (PetType == PetType.Cat && !CatBreed.TryFromValue(breedValue, out _))
+            throw new DomainException("Invalid cat breed value.");
 
-        if (PetType == PetType.Cat && breed is not CatBreedInfo)
-            throw new DomainException("Cat pet type requires a cat breed.");
-
-        Breed = breed;
+        BreedValue = breedValue;
     }
 
     public void SetFeaturedImage(Guid petImageId)

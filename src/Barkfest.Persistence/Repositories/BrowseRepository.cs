@@ -15,8 +15,6 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         var baseQuery = context.PetImages
             .Include(pi => pi.Pet)
                 .ThenInclude(p => p.Owner)
-            .Include(pi => pi.Pet)
-                .ThenInclude(p => p.Breed)
             .Where(pi => pi.IsFeaturedImage)
             .Where(pi => pi.Pet.Owner.Active && pi.Pet.Owner.IsVisible)
             .AsQueryable();
@@ -37,23 +35,8 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             if (dogBreed is null && catBreed is null)
                 return new PagedResult<BrowseImageDto>([], page, pageSize, 0);
 
-            // EF.Property cannot navigate through a relationship to reach a shadow
-            // property on a related entity. Instead, query the typed set directly
-            // and use Contains — EF Core translates this to a WHERE PetId IN (subquery).
-            if (dogBreed is not null)
-            {
-                var matchedPetIds = context.Set<DogBreedInfo>()
-                    .Where(d => d.DogBreed == dogBreed)
-                    .Select(d => d.PetId);
-                baseQuery = baseQuery.Where(pi => matchedPetIds.Contains(pi.Pet.Id));
-            }
-            else
-            {
-                var matchedPetIds = context.Set<CatBreedInfo>()
-                    .Where(c => c.CatBreed == catBreed)
-                    .Select(c => c.PetId);
-                baseQuery = baseQuery.Where(pi => matchedPetIds.Contains(pi.Pet.Id));
-            }
+            var breedValue = dogBreed?.Value ?? catBreed!.Value;
+            baseQuery = baseQuery.Where(pi => pi.Pet.BreedValue == breedValue);
         }
 
         var totalCount = await baseQuery.CountAsync(cancellationToken);
@@ -85,10 +68,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         pi.Pet.DateOfBirth,
         pi.Pet.Age,
         pi.Pet.PetType.Name,
-        pi.Pet.Breed switch
-        {
-            DogBreedInfo dog => dog.DogBreed.Name,
-            CatBreedInfo cat => cat.CatBreed.Name,
-            _ => null
-        });
+        pi.Pet.PetType == PetType.Dog
+            ? DogBreed.FromValue(pi.Pet.BreedValue).Name
+            : CatBreed.FromValue(pi.Pet.BreedValue).Name);
 }
