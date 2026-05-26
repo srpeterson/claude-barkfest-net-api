@@ -2,8 +2,8 @@
 
 export interface CreatePetRequest {
   name: string
-  petType: string
-  breed: string
+  petTypeValue: number
+  breedValue: number
   dateOfBirth: string    // ISO date "YYYY-MM-DD" — maps to DateOnly on the API
   description?: string
 }

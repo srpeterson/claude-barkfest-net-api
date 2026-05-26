@@ -10,7 +10,7 @@ namespace Barkfest.Persistence.Repositories;
 public class BrowseRepository(AppDbContext context) : IBrowseRepository
 {
     public async Task<PagedResult<BrowseImageDto>> GetBrowseImagesAsync(
-        PetType? petType, string? breed, int page, int pageSize, CancellationToken cancellationToken)
+        PetType? petType, int? breedValue, int page, int pageSize, CancellationToken cancellationToken)
     {
         var baseQuery = context.PetImages
             .Include(pi => pi.Pet)
@@ -22,22 +22,8 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         if (petType is not null)
             baseQuery = baseQuery.Where(pi => pi.Pet.PetType == petType);
 
-        if (!string.IsNullOrWhiteSpace(breed))
-        {
-            var dogBreed = DogBreed.List.FirstOrDefault(b =>
-                b.Name.Equals(breed, StringComparison.OrdinalIgnoreCase));
-
-            var catBreed = dogBreed is null
-                ? CatBreed.List.FirstOrDefault(b =>
-                    b.Name.Equals(breed, StringComparison.OrdinalIgnoreCase))
-                : null;
-
-            if (dogBreed is null && catBreed is null)
-                return new PagedResult<BrowseImageDto>([], page, pageSize, 0);
-
-            var breedValue = dogBreed?.Value ?? catBreed!.Value;
+        if (breedValue is not null)
             baseQuery = baseQuery.Where(pi => pi.Pet.BreedValue == breedValue);
-        }
 
         var totalCount = await baseQuery.CountAsync(cancellationToken);
 

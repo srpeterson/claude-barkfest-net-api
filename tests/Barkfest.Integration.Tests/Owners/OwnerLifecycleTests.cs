@@ -147,16 +147,16 @@ public class OwnerLifecycleTests(IntegrationApiFactory factory)
             name = "Fido",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog",
-            breed = "Beagle"
+            petTypeValue = 1,
+            breedValue = 7
         });
         await client.PostAsJsonAsync("/v1/pets", new
         {
             name = "Whiskers",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Cat",
-            breed = "Siamese"
+            petTypeValue = 2,
+            breedValue = 14
         });
 
         var response = await client.GetAsync($"/v1/owners/{ownerId}/pets");

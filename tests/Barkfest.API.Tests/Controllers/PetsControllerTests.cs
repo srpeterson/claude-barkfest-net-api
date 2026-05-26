@@ -22,8 +22,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog",
-            breed = "Beagle"
+            petTypeValue = 1,
+            breedValue = 7
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -39,8 +39,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog",
-            breed = "Beagle"
+            petTypeValue = 1,
+            breedValue = 7
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -58,8 +58,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog",
-            breed = "Beagle"
+            petTypeValue = 1,
+            breedValue = 7
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -133,7 +133,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Maxwell",
             description = "Very good boy",
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petTypeValue = 1,
+            breedValue = 3
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -149,7 +150,8 @@ public class PetsControllerTests(BarkfestApiFactory factory)
             name = "Ghost",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petTypeValue = 1,
+            breedValue = 7
         });
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -333,15 +335,15 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 
-    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog", string breed = "Beagle")
+    private async Task<Guid> CreatePet(HttpClient client, string name, int petTypeValue = 1, int breedValue = 7)
     {
         var response = await client.PostAsJsonAsync("/v1/pets", new
         {
             name,
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType,
-            breed
+            petTypeValue,
+            breedValue
         });
 
         response.EnsureSuccessStatusCode();

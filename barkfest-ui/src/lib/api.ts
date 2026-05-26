@@ -123,26 +123,36 @@ export function logout(): Promise<void> {
 export interface BrowseImagesParams {
   page: number
   pageSize: number
-  petType?: string
-  breed?: string
+  petTypeValue?: number
+  breedValue?: number
 }
 
 export function getBrowseImages(params: BrowseImagesParams): Promise<PagedResult<BrowseImageDto>> {
   const query = new URLSearchParams({
     page:     String(params.page),
     pageSize: String(params.pageSize),
-    ...(params.petType && { petType: params.petType }),
-    ...(params.breed   && { breed:   params.breed }),
+    ...(params.petTypeValue && { petTypeValue: String(params.petTypeValue) }),
+    ...(params.breedValue   && { breedValue:   String(params.breedValue) }),
   })
   return request<PagedResult<BrowseImageDto>>(`/v1/browse/images?${query}`)
 }
 
-export function getBrowsePetTypes(): Promise<string[]> {
-  return request<string[]>('/v1/browse/pet-types')
+export interface PetTypeOption {
+  name: string
+  value: number
 }
 
-export function getBrowseBreeds(petType: string): Promise<string[]> {
-  return request<string[]>(`/v1/browse/breeds?petType=${encodeURIComponent(petType)}`)
+export interface BreedOption {
+  name: string
+  value: number
+}
+
+export function getBrowsePetTypes(): Promise<PetTypeOption[]> {
+  return request<PetTypeOption[]>('/v1/browse/pet-types')
+}
+
+export function getBrowseBreeds(petTypeValue: number): Promise<BreedOption[]> {
+  return request<BreedOption[]>(`/v1/browse/breeds?petTypeValue=${petTypeValue}`)
 }
 
 // ── Pet API ───────────────────────────────────────────────────────────────

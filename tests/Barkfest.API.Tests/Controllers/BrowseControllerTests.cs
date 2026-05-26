@@ -33,8 +33,8 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
             name = "Buddy",
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType = "Dog",
-            breed = "Beagle"
+            petTypeValue = 1,
+            breedValue = 7
         });
 
         petResponse.EnsureSuccessStatusCode();
@@ -84,7 +84,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetImages_When_FilteredByPetType_Returns_Ok_WithMatchingItems()
     {
-        var response = await _httpClient.GetAsync("/v1/browse/images?petType=Dog");
+        var response = await _httpClient.GetAsync("/v1/browse/images?petTypeValue=1");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
@@ -97,7 +97,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetImages_When_UnrecognisedPetType_Returns_Ok_WithEmptyItems()
     {
-        var response = await _httpClient.GetAsync("/v1/browse/images?petType=Dragon");
+        var response = await _httpClient.GetAsync("/v1/browse/images?petTypeValue=99");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
@@ -156,7 +156,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
 
-        var types = doc.RootElement.EnumerateArray().Select(e => e.GetString()).ToList();
+        var types = doc.RootElement.EnumerateArray().Select(e => e.GetProperty("name").GetString()).ToList();
         types.ShouldContain("Dog");
         types.ShouldContain("Cat");
     }
@@ -176,13 +176,13 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetBreeds_When_PetTypeIsDog_Returns_Ok_WithDogBreeds()
     {
-        var response = await _httpClient.GetAsync("/v1/browse/breeds?petType=Dog");
+        var response = await _httpClient.GetAsync("/v1/browse/breeds?petTypeValue=1");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
 
-        var breeds = doc.RootElement.EnumerateArray().Select(e => e.GetString()).ToList();
+        var breeds = doc.RootElement.EnumerateArray().Select(e => e.GetProperty("name").GetString()).ToList();
         breeds.ShouldContain("Beagle");
         breeds.ShouldContain("Golden Retriever");
         breeds.ShouldNotContain("Siamese");
@@ -191,13 +191,13 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetBreeds_When_PetTypeIsCat_Returns_Ok_WithCatBreeds()
     {
-        var response = await _httpClient.GetAsync("/v1/browse/breeds?petType=Cat");
+        var response = await _httpClient.GetAsync("/v1/browse/breeds?petTypeValue=2");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
 
-        var breeds = doc.RootElement.EnumerateArray().Select(e => e.GetString()).ToList();
+        var breeds = doc.RootElement.EnumerateArray().Select(e => e.GetProperty("name").GetString()).ToList();
         breeds.ShouldContain("Siamese");
         breeds.ShouldContain("Maine Coon");
         breeds.ShouldNotContain("Beagle");
@@ -206,7 +206,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetBreeds_When_PetTypeIsUnrecognised_Returns_Ok_WithEmptyArray()
     {
-        var response = await _httpClient.GetAsync("/v1/browse/breeds?petType=Dragon");
+        var response = await _httpClient.GetAsync("/v1/browse/breeds?petTypeValue=99");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
@@ -218,7 +218,7 @@ public class BrowseControllerTests(BarkfestApiFactory factory)
     [Fact]
     public async Task GetBreeds_When_Unauthenticated_Returns_Ok()
     {
-        var response = await _httpClient.GetAsync("/v1/browse/breeds?petType=Dog");
+        var response = await _httpClient.GetAsync("/v1/browse/breeds?petTypeValue=1");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }

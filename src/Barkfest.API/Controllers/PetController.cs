@@ -28,7 +28,7 @@ public class PetController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Create(CreatePetRequest request, CancellationToken cancellationToken)
     {
         var id = await mediator.Send(
-            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetType, request.Breed),
+            new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetTypeValue, request.BreedValue),
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, null);
@@ -38,7 +38,7 @@ public class PetController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Update(Guid id, UpdatePetRequest request, CancellationToken cancellationToken)
     {
         await mediator.Send(
-            new UpdatePetCommand(id, request.Name, request.Description, request.DateOfBirth, request.PetType),
+            new UpdatePetCommand(id, request.Name, request.Description, request.DateOfBirth, request.PetTypeValue, request.BreedValue),
             cancellationToken);
 
         return NoContent();
@@ -92,6 +92,6 @@ public class PetController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType, string Breed);
-public record UpdatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, string PetType);
+public record CreatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, int PetTypeValue, int BreedValue);
+public record UpdatePetRequest(string Name, string? Description, DateOnly? DateOfBirth, int PetTypeValue, int BreedValue);
 public record BatchDeleteImagesRequest(IReadOnlyList<Guid> ImageIds);

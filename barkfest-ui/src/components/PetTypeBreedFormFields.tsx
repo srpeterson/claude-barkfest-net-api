@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { NativeSelect } from '@/components/ui/select'
 import { getBrowseBreeds, getBrowsePetTypes } from '@/lib/api'
-import { getPetTypeLabel } from '@/config/petTypes'
 
-interface PetTypeBreedSelectorProps {
+interface PetTypeBreedFormFieldsProps {
   petTypeValue: number
   onPetTypeChange: (value: number) => void
   breedValue: number
@@ -12,14 +11,14 @@ interface PetTypeBreedSelectorProps {
   breedClassName?: string
 }
 
-export function PetTypeBreedSelector({
+export function PetTypeBreedFormFields({
   petTypeValue,
   onPetTypeChange,
   breedValue,
   onBreedChange,
   petTypeClassName,
   breedClassName,
-}: PetTypeBreedSelectorProps) {
+}: PetTypeBreedFormFieldsProps) {
   const { data: petTypes = [] } = useQuery({
     queryKey: ['browse', 'pet-types'],
     queryFn: getBrowsePetTypes,
@@ -27,6 +26,7 @@ export function PetTypeBreedSelector({
   })
 
   const { data: rawBreeds = [] } = useQuery({
+
     queryKey: ['browse', 'breeds', petTypeValue],
     queryFn: () => getBrowseBreeds(petTypeValue),
     enabled: !!petTypeValue,
@@ -43,29 +43,38 @@ export function PetTypeBreedSelector({
 
   return (
     <>
-      <NativeSelect
-        value={petTypeValue || ''}
-        onChange={e => onPetTypeChange(Number(e.target.value))}
-        className={petTypeClassName}
-      >
-        <option value={0}>All Pets</option>
-        {petTypes.map(pt => (
-          <option key={pt.value} value={pt.value}>{getPetTypeLabel(pt.name)}</option>
-        ))}
-      </NativeSelect>
+      <div className="space-y-1.5">
+        <label className="text-sm font-semibold">
+          Type <span className="text-destructive">*</span>
+        </label>
+        <NativeSelect
+          value={petTypeValue || ''}
+          onChange={e => onPetTypeChange(Number(e.target.value))}
+          className={petTypeClassName}
+        >
+          <option value="">Select type</option>
+          {petTypes.map(pt => (
+            <option key={pt.value} value={pt.value}>{pt.name}</option>
+          ))}
+        </NativeSelect>
+      </div>
 
-      {!!petTypeValue && (
+      <div className="space-y-1.5">
+        <label className="text-sm font-semibold">
+          Breed <span className="text-destructive">*</span>
+        </label>
         <NativeSelect
           value={breedValue || ''}
           onChange={e => onBreedChange(Number(e.target.value))}
+          disabled={!petTypeValue}
           className={breedClassName}
         >
-          <option value={0}>All Breeds</option>
+          <option value="">Select breed</option>
           {breeds.map(b => (
             <option key={b.value} value={b.value}>{b.name}</option>
           ))}
         </NativeSelect>
-      )}
+      </div>
     </>
   )
 }

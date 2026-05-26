@@ -12,23 +12,19 @@ public class CreatePetCommandValidator : AbstractValidator<CreatePetCommand>
             .NotEmpty()
             .MaximumLength(Pet.NameMaxLength);
 
-        RuleFor(x => x.PetType)
-            .NotEmpty()
-            .Must(pt => PetType.List.Any(p => p.Name == pt))
-            .WithMessage("Pet type must be 'Dog' or 'Cat'.");
+        RuleFor(x => x.PetTypeValue)
+            .Must(v => PetType.TryFromValue(v, out _))
+            .WithMessage("Invalid pet type.");
 
-        RuleFor(x => x.Breed)
-            .NotEmpty().WithMessage("Breed is required.")
-            .When(x => x.PetType == "Dog" || x.PetType == "Cat");
-
-        RuleFor(x => x.Breed)
-            .Must(b => DogBreed.List.Any(d => d.Name == b))
-            .WithMessage("Invalid dog breed.")
-            .When(x => x.PetType == "Dog" && !string.IsNullOrWhiteSpace(x.Breed));
-
-        RuleFor(x => x.Breed)
-            .Must(b => CatBreed.List.Any(c => c.Name == b))
-            .WithMessage("Invalid cat breed.")
-            .When(x => x.PetType == "Cat" && !string.IsNullOrWhiteSpace(x.Breed));
+        RuleFor(x => x.BreedValue)
+            .Must((cmd, breedValue) =>
+            {
+                if (!PetType.TryFromValue(cmd.PetTypeValue, out var petType))
+                    return true; // PetTypeValue already invalid — let that rule report the error
+                return petType == PetType.Dog
+                    ? DogBreed.TryFromValue(breedValue, out _)
+                    : CatBreed.TryFromValue(breedValue, out _);
+            })
+            .WithMessage("Invalid breed.");
     }
 }

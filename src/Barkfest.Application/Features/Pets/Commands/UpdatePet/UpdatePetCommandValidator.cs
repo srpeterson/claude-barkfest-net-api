@@ -15,9 +15,19 @@ public class UpdatePetCommandValidator : AbstractValidator<UpdatePetCommand>
             .NotEmpty()
             .MaximumLength(Pet.NameMaxLength);
 
-        RuleFor(x => x.PetType)
-            .NotEmpty()
-            .Must(pt => PetType.List.Any(p => p.Name == pt))
-            .WithMessage("Pet type must be 'Dog' or 'Cat'.");
+        RuleFor(x => x.PetTypeValue)
+            .Must(v => PetType.TryFromValue(v, out _))
+            .WithMessage("Invalid pet type.");
+
+        RuleFor(x => x.BreedValue)
+            .Must((cmd, breedValue) =>
+            {
+                if (!PetType.TryFromValue(cmd.PetTypeValue, out var petType))
+                    return true; // PetTypeValue already invalid — let that rule report the error
+                return petType == PetType.Dog
+                    ? DogBreed.TryFromValue(breedValue, out _)
+                    : CatBreed.TryFromValue(breedValue, out _);
+            })
+            .WithMessage("Invalid breed.");
     }
 }

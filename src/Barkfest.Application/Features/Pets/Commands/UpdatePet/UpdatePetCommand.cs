@@ -13,7 +13,8 @@ public record UpdatePetCommand(
     string Name,
     string? Description,
     DateOnly? DateOfBirth,
-    string PetType) : IRequest;
+    int PetTypeValue,
+    int BreedValue) : IRequest;
 
 public class UpdatePetCommandHandler(IPetRepository petRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     : IRequestHandler<UpdatePetCommand>
@@ -28,12 +29,13 @@ public class UpdatePetCommandHandler(IPetRepository petRepository, IUnitOfWork u
         if (pet.OwnerId != currentUserService.OwnerId)
             throw new ForbiddenException();
 
-        var petType = PetType.FromName(request.PetType);
+        var petType = PetType.FromValue(request.PetTypeValue);
 
         pet.SetName(request.Name);
         pet.SetDescription(request.Description);
         pet.SetDateOfBirth(request.DateOfBirth);
         pet.SetPetType(petType);
+        pet.SetBreed(request.BreedValue);
 
         await petRepository.UpdateAsync(pet, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

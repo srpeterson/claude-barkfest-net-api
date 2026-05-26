@@ -28,8 +28,8 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
             name = "Bruno",
             description = "A very good boy",
             dateOfBirth = (string?)null,
-            petType = "Dog",
-            breed = "Beagle"
+            petTypeValue = 1,
+            breedValue = 7
         });
         createResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
         var petId = ExtractIdFromLocation(createResponse);
@@ -46,7 +46,8 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
             name = "Bruno Jr.",
             description = "Still a very good boy",
             dateOfBirth = (string?)null,
-            petType = "Dog"
+            petTypeValue = 1,
+            breedValue = 3
         });
         updateResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
@@ -322,15 +323,15 @@ public class PetLifecycleTests(IntegrationApiFactory factory)
         return (factory.CreateAuthenticatedClient(ownerId), ownerId);
     }
 
-    private async Task<Guid> CreatePet(HttpClient client, string name, string petType = "Dog", string breed = "Beagle")
+    private async Task<Guid> CreatePet(HttpClient client, string name, int petTypeValue = 1, int breedValue = 7)
     {
         var response = await client.PostAsJsonAsync("/v1/pets", new
         {
             name,
             description = (string?)null,
             dateOfBirth = (string?)null,
-            petType,
-            breed
+            petTypeValue,
+            breedValue
         });
         response.EnsureSuccessStatusCode();
         return ExtractIdFromLocation(response);
