@@ -54,7 +54,7 @@ public class GetBrowseImagesQueryHandlerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_When_PetTypeIsValid_Passes_ParsedPetType_ToRepository()
+    public async Task Handle_When_PetTypeValueIsValid_Passes_ResolvedPetType_ToRepository()
     {
         _browseRepository
             .GetBrowseImagesAsync(
@@ -62,10 +62,10 @@ public class GetBrowseImagesQueryHandlerTests
             .Returns(new PagedResult<BrowseImageDto>([], DefaultPage, DefaultPageSize, 0));
 
         await _getBrowseImagesQueryHandler.Handle(
-            new GetBrowseImagesQuery("Dog", null, DefaultPage, DefaultPageSize), CancellationToken.None);
+            new GetBrowseImagesQuery(PetType.Dog.Value, null, DefaultPage, DefaultPageSize), CancellationToken.None);
 
         await _browseRepository.Received(1).GetBrowseImagesAsync(
-            Arg.Is<PetType?>(pt => pt != null && pt.Name == "Dog"),
+            Arg.Is<PetType?>(pt => pt != null && pt == PetType.Dog),
             null,
             DefaultPage,
             DefaultPageSize,
@@ -73,15 +73,15 @@ public class GetBrowseImagesQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetTypeIsUnrecognised_Returns_EmptyPagedResult_WithoutCallingRepository()
+    public async Task Handle_When_PetTypeValueIsUnrecognised_Returns_EmptyPagedResult_WithoutCallingRepository()
     {
         var result = await _getBrowseImagesQueryHandler.Handle(
-            new GetBrowseImagesQuery("Unicorn", null, DefaultPage, DefaultPageSize), CancellationToken.None);
+            new GetBrowseImagesQuery(99, null, DefaultPage, DefaultPageSize), CancellationToken.None);
 
         result.Items.ShouldBeEmpty();
         result.TotalCount.ShouldBe(0);
         await _browseRepository.DidNotReceive().GetBrowseImagesAsync(
-            Arg.Any<PetType?>(), Arg.Any<string?>(),
+            Arg.Any<PetType?>(), Arg.Any<int?>(),
             Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
@@ -90,19 +90,19 @@ public class GetBrowseImagesQueryHandlerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_When_BreedProvided_Passes_BreedString_ToRepository()
+    public async Task Handle_When_BreedValueProvided_Passes_BreedValue_ToRepository()
     {
         _browseRepository
             .GetBrowseImagesAsync(
-                Arg.Any<PetType?>(), "Labrador Retriever", DefaultPage, DefaultPageSize, CancellationToken.None)
+                Arg.Any<PetType?>(), DogBreed.LabradorRetriever.Value, DefaultPage, DefaultPageSize, CancellationToken.None)
             .Returns(new PagedResult<BrowseImageDto>([], DefaultPage, DefaultPageSize, 0));
 
         await _getBrowseImagesQueryHandler.Handle(
-            new GetBrowseImagesQuery("Dog", "Labrador Retriever", DefaultPage, DefaultPageSize), CancellationToken.None);
+            new GetBrowseImagesQuery(PetType.Dog.Value, DogBreed.LabradorRetriever.Value, DefaultPage, DefaultPageSize), CancellationToken.None);
 
         await _browseRepository.Received(1).GetBrowseImagesAsync(
-            Arg.Is<PetType?>(pt => pt != null && pt.Name == "Dog"),
-            "Labrador Retriever",
+            Arg.Is<PetType?>(pt => pt != null && pt == PetType.Dog),
+            DogBreed.LabradorRetriever.Value,
             DefaultPage,
             DefaultPageSize,
             CancellationToken.None);

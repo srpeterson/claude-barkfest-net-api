@@ -13,8 +13,8 @@ public class GetBrowsePetTypesQueryHandlerTests
             new GetBrowsePetTypesQuery(), CancellationToken.None);
 
         result.ShouldNotBeEmpty();
-        result.ShouldContain("Dog");
-        result.ShouldContain("Cat");
+        result.ShouldContain(pt => pt.Name == "Dog" && pt.Value == 1);
+        result.ShouldContain(pt => pt.Name == "Cat" && pt.Value == 2);
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public class GetBrowsePetTypesQueryHandlerTests
         var result = await _getBrowsePetTypesQueryHandler.Handle(
             new GetBrowsePetTypesQuery(), CancellationToken.None);
 
-        result.Count.ShouldBe(result.Distinct().Count());
+        result.Count.ShouldBe(result.Select(pt => pt.Value).Distinct().Count());
     }
 
     [Fact]
@@ -33,7 +33,9 @@ public class GetBrowsePetTypesQueryHandlerTests
             new GetBrowsePetTypesQuery(), CancellationToken.None);
 
         // Dog = 1, Cat = 2 — Dog should come first
-        result[0].ShouldBe("Dog");
-        result[1].ShouldBe("Cat");
+        result[0].Name.ShouldBe("Dog");
+        result[0].Value.ShouldBe(1);
+        result[1].Name.ShouldBe("Cat");
+        result[1].Value.ShouldBe(2);
     }
 }

@@ -14,14 +14,14 @@ public class BrowseController(IMediator mediator) : ControllerBase
 {
     [HttpGet("images")]
     public async Task<IActionResult> GetImages(
-        [FromQuery] string? petType,
-        [FromQuery] string? breed,
+        [FromQuery] int? petTypeValue,
+        [FromQuery] int? breedValue,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 6,
         CancellationToken cancellationToken = default)
     {
         var result = await mediator.Send(
-            new GetBrowseImagesQuery(petType, breed, page, pageSize), cancellationToken);
+            new GetBrowseImagesQuery(petTypeValue, breedValue, page, pageSize), cancellationToken);
         return Ok(result);
     }
 
@@ -34,10 +34,10 @@ public class BrowseController(IMediator mediator) : ControllerBase
 
     [HttpGet("breeds")]
     public async Task<IActionResult> GetBreeds(
-        [FromQuery] string petType,
+        [FromQuery] int petTypeValue,
         CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new GetBrowseBreedsQuery(petType), cancellationToken);
+        var result = await mediator.Send(new GetBrowseBreedsQuery(petTypeValue), cancellationToken);
         return Ok(result);
     }
 }

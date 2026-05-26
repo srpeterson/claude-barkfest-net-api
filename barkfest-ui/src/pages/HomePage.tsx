@@ -12,33 +12,33 @@ import type { BrowseImageDto, PagedResult } from '@/types/browse'
 const PAGE_SIZE = 6
 
 export function HomePage() {
-  const [page, setPage]       = useState(1)
-  const [petType, setPetType] = useState('All')
-  const [breed, setBreed]     = useState('')
+  const [page, setPage]               = useState(1)
+  const [petTypeValue, setPetTypeValue] = useState(0)
+  const [breedValue, setBreedValue]     = useState(0)
 
   const { data, isLoading } = useQuery<PagedResult<BrowseImageDto>>({
-    queryKey: ['browse', 'images', page, petType, breed],
+    queryKey: ['browse', 'images', page, petTypeValue, breedValue],
     queryFn: () => getBrowseImages({
       page,
       pageSize: PAGE_SIZE,
-      ...(petType !== 'All' && { petType }),
-      ...(breed             && { breed }),
+      ...(petTypeValue && { petTypeValue }),
+      ...(breedValue   && { breedValue }),
     }),
   })
 
   const pets             = data?.items ?? []
   const hasMore          = data?.hasMore ?? false
   const hasPrev          = page > 1
-  const hasActiveFilters = petType !== 'All' || breed !== ''
+  const hasActiveFilters = petTypeValue !== 0 || breedValue !== 0
 
-  const handleTypeChange = (val: string) => {
-    setPetType(val)
-    setBreed('')
+  const handleTypeChange = (val: number) => {
+    setPetTypeValue(val)
+    setBreedValue(0)
     setPage(1)
   }
 
-  const handleBreedChange = (val: string) => {
-    setBreed(val)
+  const handleBreedChange = (val: number) => {
+    setBreedValue(val)
     setPage(1)
   }
 
@@ -46,13 +46,13 @@ export function HomePage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <FilterBar
-        petType={petType}
+        petTypeValue={petTypeValue}
         onPetTypeChange={handleTypeChange}
-        breed={breed}
+        breedValue={breedValue}
         onBreedChange={handleBreedChange}
       />
       <div className="-mt-12">
-        <HeroSection petType={petType} breed={breed} />
+        <HeroSection petTypeValue={petTypeValue} breedValue={breedValue} />
       </div>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6">
         <PetGrid pets={pets} isLoading={isLoading} hasActiveFilters={hasActiveFilters} />

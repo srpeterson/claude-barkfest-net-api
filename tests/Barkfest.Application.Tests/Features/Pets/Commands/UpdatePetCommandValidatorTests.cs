@@ -1,5 +1,6 @@
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Enums;
 
 namespace Barkfest.Application.Tests.Features.Pets.Commands;
 
@@ -12,9 +13,17 @@ public class UpdatePetCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_When_CommandIsValid_Passes()
+    public void Validate_When_CommandIsValid_Dog_Passes()
     {
-        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, "Dog");
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, PetType.Dog.Value, DogBreed.Beagle.Value);
+
+        _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_When_CommandIsValid_Cat_Passes()
+    {
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Whiskers", null, null, PetType.Cat.Value, CatBreed.Siamese.Value);
 
         _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
@@ -26,7 +35,7 @@ public class UpdatePetCommandValidatorTests
     [Fact]
     public void Validate_When_IdIsEmpty_Fails_ForId()
     {
-        var command = new UpdatePetCommand(Guid.Empty, "Bruno", null, null, "Dog");
+        var command = new UpdatePetCommand(Guid.Empty, "Bruno", null, null, PetType.Dog.Value, DogBreed.Beagle.Value);
 
         var result = _updatePetCommandValidator.Validate(command);
 
@@ -44,7 +53,7 @@ public class UpdatePetCommandValidatorTests
     [InlineData(null)]
     public void Validate_When_NameIsEmptyOrNull_Fails_ForName(string? name)
     {
-        var command = new UpdatePetCommand(Guid.NewGuid(), name!, null, null, "Dog");
+        var command = new UpdatePetCommand(Guid.NewGuid(), name!, null, null, PetType.Dog.Value, DogBreed.Beagle.Value);
 
         var result = _updatePetCommandValidator.Validate(command);
 
@@ -56,7 +65,7 @@ public class UpdatePetCommandValidatorTests
     public void Validate_When_NameExceedsMaxLength_Fails_ForName()
     {
         var command = new UpdatePetCommand(
-            Guid.NewGuid(), new string('A', Pet.NameMaxLength + 1), null, null, "Dog");
+            Guid.NewGuid(), new string('A', Pet.NameMaxLength + 1), null, null, PetType.Dog.Value, DogBreed.Beagle.Value);
 
         var result = _updatePetCommandValidator.Validate(command);
 
@@ -65,41 +74,84 @@ public class UpdatePetCommandValidatorTests
     }
 
     // -----------------------------------------------------------------------
-    // PetType
+    // PetTypeValue
     // -----------------------------------------------------------------------
 
     [Theory]
-    [InlineData("Dog")]
-    [InlineData("Cat")]
-    public void Validate_When_PetTypeIsKnown_Passes(string petType)
+    [InlineData(1)] // Dog
+    [InlineData(2)] // Cat
+    public void Validate_When_PetTypeValueIsValid_Passes(int petTypeValue)
     {
-        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType);
+        var breedValue = petTypeValue == PetType.Dog.Value ? DogBreed.Beagle.Value : CatBreed.Siamese.Value;
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petTypeValue, breedValue);
 
         _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    public void Validate_When_PetTypeIsEmptyOrNull_Fails_ForPetType(string? petType)
+    [InlineData(0)]
+    [InlineData(99)]
+    [InlineData(-1)]
+    public void Validate_When_PetTypeValueIsInvalid_Fails_ForPetTypeValue(int petTypeValue)
     {
-        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petType!);
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, petTypeValue, DogBreed.Beagle.Value);
 
         var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PetType));
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PetTypeValue));
+    }
+
+    // -----------------------------------------------------------------------
+    // BreedValue
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Validate_When_BreedIsValidDogBreed_ForDog_Passes()
+    {
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, PetType.Dog.Value, DogBreed.GoldenRetriever.Value);
+
+        _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
     }
 
     [Fact]
-    public void Validate_When_PetTypeIsUnknown_Fails_ForPetType()
+    public void Validate_When_BreedIsValidCatBreed_ForCat_Passes()
     {
-        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, "Other");
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Whiskers", null, null, PetType.Cat.Value, CatBreed.MaineCoon.Value);
+
+        _updatePetCommandValidator.Validate(command).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_When_DogExclusiveBreedValueUsedForCat_Fails_ForBreedValue()
+    {
+        // DogBreed.Other = 30; CatBreed.Other = 29 — value 30 is not a valid CatBreed value
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Whiskers", null, null, PetType.Cat.Value, DogBreed.Other.Value);
 
         var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PetType));
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.BreedValue) && e.ErrorMessage == "Invalid breed.");
+    }
+
+    [Fact]
+    public void Validate_When_BreedValueIsUnrecognised_Fails_ForBreedValue()
+    {
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, PetType.Dog.Value, 9999);
+
+        var result = _updatePetCommandValidator.Validate(command);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.BreedValue));
+    }
+
+    [Fact]
+    public void Validate_When_PetTypeValueIsInvalid_DoesNotReport_BreedValueError()
+    {
+        var command = new UpdatePetCommand(Guid.NewGuid(), "Bruno", null, null, 99, 9999);
+
+        var result = _updatePetCommandValidator.Validate(command);
+
+        result.Errors.ShouldNotContain(e => e.PropertyName == nameof(command.BreedValue));
     }
 }

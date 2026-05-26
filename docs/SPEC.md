@@ -85,7 +85,7 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 | `PUT` | `/v1/pets/{id}/images/{imageId}/featured` | Set featured image |
 | `GET` | `/v1/browse/images` | Browse all pet images (public, paginated) |
 | `GET` | `/v1/browse/pet-types` | List available pet types (public) |
-| `GET` | `/v1/browse/breeds?petType=` | List breeds for a pet type (public) |
+| `GET` | `/v1/browse/breeds?petTypeValue=` | List breeds for a pet type (public) |
 
 ## Constraints
 

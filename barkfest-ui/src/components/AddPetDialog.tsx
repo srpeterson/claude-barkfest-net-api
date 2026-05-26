@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DropZone } from '@/components/ui/DropZone'
-import { PetTypeBreedSelector } from '@/components/PetTypeBreedSelector'
+import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { addPetImages, createPet, setFeaturedImage } from '@/lib/api'
 import type { CreatePetRequest } from '@/types/pet'
@@ -41,8 +41,8 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
 
   // ── Step 1 fields ─────────────────────────────────────────────────────
   const [name, setName] = useState('')
-  const [petType, setPetType] = useState('')
-  const [breed, setBreed] = useState('')
+  const [petTypeValue, setPetTypeValue] = useState(0)
+  const [breedValue, setBreedValue] = useState(0)
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [dobUnknown, setDobUnknown] = useState(false)
   const [age, setAge] = useState('')
@@ -71,14 +71,14 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
   const today = new Date().toISOString().split('T')[0]
   const minDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 21); return d.toISOString().split('T')[0] })()
   const dateInRange = !dateOfBirth || (dateOfBirth >= minDate && dateOfBirth <= today)
-  const step1Valid = name.trim() !== '' && petType !== '' && breed !== '' &&
+  const step1Valid = name.trim() !== '' && petTypeValue !== 0 && breedValue !== 0 &&
     (dobUnknown ? age !== '' : dateOfBirth !== '' && dateInRange) && description.trim() !== ''
   const step2Valid = images.length > 0
 
   // ── Handlers ──────────────────────────────────────────────────────────
-  function handlePetTypeChange(value: string) {
-    setPetType(value)
-    setBreed('')
+  function handlePetTypeChange(value: number) {
+    setPetTypeValue(value)
+    setBreedValue(0)
   }
 
   async function handleSubmit() {
@@ -90,8 +90,8 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
     try {
       const petData: CreatePetRequest = {
         name: name.trim(),
-        petType,
-        breed,
+        petTypeValue,
+        breedValue,
         dateOfBirth: dobUnknown ? ageToDateOfBirth(Number(age)) : dateOfBirth,
         ...(description.trim() && { description: description.trim() }),
       }
@@ -174,12 +174,11 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <PetTypeBreedSelector
-                variant="form"
-                petType={petType}
+              <PetTypeBreedFormFields
+                petTypeValue={petTypeValue}
                 onPetTypeChange={handlePetTypeChange}
-                breed={breed}
-                onBreedChange={setBreed}
+                breedValue={breedValue}
+                onBreedChange={setBreedValue}
               />
             </div>
 

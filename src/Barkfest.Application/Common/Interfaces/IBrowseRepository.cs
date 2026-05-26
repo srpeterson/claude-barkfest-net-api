@@ -8,7 +8,7 @@ public interface IBrowseRepository
 {
     Task<PagedResult<BrowseImageDto>> GetBrowseImagesAsync(
         PetType? petType,
-        string? breed,
+        int? breedValue,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

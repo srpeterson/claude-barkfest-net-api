@@ -5,20 +5,18 @@ import { getBlobImageUrl } from '@/lib/imageUrl'
 const STRIP_SIZE = 5
 
 interface HeroSectionProps {
-  petType: string
-  breed: string
+  petTypeValue: number
+  breedValue: number
 }
 
-export function HeroSection({ petType, breed }: HeroSectionProps) {
-  const activeType = petType !== 'All' ? petType : undefined
-
+export function HeroSection({ petTypeValue, breedValue }: HeroSectionProps) {
   const { data } = useQuery({
-    queryKey: ['browse', 'hero-strip', activeType, breed],
+    queryKey: ['browse', 'hero-strip', petTypeValue, breedValue],
     queryFn: () => getBrowseImages({
       page: 1,
       pageSize: STRIP_SIZE,
-      ...(activeType && { petType: activeType }),
-      ...(breed      && { breed }),
+      ...(petTypeValue && { petTypeValue }),
+      ...(breedValue   && { breedValue }),
     }),
     staleTime: 5 * 60 * 1000,
   })

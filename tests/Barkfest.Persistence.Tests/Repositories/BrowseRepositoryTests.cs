@@ -152,7 +152,7 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
         await _context.SaveChangesAsync();
 
         var result = await _browseRepository.GetBrowseImagesAsync(
-            null, "Beagle", page: 1, pageSize: 10, CancellationToken.None);
+            null, DogBreed.Beagle.Value, page: 1, pageSize: 10, CancellationToken.None);
 
         result.Items.Any(i => i.PetName == "BeaglePet").ShouldBeTrue();
         result.Items.Any(i => i.PetName == "LabradorPet").ShouldBeFalse();
@@ -166,7 +166,7 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
         await _context.SaveChangesAsync();
 
         var result = await _browseRepository.GetBrowseImagesAsync(
-            null, "not-a-real-breed", page: 1, pageSize: 10, CancellationToken.None);
+            null, 9999, page: 1, pageSize: 10, CancellationToken.None);
 
         result.Items.ShouldBeEmpty();
         result.TotalCount.ShouldBe(0);

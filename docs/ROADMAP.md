@@ -604,7 +604,7 @@ after the fact. A clean edit flow is essential before the app goes public.
 
 ### Approach (high level)
 - Pre-fill all fields with the pet's current data on open (same pattern as `UpdateOwnerProfileDialog`)
-- Re-use `PetTypeBreedSelector` for breed selection
+- Re-use `PetTypeBreedFormFields` for breed selection
 - Image management: show existing images with remove buttons, allow adding new ones up to the limit
 - `PUT /v1/pets/{id}` — update pet info
 - `POST /v1/pets/{id}/images` — add new images

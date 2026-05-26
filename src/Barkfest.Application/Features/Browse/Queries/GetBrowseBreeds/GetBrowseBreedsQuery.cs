@@ -1,23 +1,22 @@
+using Barkfest.Application.Features.Browse.DTOs;
 using Barkfest.Domain.Enums;
 using MediatR;
 
 namespace Barkfest.Application.Features.Browse.Queries.GetBrowseBreeds;
 
-public record GetBrowseBreedsQuery(string PetType) : IRequest<IReadOnlyList<string>>;
+public record GetBrowseBreedsQuery(int PetTypeValue) : IRequest<IReadOnlyList<BreedOptionDto>>;
 
-public class GetBrowseBreedsQueryHandler : IRequestHandler<GetBrowseBreedsQuery, IReadOnlyList<string>>
+public class GetBrowseBreedsQueryHandler : IRequestHandler<GetBrowseBreedsQuery, IReadOnlyList<BreedOptionDto>>
 {
-    public Task<IReadOnlyList<string>> Handle(
+    public Task<IReadOnlyList<BreedOptionDto>> Handle(
         GetBrowseBreedsQuery request, CancellationToken cancellationToken)
     {
-        IReadOnlyList<string> breeds;
+        if (!PetType.TryFromValue(request.PetTypeValue, out var petType))
+            return Task.FromResult<IReadOnlyList<BreedOptionDto>>([]);
 
-        if (request.PetType.Equals("Dog", StringComparison.OrdinalIgnoreCase))
-            breeds = DogBreed.List.OrderBy(b => b.Value).Select(b => b.Name).ToList();
-        else if (request.PetType.Equals("Cat", StringComparison.OrdinalIgnoreCase))
-            breeds = CatBreed.List.OrderBy(b => b.Value).Select(b => b.Name).ToList();
-        else
-            breeds = [];
+        IReadOnlyList<BreedOptionDto> breeds = petType == PetType.Dog
+            ? DogBreed.List.OrderBy(b => b.Value).Select(b => new BreedOptionDto(b.Name, b.Value)).ToList()
+            : CatBreed.List.OrderBy(b => b.Value).Select(b => new BreedOptionDto(b.Name, b.Value)).ToList();
 
         return Task.FromResult(breeds);
     }

@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Barkfest.Application.Features.Browse.Queries;
 
-public record GetBrowseImagesQuery(string? PetType, string? Breed, int Page, int PageSize)
+public record GetBrowseImagesQuery(int? PetTypeValue, int? BreedValue, int Page, int PageSize)
     : IRequest<PagedResult<BrowseImageDto>>;
 
 public class GetBrowseImagesQueryHandler(IBrowseRepository browseRepository)
@@ -15,20 +15,16 @@ public class GetBrowseImagesQueryHandler(IBrowseRepository browseRepository)
     public async Task<PagedResult<BrowseImageDto>> Handle(
         GetBrowseImagesQuery request, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(request.PetType))
+        if (request.PetTypeValue is not null)
         {
-            var petType = PetType.List.FirstOrDefault(p =>
-                p.Name.Equals(request.PetType, StringComparison.OrdinalIgnoreCase));
-
-            // Unrecognised petType — no results
-            if (petType is null)
+            if (!PetType.TryFromValue(request.PetTypeValue.Value, out var petType))
                 return new PagedResult<BrowseImageDto>([], request.Page, request.PageSize, 0);
 
             return await browseRepository.GetBrowseImagesAsync(
-                petType, request.Breed, request.Page, request.PageSize, cancellationToken);
+                petType, request.BreedValue, request.Page, request.PageSize, cancellationToken);
         }
 
         return await browseRepository.GetBrowseImagesAsync(
-            null, request.Breed, request.Page, request.PageSize, cancellationToken);
+            null, request.BreedValue, request.Page, request.PageSize, cancellationToken);
     }
 }
