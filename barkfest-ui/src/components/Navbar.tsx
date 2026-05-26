@@ -9,7 +9,7 @@ import { logout } from '@/lib/api'
 import { AddPetDialog } from '@/components/AddPetDialog'
 
 export function Navbar() {
-  const { isAuthenticated, accountType, signOut, openLoginModal, openRegisterModal } = useAuth()
+  const { isAuthenticated, accountType, signOut, openLoginDialog, openRegisterDialog } = useAuth()
   const [addPetOpen, setAddPetOpen] = useState(false)
   const queryClient = useQueryClient()
 
@@ -83,7 +83,7 @@ export function Navbar() {
         ) : (
           <div className="flex items-center gap-2">
             <button
-              onClick={openLoginModal}
+              onClick={openLoginDialog}
               className={cn(
                 buttonVariants({ variant: 'ghost', size: 'sm' }),
                 'font-medium hover:bg-primary/20 hover:text-primary'
@@ -92,7 +92,7 @@ export function Navbar() {
               Sign In
             </button>
             <button
-              onClick={openRegisterModal}
+              onClick={openRegisterDialog}
               className={cn(
                 buttonVariants({ size: 'sm' }),
                 'font-medium'

@@ -13,8 +13,8 @@ const STRENGTH_COLORS = [
   'bg-green-500',
 ]
 
-export function RegisterModal() {
-  const { modal, closeModal, openLoginModal, signIn } = useAuth()
+export function RegisterDialog() {
+  const { dialog, closeDialog, openLoginDialog, signIn } = useAuth()
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -43,14 +43,14 @@ export function RegisterModal() {
     : null
 
   useEffect(() => {
-    if (modal !== 'register') {
+    if (dialog !== 'register') {
       setForm({ firstName: '', lastName: '', email: '', username: '', displayName: '', password: '', confirmPassword: '' })
       setShowPassword(false)
       setError(null)
       setDisplayNameAvailable(null)
       setDisplayNameChecking(false)
     }
-  }, [modal])
+  }, [dialog])
 
   useEffect(() => {
     if (!form.displayName.trim() || displayNameTooShort) {
@@ -76,7 +76,7 @@ export function RegisterModal() {
     return () => clearTimeout(timer)
   }, [form.displayName])
 
-  if (modal !== 'register') return null
+  if (dialog !== 'register') return null
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -97,7 +97,7 @@ export function RegisterModal() {
       })
       const result = await login(form.username, form.password)
       signIn(result.accountId, 'owner', result.accessToken)
-      closeModal()
+      closeDialog()
     } catch (err) {
       if (err instanceof ApiError && err.status < 500) {
         setError(err.message)
@@ -117,7 +117,7 @@ export function RegisterModal() {
         className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8"
       >
         <button
-          onClick={closeModal}
+          onClick={closeDialog}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-5 h-5" />
@@ -134,16 +134,16 @@ export function RegisterModal() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <ModalField label="First name" id="reg-firstName" name="firstName" autoComplete="given-name" autoFocus placeholder="Jane" required maxLength={30} value={form.firstName} onChange={handleChange} />
-            <ModalField label="Last name" id="reg-lastName" name="lastName" autoComplete="family-name" placeholder="Doe" required maxLength={50} value={form.lastName} onChange={handleChange} />
+            <DialogField label="First name" id="reg-firstName" name="firstName" autoComplete="given-name" autoFocus placeholder="Jane" required maxLength={30} value={form.firstName} onChange={handleChange} />
+            <DialogField label="Last name" id="reg-lastName" name="lastName" autoComplete="family-name" placeholder="Doe" required maxLength={50} value={form.lastName} onChange={handleChange} />
           </div>
 
-          <ModalField label="Email" id="reg-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={75} value={form.email} onChange={handleChange} />
+          <DialogField label="Email" id="reg-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={75} value={form.email} onChange={handleChange} />
 
-          <ModalField label="Username" id="reg-username" name="username" autoComplete="username" placeholder="Pick a username" required maxLength={25} value={form.username} onChange={handleChange} />
+          <DialogField label="Username" id="reg-username" name="username" autoComplete="username" placeholder="Pick a username" required maxLength={25} value={form.username} onChange={handleChange} />
 
           <div className="space-y-1">
-            <ModalField label="Display name" id="reg-displayName" name="displayName" autoComplete="nickname" placeholder="e.g. Cool Pet Dad" required maxLength={25} value={form.displayName} onChange={handleChange} />
+            <DialogField label="Display name" id="reg-displayName" name="displayName" autoComplete="nickname" placeholder="e.g. Cool Pet Dad" required maxLength={25} value={form.displayName} onChange={handleChange} />
             {form.displayName.trim() && (
               displayNameTooShort ? (
                 <p className="text-xs text-destructive">At least 4 characters required</p>
@@ -247,7 +247,7 @@ export function RegisterModal() {
         <p className="text-center text-sm text-muted-foreground mt-5">
           Already have an account?{' '}
           <button
-            onClick={openLoginModal}
+            onClick={openLoginDialog}
             className="text-primary font-medium hover:underline"
           >
             Sign in
@@ -258,7 +258,7 @@ export function RegisterModal() {
   )
 }
 
-interface ModalFieldProps {
+interface DialogFieldProps {
   label: string
   id: string
   name: string
@@ -272,7 +272,7 @@ interface ModalFieldProps {
   placeholder?: string
 }
 
-function ModalField({ label, id, name, type = 'text', autoComplete, autoFocus, required, maxLength, value, onChange, placeholder }: ModalFieldProps) {
+function DialogField({ label, id, name, type = 'text', autoComplete, autoFocus, required, maxLength, value, onChange, placeholder }: DialogFieldProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium" htmlFor={id}>

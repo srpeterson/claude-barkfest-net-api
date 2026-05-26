@@ -507,6 +507,29 @@ convenience feature).
 
 ---
 
+## 18. Change Owner Password
+
+**Priority:** Medium
+**Status:** Not started
+
+### What
+Allow an authenticated owner to change their own password from within the app:
+- Requires the current password to confirm identity
+- New password must meet the minimum strength requirements (`AccountConstraints.PasswordMinLength`)
+- Confirm new password field (client-side match check)
+
+### Why
+Owners currently have no self-service way to change their password after registration.
+This is a basic account security expectation.
+
+### Approach (high level)
+- New command: `ChangeOwnerPasswordCommand(Guid Id, string CurrentPassword, string NewPassword)`
+- New endpoint: `POST /v1/owners/{id}/change-password` → 204 NoContent
+- Handler verifies current password via `IPasswordHasher.Verify` before accepting the new one
+- UI: a small standalone "Change Password" dialog or section, separate from the main profile update flow
+
+---
+
 ## 17. Consolidate Migrations into a Single InitialCreate
 
 **Priority:** High — must be done before the app goes public

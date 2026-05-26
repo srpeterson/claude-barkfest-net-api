@@ -3,12 +3,12 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 export function ProtectedRoute() {
-  const { isAuthenticated, accountType, openLoginModal } = useAuth()
+  const { isAuthenticated, accountType, openLoginDialog } = useAuth()
   const isOwner = isAuthenticated && accountType === 'owner'
 
   useEffect(() => {
     if (!isAuthenticated) {
-      openLoginModal()
+      openLoginDialog()
     }
   }, [])
 

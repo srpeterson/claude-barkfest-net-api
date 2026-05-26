@@ -3,8 +3,8 @@ import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { adminLogin, login } from '@/lib/api'
 
-export function LoginModal() {
-  const { modal, closeModal, openRegisterModal, signIn } = useAuth()
+export function LoginDialog() {
+  const { dialog, closeDialog, openRegisterDialog, signIn } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -15,15 +15,15 @@ export function LoginModal() {
   const allFieldsFilled = username.trim() !== '' && password !== ''
 
   useEffect(() => {
-    if (modal !== 'login') {
+    if (dialog !== 'login') {
       setUsername('')
       setPassword('')
       setShowPassword(false)
       setError(null)
     }
-  }, [modal])
+  }, [dialog])
 
-  if (modal !== 'login') return null
+  if (dialog !== 'login') return null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,7 +34,7 @@ export function LoginModal() {
         ? await adminLogin(username, password)
         : await login(username, password)
       signIn(result.accountId, isAdmin ? 'admin' : 'owner', result.accessToken)
-      closeModal()
+      closeDialog()
     } catch {
       setError('Invalid username or password.')
     } finally {
@@ -50,7 +50,7 @@ export function LoginModal() {
         className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8"
       >
         <button
-          onClick={closeModal}
+          onClick={closeDialog}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-5 h-5" />
@@ -134,7 +134,7 @@ export function LoginModal() {
           <p className="text-center text-sm text-muted-foreground mt-5">
             Don't have an account?{' '}
             <button
-              onClick={openRegisterModal}
+              onClick={openRegisterDialog}
               className="text-primary font-medium hover:underline"
             >
               Join the barkfest!

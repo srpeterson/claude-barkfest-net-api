@@ -10,10 +10,10 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   signIn: (accountId: string, accountType: 'owner' | 'admin', token: string) => void
   signOut: () => void
-  modal: 'login' | 'register' | null
-  openLoginModal: () => void
-  openRegisterModal: () => void
-  closeModal: () => void
+  dialog: 'login' | 'register' | null
+  openLoginDialog: () => void
+  openRegisterDialog: () => void
+  closeDialog: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     accountType: (sessionStorage.getItem('barkfest_account_type') as AuthState['accountType']) ?? null,
     token: sessionStorage.getItem('barkfest_token'),
   })
-  const [modal, setModal] = useState<'login' | 'register' | null>(null)
+  const [dialog, setDialog] = useState<'login' | 'register' | null>(null)
 
   function signIn(accountId: string, accountType: 'owner' | 'admin', token: string) {
     sessionStorage.setItem('barkfest_authenticated', 'true')
@@ -45,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...auth,
       signIn,
       signOut,
-      modal,
-      openLoginModal: () => setModal('login'),
-      openRegisterModal: () => setModal('register'),
-      closeModal: () => setModal(null),
+      dialog,
+      openLoginDialog: () => setDialog('login'),
+      openRegisterDialog: () => setDialog('register'),
+      closeDialog: () => setDialog(null),
     }}>
       {children}
     </AuthContext.Provider>
