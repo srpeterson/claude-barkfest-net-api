@@ -84,7 +84,7 @@ Owners register and log in but currently have no UI to actually add or manage th
 ## 4. Landing Page — Full Wire-Up
 
 **Priority:** High
-**Status:** In progress — branch `feature/landing-page-wire-up`
+**Status:** Complete — merged via PR #10
 
 ### What
 Ensure the landing page works correctly end-to-end once real owners and pets exist in the database:

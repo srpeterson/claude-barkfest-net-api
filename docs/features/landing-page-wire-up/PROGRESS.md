@@ -1,6 +1,6 @@
 # Landing Page — Full Wire-Up Progress
 
-## Status: In progress
+## Status: Complete
 
 ---
 
@@ -38,15 +38,15 @@
 
 | # | Milestone | Status |
 |---|---|---|
-| 1 | Register owner, post a pet, verify it appears on the home page | ⬜ Not started |
-| 2 | Pet type filter returns correct results | ⬜ Not started |
-| 3 | Breed dropdown resets when pet type changes | ⬜ Not started |
-| 4 | Breed filter further narrows results correctly | ⬜ Not started |
-| 5 | Pagination appears once pets exceed PAGE_SIZE (6) | ⬜ Not started |
-| 6 | Empty state — "No pets posted yet" (empty database) | ⬜ Not started |
-| 7 | Empty state — "Try a different breed…" (filters match nothing) | ⬜ Not started |
-| 8 | Featured image displayed on each card | ⬜ Not started |
-| 9 | Owner attribution shown when DisplayName is set | ⬜ Not started |
+| 1 | Register owner, post a pet, verify it appears on the home page | ✅ Complete |
+| 2 | Pet type filter returns correct results | ✅ Complete |
+| 3 | Breed dropdown resets when pet type changes | ✅ Complete |
+| 4 | Breed filter further narrows results correctly | ✅ Complete |
+| 5 | Pagination appears once pets exceed PAGE_SIZE (6) | ✅ Complete |
+| 6 | Empty state — "No pets posted yet" (empty database) | ✅ Complete |
+| 7 | Empty state — "Try a different breed…" (filters match nothing) | ✅ Complete |
+| 8 | Featured image displayed on each card | ✅ Complete |
+| 9 | Owner attribution shown when DisplayName is set | ✅ Complete |
 
 ---
 
@@ -89,6 +89,6 @@
 
 | # | Milestone | Status |
 |---|---|---|
-| 1 | Full flow verified (register with DisplayName → post pet → grid refresh → filters → pagination → empty states) | ⬜ Not started |
-| 2 | TypeScript check clean (`pnpm --dir barkfest-ui build`) | ⬜ Not started |
-| 3 | Committed and pushed | ⬜ Not started |
+| 1 | Full flow verified (register with DisplayName → post pet → grid refresh → filters → pagination → empty states) | ✅ Complete |
+| 2 | TypeScript check clean (`pnpm --dir barkfest-ui build`) | ✅ Complete |
+| 3 | Committed and pushed | ✅ Complete |
