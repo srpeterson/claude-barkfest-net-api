@@ -9,9 +9,15 @@ namespace Barkfest.Application.Features.Pets.Commands.DeletePet;
 
 public record DeletePetCommand(Guid Id) : IRequest;
 
-public class DeletePetCommandHandler(IPetRepository petRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
+public class DeletePetCommandHandler(
+    IPetRepository petRepository,
+    IBlobStorageService blobStorageService,
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService)
     : IRequestHandler<DeletePetCommand>
 {
+    private const string ContainerName = "pet-images";
+
     public async Task Handle(DeletePetCommand request, CancellationToken cancellationToken)
     {
         var pet = await petRepository.GetByIdAsync(request.Id, cancellationToken);
@@ -21,6 +27,9 @@ public class DeletePetCommandHandler(IPetRepository petRepository, IUnitOfWork u
 
         if (pet.OwnerId != currentUserService.OwnerId)
             throw new ForbiddenException();
+
+        foreach (var image in pet.Images)
+            await blobStorageService.DeleteAsync(ContainerName, image.BlobName, cancellationToken);
 
         await petRepository.DeleteAsync(request.Id, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -6,11 +6,14 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { logout } from '@/lib/api'
+import { getBlobImageUrl } from '@/lib/imageUrl'
 import { AddPetDialog } from '@/components/AddPetDialog'
+import { UpdateOwnerProfileDialog } from '@/components/UpdateOwnerProfileDialog'
 
 export function Navbar() {
-  const { isAuthenticated, accountType, signOut, openLoginModal, openRegisterModal } = useAuth()
+  const { isAuthenticated, accountType, profileImageBlobName, signOut, openLoginDialog, openRegisterDialog } = useAuth()
   const [addPetOpen, setAddPetOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const queryClient = useQueryClient()
 
   function handlePetAdded() {
@@ -21,10 +24,6 @@ export function Navbar() {
   async function handleSignOut() {
     await logout()
     signOut()
-  }
-
-  async function handlePostAPet() {
-    setAddPetOpen(true)
   }
 
   return (
@@ -55,7 +54,7 @@ export function Navbar() {
         ) : isAuthenticated && accountType === 'owner' ? (
           <div className="flex items-center gap-3">
             <button
-              onClick={handlePostAPet}
+              onClick={() => setAddPetOpen(true)}
               className={cn(
                 buttonVariants({ size: 'sm' }),
                 'gap-1.5 font-medium'
@@ -65,8 +64,20 @@ export function Navbar() {
               Post a Pet
             </button>
 
-            <button className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors overflow-hidden">
-              <UserCircle className="w-7 h-7" />
+            {/* Avatar — opens UpdateOwnerProfileDialog */}
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:ring-2 hover:ring-primary/40 transition-all overflow-hidden"
+            >
+              {profileImageBlobName ? (
+                <img
+                  src={getBlobImageUrl(profileImageBlobName, 'owner-profile-images')}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserCircle className="w-7 h-7" />
+              )}
             </button>
 
             <button
@@ -83,7 +94,7 @@ export function Navbar() {
         ) : (
           <div className="flex items-center gap-2">
             <button
-              onClick={openLoginModal}
+              onClick={openLoginDialog}
               className={cn(
                 buttonVariants({ variant: 'ghost', size: 'sm' }),
                 'font-medium hover:bg-primary/20 hover:text-primary'
@@ -92,7 +103,7 @@ export function Navbar() {
               Sign In
             </button>
             <button
-              onClick={openRegisterModal}
+              onClick={openRegisterDialog}
               className={cn(
                 buttonVariants({ size: 'sm' }),
                 'font-medium'
@@ -106,6 +117,7 @@ export function Navbar() {
     </nav>
 
     {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} onSuccess={handlePetAdded} />}
+    {profileOpen && <UpdateOwnerProfileDialog onClose={() => setProfileOpen(false)} />}
   </>
   )
 }

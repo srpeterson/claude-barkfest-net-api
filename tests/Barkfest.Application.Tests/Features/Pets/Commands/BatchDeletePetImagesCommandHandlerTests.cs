@@ -11,6 +11,7 @@ namespace Barkfest.Application.Tests.Features.Pets.Commands;
 public class BatchDeletePetImagesCommandHandlerTests
 {
     private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
+    private readonly IBlobStorageService _blobStorageService = Substitute.For<IBlobStorageService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
     private readonly BatchDeletePetImagesCommandHandler _batchDeletePetImagesCommandHandler;
@@ -18,7 +19,7 @@ public class BatchDeletePetImagesCommandHandlerTests
     public BatchDeletePetImagesCommandHandlerTests()
     {
         _batchDeletePetImagesCommandHandler = new BatchDeletePetImagesCommandHandler(
-            _petRepository, _unitOfWork, _currentUserService);
+            _petRepository, _blobStorageService, _unitOfWork, _currentUserService);
     }
 
     [Fact]
@@ -46,12 +47,12 @@ public class BatchDeletePetImagesCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_AllImagesExist_Removes_AllAndSaves()
+    public async Task Handle_When_AllImagesExist_DeletesBlobs_AndRemovesImages()
     {
         var pet = new PetBuilder().Build();
-        var image1 = new PetImageBuilder().WithDisplayOrder(0).Build();
-        var image2 = new PetImageBuilder().WithDisplayOrder(1).Build();
-        var image3 = new PetImageBuilder().WithDisplayOrder(2).Build();
+        var image1 = new PetImageBuilder().WithBlobName("pets/abc/gallery/photo1.jpg").WithDisplayOrder(0).Build();
+        var image2 = new PetImageBuilder().WithBlobName("pets/abc/gallery/photo2.jpg").WithDisplayOrder(1).Build();
+        var image3 = new PetImageBuilder().WithBlobName("pets/abc/gallery/photo3.jpg").WithDisplayOrder(2).Build();
         pet.AddImage(image1);
         pet.AddImage(image2);
         pet.AddImage(image3);
@@ -64,6 +65,9 @@ public class BatchDeletePetImagesCommandHandlerTests
 
         pet.Images.Count.ShouldBe(1);
         pet.Images.ShouldContain(i => i.Id == image3.Id);
+        await _blobStorageService.Received(1).DeleteAsync("pet-images", "pets/abc/gallery/photo1.jpg", CancellationToken.None);
+        await _blobStorageService.Received(1).DeleteAsync("pet-images", "pets/abc/gallery/photo2.jpg", CancellationToken.None);
+        await _blobStorageService.DidNotReceive().DeleteAsync("pet-images", "pets/abc/gallery/photo3.jpg", CancellationToken.None);
         await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
     }
 

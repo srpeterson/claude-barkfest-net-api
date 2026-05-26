@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
   Loader2,
   Minus,
@@ -67,7 +67,6 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
   // ── Submission state ──────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
   const minDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 21); return d.toISOString().split('T')[0] })()
@@ -83,8 +82,10 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
   }
 
   async function handleSubmit() {
-    setError(null)
-    setIsSubmitting(true)
+    flushSync(() => {
+      setError(null)
+      setIsSubmitting(true)
+    })
 
     try {
       const petData: CreatePetRequest = {
@@ -113,37 +114,12 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
       }
 
       onSuccess?.()
-      setSuccess(true)
+      onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  // ── Success screen ────────────────────────────────────────────────────
-  if (success) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8 text-center">
-          <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4">
-            <CheckCircle2 className="w-10 h-10 text-primary" />
-          </div>
-          <h2 className="font-heading text-2xl font-bold mb-2">
-            {name} is on Barkfest!
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Your pet has been added successfully.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    )
   }
 
   // ── Dialog ────────────────────────────────────────────────────────────

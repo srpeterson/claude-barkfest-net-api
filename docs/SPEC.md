@@ -67,9 +67,9 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/v1/auth/register` | Register a new owner |
-| `POST` | `/v1/auth/login` | Owner login — sets HttpOnly auth cookie |
-| `POST` | `/v1/auth/admin/login` | Admin login — sets HttpOnly auth cookie |
-| `POST` | `/v1/auth/logout` | Clear auth cookie (no auth required) |
+| `POST` | `/v1/auth/login` | Owner login — returns JWT access token |
+| `POST` | `/v1/auth/admin/login` | Admin login — returns JWT access token |
+| `POST` | `/v1/auth/logout` | Logout (no auth required) |
 | `GET` | `/v1/owners/{id}` | Get owner by ID |
 | `PUT` | `/v1/owners/{id}` | Update owner |
 | `DELETE` | `/v1/owners/{id}` | Delete owner |
@@ -105,8 +105,13 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 The `barkfest-ui` React SPA provides:
 
 - **Home page** — browse pet images, filter by pet type and breed, paginated
-- **Login modal** — username + password; admin checkbox (currently disabled; admin login available via Scalar)
-- **Register modal** — full registration form with password strength meter and confirm password field
-- **Navbar** — three states: unauthenticated (Sign In), owner (Post a Pet + Sign Out), admin (label + Sign Out)
+- **Login dialog** — username + password; admin checkbox hidden (admin login available via Scalar)
+- **Register dialog** — full registration form with display name availability check, password strength meter, and confirm password
+- **Add Pet dialog** — two-step flow: pet details then image upload; closes immediately on success
+- **Update Owner Profile dialog** — two-step flow: personal info then profile photo; closes immediately on success
+- **Navbar** — three states:
+  - Unauthenticated: Sign In + Join the Barkfest
+  - Owner: Post a Pet + round avatar (profile photo or placeholder; opens Update Owner Profile dialog) + Sign Out
+  - Admin: "Logged in as Administrator" label + Sign Out
 - **Protected routes** — owner-only; unauthenticated users are redirected to the home page and prompted to log in
 - **401 interception** — any expired token automatically signs the user out and re-prompts login

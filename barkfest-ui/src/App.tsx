@@ -4,14 +4,14 @@ import { OwnersPage }      from '@/features/owners/OwnersPage'
 import { PetsPage }        from '@/features/pets/PetsPage'
 import { ShellLayout }     from '@/layouts/ShellLayout'
 import { ProtectedRoute }  from '@/components/ProtectedRoute'
-import { LoginModal }      from '@/components/LoginModal'
-import { RegisterModal }   from '@/components/RegisterModal'
+import { LoginDialog }     from '@/components/LoginDialog'
+import { RegisterDialog }  from '@/components/RegisterDialog'
 import { HomePage }        from '@/pages/HomePage'
 import { useAuth }         from '@/hooks/useAuth'
 import { setAuthToken, setUnauthorizedHandler } from '@/lib/api'
 
 export function App() {
-  const { token, signOut, openLoginModal } = useAuth()
+  const { token, signOut, openLoginDialog } = useAuth()
 
   // Keep the api module's token in sync with auth state
   useEffect(() => {
@@ -22,9 +22,9 @@ export function App() {
     setUnauthorizedHandler(() => {
       setAuthToken(null)
       signOut()
-      openLoginModal()
+      openLoginDialog()
     })
-  }, [signOut, openLoginModal])
+  }, [signOut, openLoginDialog])
 
   return (
     <>
@@ -41,9 +41,9 @@ export function App() {
         </Route>
       </Routes>
 
-      {/* Auth modals — rendered over any page */}
-      <LoginModal />
-      <RegisterModal />
+      {/* Auth dialogs — rendered over any page */}
+      <LoginDialog />
+      <RegisterDialog />
     </>
   )
 }
