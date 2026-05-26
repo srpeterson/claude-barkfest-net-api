@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { adminLogin, login } from '@/lib/api'
+import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
 
 export function LoginDialog() {
   const { dialog, closeDialog, openRegisterDialog, signIn } = useAuth()
@@ -33,7 +33,19 @@ export function LoginDialog() {
       const result = isAdmin
         ? await adminLogin(username, password)
         : await login(username, password)
-      signIn(result.accountId, isAdmin ? 'admin' : 'owner', result.accessToken)
+
+      let profileImageBlobName: string | null = null
+      if (!isAdmin) {
+        try {
+          setAuthToken(result.accessToken)
+          const owner = await getOwnerById(result.accountId)
+          profileImageBlobName = owner.profileImage?.blobName ?? null
+        } catch {
+          // Non-fatal — proceed with null profile image
+        }
+      }
+
+      signIn(result.accountId, isAdmin ? 'admin' : 'owner', result.accessToken, profileImageBlobName)
       closeDialog()
     } catch {
       setError('Invalid username or password.')
@@ -108,7 +120,8 @@ export function LoginDialog() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          {/* Hidden until admin UI is part of the MVP — remove `hidden` to restore */}
+          <label className="hidden flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={isAdmin}

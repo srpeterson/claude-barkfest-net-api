@@ -1,8 +1,9 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import isEmail from 'validator/lib/isEmail'
 import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
 import { useAuth } from '@/hooks/useAuth'
-import { ApiError, checkDisplayName, login, register } from '@/lib/api'
+import { ApiError, checkDisplayName, getOwnerById, login, register, setAuthToken } from '@/lib/api'
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
 const STRENGTH_COLORS = [
@@ -33,8 +34,9 @@ export function RegisterDialog() {
   const strength = zxcvbn(form.password)
   const displayNameStripped = form.displayName.replace(/\s/g, '')
   const displayNameTooShort = displayNameStripped.length > 0 && displayNameStripped.length < 4
+  const emailInvalid = form.email.trim() !== '' && !isEmail(form.email.trim())
   const allFieldsFilled = form.firstName.trim() !== '' && form.lastName.trim() !== '' &&
-    form.email.trim() !== '' && form.username.trim() !== '' && form.displayName.trim() !== '' &&
+    form.email.trim() !== '' && !emailInvalid && form.username.trim() !== '' && form.displayName.trim() !== '' &&
     form.password !== '' && form.confirmPassword !== ''
   const passwordMismatch = form.confirmPassword !== '' && form.password !== form.confirmPassword
   const passwordTooWeak = form.password.length > 0 && strength.score < 2
@@ -96,7 +98,17 @@ export function RegisterDialog() {
         displayName: form.displayName.trim(),
       })
       const result = await login(form.username, form.password)
-      signIn(result.accountId, 'owner', result.accessToken)
+
+      let profileImageBlobName: string | null = null
+      try {
+        setAuthToken(result.accessToken)
+        const owner = await getOwnerById(result.accountId)
+        profileImageBlobName = owner.profileImage?.blobName ?? null
+      } catch {
+        // Non-fatal — new owner will always have null profile image
+      }
+
+      signIn(result.accountId, 'owner', result.accessToken, profileImageBlobName)
       closeDialog()
     } catch (err) {
       if (err instanceof ApiError && err.status < 500) {
@@ -138,7 +150,12 @@ export function RegisterDialog() {
             <DialogField label="Last name" id="reg-lastName" name="lastName" autoComplete="family-name" placeholder="Doe" required maxLength={50} value={form.lastName} onChange={handleChange} />
           </div>
 
-          <DialogField label="Email" id="reg-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={75} value={form.email} onChange={handleChange} />
+          <div className="space-y-1">
+            <DialogField label="Email" id="reg-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={75} value={form.email} onChange={handleChange} />
+            {emailInvalid && (
+              <p className="text-xs text-destructive">Must be a valid email address.</p>
+            )}
+          </div>
 
           <DialogField label="Username" id="reg-username" name="username" autoComplete="username" placeholder="Pick a username" required maxLength={25} value={form.username} onChange={handleChange} />
 

@@ -7,7 +7,7 @@ public sealed class DogBreed : SmartEnum<DogBreed>
     public static readonly DogBreed FrenchBulldog            = new("French Bulldog", 1);
     public static readonly DogBreed LabradorRetriever         = new("Labrador Retriever", 2);
     public static readonly DogBreed GoldenRetriever           = new("Golden Retriever", 3);
-    public static readonly DogBreed GermanShepherdDog         = new("German Shepherd Dog", 4);
+    public static readonly DogBreed GermanShepherdDog         = new("German Shepherd", 4);
     public static readonly DogBreed Dachshund                 = new("Dachshund", 5);
     public static readonly DogBreed Poodle                    = new("Poodle", 6);
     public static readonly DogBreed Beagle                    = new("Beagle", 7);

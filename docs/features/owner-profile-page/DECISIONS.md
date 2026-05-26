@@ -62,3 +62,30 @@ Discovered during Q&A that `DeletePetCommand` and `BatchDeletePetImagesCommand` 
 delete Azure blobs when removing pets or pet images. Fixed in this branch before building
 the profile dialog — `RemovePetImageCommand` and `RemoveOwnerProfileImageCommand` were
 already correct.
+
+---
+
+## D8 — No success screen; dialog closes immediately on save
+
+Both `UpdateOwnerProfileDialog` and `AddPetDialog` previously showed an intermediate
+success screen for ~1.5 seconds before closing. This was removed in favour of closing
+the dialog immediately when the save completes. The "Saving…" / "Making it official…"
+spinner state on the submit button is the only loading feedback — sufficient for actions
+that complete in under a second.
+
+---
+
+## D9 — flushSync used before async submit handlers
+
+React 18's automatic batching can delay a `setIsSubmitting(true)` render until after a
+fast localhost API response has already returned, making the spinner invisible. Both
+submit handlers use `flushSync(() => { setIsSubmitting(true); ... })` to force a
+synchronous DOM update before the first `await`. This ensures the spinner is always
+visible regardless of how fast the server responds.
+
+---
+
+## D10 — "German Shepherd Dog" renamed to "German Shepherd" in DogBreed enum
+
+The display string in `DogBreed.GermanShepherdDog` was shortened to "German Shepherd".
+The C# field name is unchanged to avoid breaking references across the codebase.

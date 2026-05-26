@@ -31,28 +31,32 @@ full management page.
 
 ---
 
-## 2. Owner Profile Page
+## 2. Owner Profile Dialog
 
 **Priority:** High
-**Status:** Not started
+**Status:** Complete — smoke tested, pending PR
 
 ### What
-A dedicated page where an authenticated owner can manage their own account:
-- Update personal info (first name, last name, email, phone number)
-- Change their password (current password required to confirm identity)
-- Upload or remove their profile image
+A two-step modal dialog (`UpdateOwnerProfileDialog`) that lets an authenticated owner
+manage their own account without leaving the current page:
+- Step 1 — Update personal info: first name, last name, email, display name
+  (username is shown as a read-only info line — it cannot be changed)
+- Step 2 — Upload or remove their profile photo
+- Profile photo appears as a round avatar in the Navbar immediately after save or login
 
 ### Why
-Owners currently have no self-service way to update their account after registration. This is a basic expectation of any account-based application.
+Owners currently have no self-service way to update their account after registration.
+This is a basic expectation of any account-based application.
 
-### Approach (high level)
-- New route: `/profile` — protected, owner only
-- `GET /v1/owners/{id}` — load current owner info
-- `PUT /v1/owners/{id}` — update personal info
-- `POST /v1/owners/{id}/change-password` — requires current password + new password
-- `POST /v1/owners/{id}/profile-image` — upload profile image
-- `DELETE /v1/owners/{id}/profile-image` — remove profile image
-- UI: form with inline editing, profile image upload with preview
+### Approach (as built)
+- Two-step dialog opened from the Navbar avatar button — no dedicated route
+- Step 1 pre-fills all fields from `GET /v1/owners/{id}` on open
+- Display name availability check fires only when the value has changed from the saved value
+- Step 2 pre-loads the existing profile photo if one is set
+- On save: `PUT /v1/owners/{id}` always; then upload/remove image if changed
+- Profile image blob name stored in `AuthContext` + `sessionStorage` for instant Navbar avatar
+- Dialog closes immediately on success — no intermediate success screen
+- Password change excluded — see item 18
 
 ---
 
@@ -578,3 +582,51 @@ to swap out the history record rather than drop and recreate the database:
 After all planned pre-launch features are merged to `main` and the schema is considered
 stable. Do not do this while active feature branches exist that depend on the current
 migration history.
+
+---
+
+## 19. Update Pet Dialog
+
+**Priority:** High
+**Status:** Not started
+
+### What
+A dialog that allows an authenticated owner to edit an existing pet's details and manage
+its gallery images:
+- Update pet info (name, breed, date of birth, description)
+- Add new images to the gallery (up to `Pet.MaxImages` total)
+- Remove existing images
+- Change the featured image
+
+### Why
+Owners can currently add pets but have no way to correct mistakes or update information
+after the fact. A clean edit flow is essential before the app goes public.
+
+### Approach (high level)
+- Pre-fill all fields with the pet's current data on open (same pattern as `UpdateOwnerProfileDialog`)
+- Re-use `PetTypeBreedSelector` for breed selection
+- Image management: show existing images with remove buttons, allow adding new ones up to the limit
+- `PUT /v1/pets/{id}` — update pet info
+- `POST /v1/pets/{id}/images` — add new images
+- `DELETE /v1/pets/{id}/images/{imageId}` — remove individual images
+- `PUT /v1/pets/{id}/images/{imageId}/featured` — change featured image
+
+---
+
+## 20. Styled Authenticated Navbar
+
+**Priority:** High
+**Status:** Not started
+
+### What
+Re-style the Navbar for authenticated owners to give it a polished, on-brand look that
+goes beyond the current minimal layout.
+
+### Why
+The authenticated state of the Navbar currently has the same basic layout as the public
+state. As owner features grow (profile, pets, etc.) the Navbar needs a more intentional
+design that reflects the owner's logged-in experience.
+
+### Approach (high level)
+- Design to be agreed during the feature session
+- Consider: dropdown menu from the avatar, navigation links, notification indicators

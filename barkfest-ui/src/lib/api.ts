@@ -1,5 +1,6 @@
 import type { BrowseImageDto, PagedResult } from '@/types/browse'
 import type { AddPetImagesResult, CreatePetRequest } from '@/types/pet'
+import type { OwnerDto, UpdateOwnerRequest } from '@/types/owner'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -225,4 +226,27 @@ export function addPetImages(petId: string, files: File[]): Promise<AddPetImages
 // PUT /v1/pets/{id}/images/{imageId}/featured
 export function setFeaturedImage(petId: string, imageId: string): Promise<void> {
   return request<void>(`/v1/pets/${petId}/images/${imageId}/featured`, { method: 'PUT' })
+}
+
+// ── Owner API ─────────────────────────────────────────────────────────────
+
+export function getOwnerById(id: string): Promise<OwnerDto> {
+  return request<OwnerDto>(`/v1/owners/${id}`)
+}
+
+export function updateOwner(id: string, data: UpdateOwnerRequest): Promise<void> {
+  return request<void>(`/v1/owners/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function uploadOwnerProfileImage(id: string, file: File): Promise<void> {
+  const form = new FormData()
+  form.append('file', file)
+  return requestMultipart<void>(`/v1/owners/${id}/profile-image`, form)
+}
+
+export function removeOwnerProfileImage(id: string): Promise<void> {
+  return request<void>(`/v1/owners/${id}/profile-image`, { method: 'DELETE' })
 }
