@@ -147,20 +147,10 @@ public class PetRepositoryTests(DatabaseFixture fixture)
 
     private static Pet BuildPet(Guid ownerId, string name, PetType petType)
     {
-        Breed breed;
-        if (petType == PetType.Dog)
-        {
-            var dogBreed = new DogBreedInfo();
-            dogBreed.SetDogBreed(DogBreed.Beagle);
-            breed = dogBreed;
-        }
-        else
-        {
-            var catBreed = new CatBreedInfo();
-            catBreed.SetCatBreed(CatBreed.Siamese);
-            breed = catBreed;
-        }
+        var breedValue = petType == PetType.Dog
+            ? DogBreed.Beagle.Value
+            : CatBreed.Siamese.Value;
 
-        return Pet.Create(ownerId, name, petType, breed);
+        return Pet.Create(ownerId, name, petType, breedValue);
     }
 }

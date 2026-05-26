@@ -33,21 +33,11 @@ public class CreatePetCommandHandler(
 
         var petType = PetType.FromName(request.PetType);
 
-        Breed breed;
-        if (petType == PetType.Dog)
-        {
-            var dogBreedInfo = new DogBreedInfo();
-            dogBreedInfo.SetDogBreed(DogBreed.FromName(request.Breed));
-            breed = dogBreedInfo;
-        }
-        else
-        {
-            var catBreedInfo = new CatBreedInfo();
-            catBreedInfo.SetCatBreed(CatBreed.FromName(request.Breed));
-            breed = catBreedInfo;
-        }
+        var breedValue = petType == PetType.Dog
+            ? DogBreed.FromName(request.Breed).Value
+            : CatBreed.FromName(request.Breed).Value;
 
-        var pet = Pet.Create(ownerId, request.Name, petType, breed, request.Description, request.DateOfBirth);
+        var pet = Pet.Create(ownerId, request.Name, petType, breedValue, request.Description, request.DateOfBirth);
 
         await petRepository.AddAsync(pet, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

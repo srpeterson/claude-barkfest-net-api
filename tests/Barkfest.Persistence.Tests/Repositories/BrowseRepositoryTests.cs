@@ -128,8 +128,8 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
     public async Task GetBrowseImagesAsync_When_PetTypeFilterApplied_Returns_OnlyMatchingType()
     {
         var owner = await SeedOwnerAsync();
-        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "DogPet", PetType.Dog, BuildDogBreed(DogBreed.Beagle)));
-        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "CatPet", PetType.Cat, BuildCatBreed(CatBreed.Persian)));
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "DogPet", PetType.Dog, DogBreed.Beagle.Value));
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "CatPet", PetType.Cat, CatBreed.Persian.Value));
         await _context.SaveChangesAsync();
 
         var result = await _browseRepository.GetBrowseImagesAsync(
@@ -147,8 +147,8 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
     public async Task GetBrowseImagesAsync_When_BreedFilterApplied_Returns_OnlyMatchingBreed()
     {
         var owner = await SeedOwnerAsync();
-        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "BeaglePet",    PetType.Dog, BuildDogBreed(DogBreed.Beagle)));
-        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "LabradorPet",  PetType.Dog, BuildDogBreed(DogBreed.LabradorRetriever)));
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "BeaglePet",    PetType.Dog, DogBreed.Beagle.Value));
+        _context.Pets.Add(BuildPetWithFeaturedImage(owner.Id, "LabradorPet",  PetType.Dog, DogBreed.LabradorRetriever.Value));
         await _context.SaveChangesAsync();
 
         var result = await _browseRepository.GetBrowseImagesAsync(
@@ -190,32 +190,18 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
     }
 
     private static Pet BuildPetWithFeaturedImage(Guid ownerId, string name)
-        => BuildPetWithFeaturedImage(ownerId, name, PetType.Dog, BuildDogBreed(DogBreed.Beagle));
+        => BuildPetWithFeaturedImage(ownerId, name, PetType.Dog, DogBreed.Beagle.Value);
 
-    private static Pet BuildPetWithFeaturedImage(Guid ownerId, string name, PetType petType, Breed breed)
+    private static Pet BuildPetWithFeaturedImage(Guid ownerId, string name, PetType petType, int breedValue)
     {
-        var pet   = Pet.Create(ownerId, name, petType, breed);
+        var pet   = Pet.Create(ownerId, name, petType, breedValue);
         var image = BuildImage($"pets/{ownerId}/gallery/{Guid.NewGuid()}.jpg", isFeatured: true);
         pet.AddImage(image);
         return pet;
     }
 
     private static Pet BuildPet(Guid ownerId, string name)
-        => Pet.Create(ownerId, name, PetType.Dog, BuildDogBreed(DogBreed.Beagle));
-
-    private static DogBreedInfo BuildDogBreed(DogBreed dogBreed)
-    {
-        var breed = new DogBreedInfo();
-        breed.SetDogBreed(dogBreed);
-        return breed;
-    }
-
-    private static CatBreedInfo BuildCatBreed(CatBreed catBreed)
-    {
-        var breed = new CatBreedInfo();
-        breed.SetCatBreed(catBreed);
-        return breed;
-    }
+        => Pet.Create(ownerId, name, PetType.Dog, DogBreed.Beagle.Value);
 
     private static PetImage BuildImage(string blobName, bool isFeatured)
     {

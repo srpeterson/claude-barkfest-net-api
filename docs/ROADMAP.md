@@ -504,3 +504,54 @@ Azurite emulator ports. The GitHub issue tracker for `dotnet/aspire` is the righ
 to watch. Once the DCP honours the port parameter, the simplest fix would be to restore
 hardcoded defaults in `AppHost.cs` (no User Secrets needed for a purely local-dev
 convenience feature).
+
+---
+
+## 17. Consolidate Migrations into a Single InitialCreate
+
+**Priority:** High — must be done before the app goes public
+**Status:** Not started — to be done once all pre-launch features are complete
+
+### What
+Replace all accumulated EF Core migrations with a single clean `InitialCreate` migration
+that represents the final production schema. This gives the codebase a clean baseline
+with no incremental history of schema experiments and refactors.
+
+### Why
+The current migration history includes scaffolding artefacts and design changes (e.g. the
+Breeds table refactor) that have no value once the schema is stable. A single `InitialCreate`
+is easier to reason about, faster to apply on a fresh database, and removes noise from the
+migration history that new developers would otherwise have to read through.
+
+### Local dev steps
+1. Stop Aspire and delete the persistent SQL Server volume (`barkfest-sql-data`) so the
+   local container starts fresh
+2. Delete all files under `src/Barkfest.Persistence/Migrations/`
+3. Run `dotnet ef migrations add InitialCreate --project src/Barkfest.Persistence --startup-project src/Barkfest.Persistence`
+4. Start Aspire — `MigrateAsync()` applies the single migration to the fresh database
+5. Run the full test suite to confirm everything still works
+
+### Azure steps (existing deployed database)
+The Azure database already has the full schema applied via the accumulated migrations.
+Since the schema itself is not changing — only the migration history — the approach is
+to swap out the history record rather than drop and recreate the database:
+
+1. **Deploy the app with the new single migration** — `MigrateAsync()` will fail on startup
+   because the existing `__EFMigrationsHistory` table contains the old migration names and
+   does not contain `InitialCreate`
+2. **Before deploying:** manually clear and repopulate `__EFMigrationsHistory` on the Azure
+   database via a one-time SQL script run in the Azure portal query editor:
+   ```sql
+   DELETE FROM [__EFMigrationsHistory];
+   INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+   VALUES ('<timestamp>_InitialCreate', '<ef-version>');
+   ```
+   where `<timestamp>` matches the generated migration file name and `<ef-version>` matches
+   the version in the existing history rows
+3. Deploy — `MigrateAsync()` sees `InitialCreate` already applied and skips it; the app
+   starts normally with the existing data intact
+
+### When to do this
+After all planned pre-launch features are merged to `main` and the schema is considered
+stable. Do not do this while active feature branches exist that depend on the current
+migration history.

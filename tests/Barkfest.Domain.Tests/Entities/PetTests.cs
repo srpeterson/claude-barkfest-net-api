@@ -166,61 +166,46 @@ public class PetTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetBreed_When_Null_Throws_DomainException()
+    public void SetBreed_When_DogBreedValueAndTypeIsDog_Sets_BreedValue()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Dog);
 
-        Should.Throw<DomainException>(() => pet.SetBreed(null!))
-            .Message.ShouldBe("Breed is required.");
+        pet.SetBreed(DogBreed.GoldenRetriever.Value);
+
+        pet.BreedValue.ShouldBe(DogBreed.GoldenRetriever.Value);
     }
 
     [Fact]
-    public void SetBreed_When_DogBreedAndTypeIsDog_Sets_Breed()
-    {
-        var pet = BuildPet();
-        pet.SetPetType(PetType.Dog);
-        var dogBreed = new DogBreedInfo();
-        dogBreed.SetDogBreed(DogBreed.GoldenRetriever);
-
-        pet.SetBreed(dogBreed);
-
-        pet.Breed.ShouldBe(dogBreed);
-    }
-
-    [Fact]
-    public void SetBreed_When_CatBreedAndTypeIsDog_Throws_DomainException()
-    {
-        var pet = BuildPet();
-        pet.SetPetType(PetType.Dog);
-        var catBreed = new CatBreedInfo();
-
-        Should.Throw<DomainException>(() => pet.SetBreed(catBreed))
-            .Message.ShouldBe("Dog pet type requires a dog breed.");
-    }
-
-    [Fact]
-    public void SetBreed_When_CatBreedAndTypeIsCat_Sets_Breed()
+    public void SetBreed_When_CatBreedValueAndTypeIsCat_Sets_BreedValue()
     {
         var pet = BuildPet();
         pet.SetPetType(PetType.Cat);
-        var catBreed = new CatBreedInfo();
-        catBreed.SetCatBreed(CatBreed.Siamese);
 
-        pet.SetBreed(catBreed);
+        pet.SetBreed(CatBreed.Siamese.Value);
 
-        pet.Breed.ShouldBe(catBreed);
+        pet.BreedValue.ShouldBe(CatBreed.Siamese.Value);
     }
 
     [Fact]
-    public void SetBreed_When_DogBreedAndTypeIsCat_Throws_DomainException()
+    public void SetBreed_When_DogOnlyBreedValueAndTypeIsCat_Throws_DomainException()
     {
+        // DogBreed.SaintBernard = 31, which is beyond CatBreed's range of 29 values.
         var pet = BuildPet();
         pet.SetPetType(PetType.Cat);
-        var dogBreed = new DogBreedInfo();
 
-        Should.Throw<DomainException>(() => pet.SetBreed(dogBreed))
-            .Message.ShouldBe("Cat pet type requires a cat breed.");
+        Should.Throw<DomainException>(() => pet.SetBreed(DogBreed.SaintBernard.Value))
+            .Message.ShouldBe("Invalid cat breed value.");
+    }
+
+    [Fact]
+    public void SetBreed_When_InvalidValue_Throws_DomainException()
+    {
+        var pet = BuildPet();
+        pet.SetPetType(PetType.Dog);
+
+        Should.Throw<DomainException>(() => pet.SetBreed(9999))
+            .Message.ShouldBe("Invalid dog breed value.");
     }
 
     // -----------------------------------------------------------------------
