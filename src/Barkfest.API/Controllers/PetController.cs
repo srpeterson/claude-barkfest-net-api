@@ -1,7 +1,9 @@
 using Barkfest.Application.Features.Pets.Commands.AddPetImages;
 using Barkfest.Application.Features.Pets.Commands.BatchDeletePetImages;
 using Barkfest.Application.Features.Pets.Commands.CreatePet;
+using Barkfest.Application.Features.Pets.Commands.DecrementPetLikes;
 using Barkfest.Application.Features.Pets.Commands.DeletePet;
+using Barkfest.Application.Features.Pets.Commands.IncrementPetLikes;
 using Barkfest.Application.Features.Pets.Commands.RemovePetImage;
 using Barkfest.Application.Features.Pets.Commands.SetFeaturedImage;
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
@@ -18,6 +20,7 @@ namespace Barkfest.API.Controllers;
 public class PetController(IMediator mediator) : ControllerBase
 {
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var pet = await mediator.Send(new GetPetByIdQuery(id), cancellationToken);
@@ -89,6 +92,22 @@ public class PetController(IMediator mediator) : ControllerBase
     {
         await mediator.Send(new RemovePetImageCommand(id, imageId), cancellationToken);
         return NoContent();
+    }
+
+    [HttpPost("{id:guid}/likes")]
+    [AllowAnonymous]
+    public async Task<IActionResult> IncrementLikes(Guid id, CancellationToken cancellationToken)
+    {
+        var likes = await mediator.Send(new IncrementPetLikesCommand(id), cancellationToken);
+        return Ok(likes);
+    }
+
+    [HttpDelete("{id:guid}/likes")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DecrementLikes(Guid id, CancellationToken cancellationToken)
+    {
+        var likes = await mediator.Send(new DecrementPetLikesCommand(id), cancellationToken);
+        return Ok(likes);
     }
 }
 

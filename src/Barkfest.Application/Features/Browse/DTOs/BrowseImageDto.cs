@@ -13,4 +13,6 @@ public record BrowseImageDto(
     DateOnly? DateOfBirth,
     int? Age,
     string PetType,
-    string? Breed);
+    string? Breed,
+    int Likes,
+    Guid OwnerId);

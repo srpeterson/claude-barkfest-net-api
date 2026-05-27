@@ -18,7 +18,8 @@ public static class PetMappings
             : CatBreed.FromValue(pet.BreedValue).Name,
         pet.Images.Select(i => new PetImageDto(i.Id, i.BlobName, i.ContentType, i.DisplayOrder, i.IsFeaturedImage, i.CreatedAt)).ToList().AsReadOnly(),
         pet.OwnerId,
-        pet.CreatedAt);
+        pet.CreatedAt,
+        pet.Likes);
 
     public static IEnumerable<PetDto> ToDtoList(this IEnumerable<Pet> pets) =>
         pets.Select(p => p.ToDto());

@@ -73,11 +73,11 @@ public class PetsControllerTests(BarkfestApiFactory factory)
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task GetById_When_Unauthenticated_Returns_Unauthorized()
+    public async Task GetById_When_Unauthenticated_Returns_NotFound()
     {
         var response = await _unauthenticatedClient.GetAsync($"/v1/pets/{Guid.NewGuid()}");
 
-        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -310,6 +310,70 @@ public class PetsControllerTests(BarkfestApiFactory factory)
         var response = await client.PutAsync($"/v1/pets/{petId}/images/{Guid.NewGuid()}/featured", null);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // -----------------------------------------------------------------------
+    // POST /v1/pets/{id}/likes
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task IncrementLikes_When_PetExists_Returns_Ok_WithNewCount()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+
+        var response = await _unauthenticatedClient.PostAsync($"/v1/pets/{petId}/likes", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var count = await response.Content.ReadFromJsonAsync<int>();
+        count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task IncrementLikes_When_PetNotFound_Returns_NotFound()
+    {
+        var response = await _unauthenticatedClient.PostAsync($"/v1/pets/{Guid.NewGuid()}/likes", null);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    // -----------------------------------------------------------------------
+    // DELETE /v1/pets/{id}/likes
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task DecrementLikes_When_PetExists_Returns_Ok_WithNewCount()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+        await _unauthenticatedClient.PostAsync($"/v1/pets/{petId}/likes", null);
+
+        var response = await _unauthenticatedClient.DeleteAsync($"/v1/pets/{petId}/likes");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var count = await response.Content.ReadFromJsonAsync<int>();
+        count.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task DecrementLikes_When_LikesIsZero_Returns_Ok_WithZero()
+    {
+        var (client, _) = await RegisterAndGetClient();
+        var petId = await CreatePet(client, "Buddy");
+
+        var response = await _unauthenticatedClient.DeleteAsync($"/v1/pets/{petId}/likes");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var count = await response.Content.ReadFromJsonAsync<int>();
+        count.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task DecrementLikes_When_PetNotFound_Returns_NotFound()
+    {
+        var response = await _unauthenticatedClient.DeleteAsync($"/v1/pets/{Guid.NewGuid()}/likes");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     // -----------------------------------------------------------------------

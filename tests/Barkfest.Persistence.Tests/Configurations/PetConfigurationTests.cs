@@ -138,4 +138,24 @@ public class PetConfigurationTests
         fk.DeleteBehavior.ShouldBe(DeleteBehavior.Cascade);
     }
 
+    // -----------------------------------------------------------------------
+    // Likes
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Likes_IsRequired()
+    {
+        _pet.FindProperty(nameof(Pet.Likes))!
+            .IsNullable
+            .ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Likes_HasDefaultValueOfZero()
+    {
+        _pet.FindProperty(nameof(Pet.Likes))!
+            .GetDefaultValue()
+            .ShouldBe(0);
+    }
+
 }
