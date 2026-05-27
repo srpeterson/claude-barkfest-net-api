@@ -10,4 +10,5 @@ public record PetDto(
     string? Breed,
     IReadOnlyCollection<PetImageDto> Images,
     Guid OwnerId,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    int Likes);

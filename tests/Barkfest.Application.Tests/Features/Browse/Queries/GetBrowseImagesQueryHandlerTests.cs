@@ -30,9 +30,9 @@ public class GetBrowseImagesQueryHandlerTests
         var images = new[]
         {
             new BrowseImageDto(Guid.NewGuid(), "pets/1/img.jpg", "image/jpeg", true, DateTime.UtcNow,
-                "Alice Adams", Guid.NewGuid(), "Buddy", null, null, null, "Dog", null),
+                "Alice Adams", Guid.NewGuid(), "Buddy", null, null, null, "Dog", null, 0, Guid.NewGuid()),
             new BrowseImageDto(Guid.NewGuid(), "pets/2/img.jpg", "image/jpeg", true, DateTime.UtcNow,
-                "Bob Baker", Guid.NewGuid(), "Whiskers", null, null, null, "Cat", null)
+                "Bob Baker", Guid.NewGuid(), "Whiskers", null, null, null, "Cat", null, 0, Guid.NewGuid())
         };
         var pagedResult = new PagedResult<BrowseImageDto>(images, DefaultPage, DefaultPageSize, 2);
 

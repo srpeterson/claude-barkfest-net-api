@@ -413,4 +413,39 @@ public class PetTests
         pet.OwnerId.ShouldBe(ownerId);
     }
 
+    // -----------------------------------------------------------------------
+    // IncrementLikes / DecrementLikes
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void IncrementLikes_When_Called_Returns_IncrementedCount()
+    {
+        var pet = BuildPet();
+
+        pet.IncrementLikes();
+
+        pet.Likes.ShouldBe(1);
+    }
+
+    [Fact]
+    public void DecrementLikes_When_LikesIsGreaterThanZero_Returns_DecrementedCount()
+    {
+        var pet = BuildPet();
+        pet.IncrementLikes();
+
+        pet.DecrementLikes();
+
+        pet.Likes.ShouldBe(0);
+    }
+
+    [Fact]
+    public void DecrementLikes_When_LikesIsZero_Returns_Zero()
+    {
+        var pet = BuildPet();
+
+        pet.DecrementLikes();
+
+        pet.Likes.ShouldBe(0);
+    }
+
 }

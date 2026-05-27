@@ -16,6 +16,7 @@ public class Pet
     public DateOnly? DateOfBirth { get; private set; }
     public PetType PetType { get; private set; } = null!;
     public int BreedValue { get; private set; }
+    public int Likes { get; private set; }
     public IReadOnlyCollection<PetImage> Images => _images.AsReadOnly();
     public PetImage? FeaturedImage => _images.FirstOrDefault(i => i.IsFeaturedImage);
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
@@ -122,6 +123,14 @@ public class Pet
             throw new DomainException("Image not found.");
 
         _images.Remove(image);
+    }
+
+    public void IncrementLikes() => Likes++;
+
+    public void DecrementLikes()
+    {
+        if (Likes > 0)
+            Likes--;
     }
 
     public void RemoveImages(IReadOnlyList<Guid> petImageIds)

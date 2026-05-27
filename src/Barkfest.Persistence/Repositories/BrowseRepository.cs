@@ -56,5 +56,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         pi.Pet.PetType.Name,
         pi.Pet.PetType == PetType.Dog
             ? DogBreed.FromValue(pi.Pet.BreedValue).Name
-            : CatBreed.FromValue(pi.Pet.BreedValue).Name);
+            : CatBreed.FromValue(pi.Pet.BreedValue).Name,
+        pi.Pet.Likes,
+        pi.Pet.OwnerId);
 }

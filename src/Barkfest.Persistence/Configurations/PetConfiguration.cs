@@ -35,6 +35,10 @@ public class PetConfiguration : IEntityTypeConfiguration<Pet>
             .HasColumnName("Breed")
             .IsRequired();
 
+        builder.Property(p => p.Likes)
+            .IsRequired()
+            .HasDefaultValue(0);
+
         builder.Ignore(p => p.Age);
         builder.Ignore(p => p.FeaturedImage);
 
