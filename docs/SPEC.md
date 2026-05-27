@@ -83,6 +83,8 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 | `DELETE` | `/v1/pets/{id}/images/{imageId}` | Remove single image |
 | `POST` | `/v1/pets/{id}/images/batch-delete` | Batch delete images (atomic) |
 | `PUT` | `/v1/pets/{id}/images/{imageId}/featured` | Set featured image |
+| `POST` | `/v1/pets/{id}/likes` | Increment pet likes by 1 (public) |
+| `DELETE` | `/v1/pets/{id}/likes` | Decrement pet likes by 1, floors at 0 (public) |
 | `GET` | `/v1/browse/images` | Browse all pet images (public, paginated) |
 | `GET` | `/v1/browse/pet-types` | List available pet types (public) |
 | `GET` | `/v1/browse/breeds?petTypeValue=` | List breeds for a pet type (public) |
@@ -94,7 +96,8 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 - Pet age is computed from date of birth at runtime — never stored
 - Date of birth is optional; the UI may back-calculate it from an age the owner enters
 - Breed is required and must match pet type (Dog → dog breed, Cat → cat breed)
-- All resource endpoints require a valid owner JWT; ownership enforced in handlers
+- Most resource endpoints require a valid owner JWT; ownership enforced in handlers
+- `GET /v1/pets/{id}`, `POST /v1/pets/{id}/likes`, `DELETE /v1/pets/{id}/likes`, and all `GET /v1/browse/*` endpoints are public (no JWT required)
 - `GET /v1/owners` and `GET /v1/admin/admins` require an admin JWT
 - Passwords: minimum 10 characters, maximum 72 characters (BCrypt limit); no mandatory complexity rules
 - Owner login uses `Username` + password; `Email` is a contact field only

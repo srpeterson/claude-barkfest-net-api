@@ -320,6 +320,7 @@ validators, tests, EF Core configuration.
 - `PetType` — required SmartEnum; only `Dog` (1) and `Cat` (2) are valid values
 - `Breed` — required; must match `PetType`: Dog → `DogBreedInfo`, Cat → `CatBreedInfo`; "Other" is a valid breed name within each species (same as any named breed)
 - `Images` — maximum `Pet.MaxImages` (6) images total; any one can be designated `IsFeaturedImage = true`; only one may be featured at a time; the UI enforces a minimum of 1 image at creation — the API does not enforce this at the endpoint level
+- `Likes` — integer, default `0`, never negative; incremented via `POST /v1/pets/{id}/likes`, decremented via `DELETE /v1/pets/{id}/likes`; both endpoints are public (`[AllowAnonymous]`); decrement silently floors at zero — no exception; the API is intentionally dumb (no uniqueness enforcement); the UI owns liked state via localStorage
 
 ### Images (applies to all image uploads across the entire application)
 - Allowed content types: `image/jpeg`, `image/jpg`, `image/png`
@@ -345,7 +346,10 @@ validators, tests, EF Core configuration.
 ### Authorization
 - `GET /v1/owners` — lists all owners; admin JWT required (throws `ForbiddenException` for non-admins)
 - `GET /v1/admin/admins` — lists all administrators; admin JWT required (throws `ForbiddenException` for non-admins)
-- All other owner and pet endpoints require a valid owner JWT; ownership enforced in handlers
+- `GET /v1/pets/{id}` — public (`[AllowAnonymous]`); used by the public Pet Details page
+- `POST /v1/pets/{id}/likes` and `DELETE /v1/pets/{id}/likes` — public (`[AllowAnonymous]`)
+- `GET /v1/browse/*` — public (`[AllowAnonymous]`)
+- All other pet and owner endpoints require a valid owner JWT; ownership enforced in handlers
 
 ### Profile Images
 - `Owner` has an optional profile image represented as a `ProfileImage` value object (`sealed record`) with `BlobName` and `ContentType`

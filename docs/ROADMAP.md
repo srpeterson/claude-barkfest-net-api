@@ -60,6 +60,39 @@ This is a basic expectation of any account-based application.
 
 ---
 
+## 21. Pet Details Page
+
+**Priority:** High
+**Status:** Backend complete (branch `infrastructure/add-likes`, pending PR) — UI not started
+
+### What
+A public-facing page that opens when a user clicks a pet image on the landing page:
+- Displays all gallery images for the pet
+- Shows pet info: name, type, breed, age, description, like count
+- Shows an owner actions menu (Edit, Delete) if the logged-in owner's ID matches `OwnerId`
+- Like/Unlike button visible to all users; liked state tracked in localStorage by the UI
+
+### Why
+Clicking a pet card on the landing page currently has no destination. This page closes
+the loop between browsing and viewing full pet details.
+
+### Backend work completed
+- `Likes` column added to `Pets` (`int NOT NULL DEFAULT 0`) — migration `AddPetLikes`
+- `POST /v1/pets/{id}/likes` — increment likes (public, returns new count)
+- `DELETE /v1/pets/{id}/likes` — decrement likes, floors at zero (public, returns new count)
+- `GET /v1/pets/{id}` made `[AllowAnonymous]` — returns full `PetDto` including all images and `OwnerId`
+- `OwnerId` added to `BrowseImageDto` — available at navigation time before full pet data loads
+
+### UI approach (high level)
+- Route: `/pets/{id}` — public, no auth required
+- On load: `GET /v1/pets/{id}` for full pet data
+- Image gallery with all pet images; featured image shown first
+- Like button: compare localStorage for liked state; call POST/DELETE `/v1/pets/{id}/likes`
+- Owner menu: visible only when `jwtOwnerId === pet.ownerId`; contains Edit and Delete actions
+- Navigate from landing page: pass `OwnerId` (from `BrowseImageDto`) via router state for instant owner-menu decision before the full fetch completes
+
+---
+
 ## 3. Owner Pet Management Page
 
 **Priority:** High
