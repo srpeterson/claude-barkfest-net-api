@@ -260,3 +260,73 @@ export function uploadOwnerProfileImage(id: string, file: File): Promise<void> {
 export function removeOwnerProfileImage(id: string): Promise<void> {
   return request<void>(`/v1/owners/${id}/profile-image`, { method: 'DELETE' })
 }
+
+// ── Pet Detail API ────────────────────────────────────────────────────────
+
+// Mirrors Barkfest.Application.Features.Pets.DTOs.PetImageDto
+export interface PetImageDto {
+  petImageId: string
+  blobName: string
+  contentType: string
+  isFeaturedImage: boolean
+  displayOrder: number
+  createdAt: string
+}
+
+// Mirrors Barkfest.Application.Features.Pets.DTOs.PetDto
+// Returned by GET /v1/pets/{id} and GET /v1/owners/{id}/pets
+export interface PetDto {
+  petId: string
+  name: string
+  description?: string
+  dateOfBirth?: string
+  age?: number
+  petType: string
+  breed?: string
+  images: PetImageDto[]
+  ownerId: string
+  createdAt: string
+  likes: number
+}
+
+export function getPetDetail(petId: string): Promise<PetDto> {
+  return request<PetDto>(`/v1/pets/${petId}`)
+}
+
+export interface UpdatePetRequest {
+  name: string
+  petTypeValue: number
+  breedValue: number
+  dateOfBirth?: string
+  description?: string
+}
+
+export function updatePet(petId: string, data: UpdatePetRequest): Promise<void> {
+  return request<void>(`/v1/pets/${petId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deletePet(petId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}`, { method: 'DELETE' })
+}
+
+export function likePet(petId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}/likes`, { method: 'POST' })
+}
+
+export function unlikePet(petId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}/likes`, { method: 'DELETE' })
+}
+
+export function getOwnerPets(ownerId: string): Promise<PetDto[]> {
+  return request<PetDto[]>(`/v1/owners/${ownerId}/pets`)
+}
+
+export function changePassword(ownerId: string, currentPassword: string, newPassword: string): Promise<void> {
+  return request<void>(`/v1/owners/${ownerId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}

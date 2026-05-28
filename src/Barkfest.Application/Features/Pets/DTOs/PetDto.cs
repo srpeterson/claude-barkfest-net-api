@@ -1,7 +1,7 @@
 namespace Barkfest.Application.Features.Pets.DTOs;
 
 public record PetDto(
-    Guid Id,
+    Guid PetId,
     string Name,
     string? Description,
     DateOnly? DateOfBirth,

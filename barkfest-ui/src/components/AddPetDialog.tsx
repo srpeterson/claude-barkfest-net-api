@@ -5,11 +5,11 @@ import {
   ChevronRight,
   Loader2,
   Minus,
-  PawPrint,
   Plus,
   Star,
   X,
 } from 'lucide-react'
+import { BarkfestMark } from '@/components/BarkfestMark'
 import { cn } from '@/lib/utils'
 import { DropZone } from '@/components/ui/DropZone'
 import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
@@ -129,8 +129,8 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
 
         {/* Header */}
         <div className="flex items-center gap-2 px-6 pt-6 pb-0">
-          <PawPrint className="w-5 h-5 text-primary" />
-          <span className="font-heading text-lg font-semibold tracking-tight">
+          <BarkfestMark size={22} />
+          <span className="font-heading font-bold" style={{ fontSize: '17px' }}>
             {step === 1 ? 'Add your furry friend' : `Time to shine, ${name}!`}
           </span>
           <button
@@ -303,7 +303,8 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline"
+                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary"
+                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
               >
                 Cancel
               </button>
@@ -401,7 +402,8 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                 type="button"
                 onClick={() => { setStep(1); setError(null); setUploadError(null) }}
                 disabled={isSubmitting}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline disabled:opacity-50"
+                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
+                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
               >
                 Back
               </button>

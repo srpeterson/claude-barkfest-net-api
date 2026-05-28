@@ -1,4 +1,5 @@
 import { Calendar, PawPrint } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getBlobImageUrl } from '@/lib/imageUrl'
@@ -26,6 +27,7 @@ interface PetCardProps {
 }
 
 export function PetCard({ pet, index }: PetCardProps) {
+  const navigate = useNavigate()
   const age = formatAge(pet.dateOfBirth)
 
   return (
@@ -33,7 +35,10 @@ export function PetCard({ pet, index }: PetCardProps) {
       className="animate-fade-in-up"
       style={{ animationDelay: `${index * 0.06}s`, opacity: 0 }}
     >
-      <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-shadow duration-500 bg-card">
+      <Card
+        className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-shadow duration-500 bg-card cursor-pointer"
+        onClick={() => navigate(`/pets/${pet.petId}`)}
+      >
 
         {/* Image with gradient overlay */}
         <div className="aspect-[4/5] overflow-hidden relative">

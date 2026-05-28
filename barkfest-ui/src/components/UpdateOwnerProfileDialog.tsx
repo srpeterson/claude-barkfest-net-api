@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { flushSync } from 'react-dom'
 import isEmail from 'validator/lib/isEmail'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Loader2, PawPrint, Upload, UserCircle, X } from 'lucide-react'
+import { ChevronRight, Loader2, Upload, UserCircle, X } from 'lucide-react'
+import { BarkfestMark } from '@/components/BarkfestMark'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { useDropzone } from 'react-dropzone'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -59,6 +61,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   // ── Submission ────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   // ── Derived state ─────────────────────────────────────────────────────
   const displayNameStripped = displayName.replace(/\s/g, '')
@@ -230,6 +233,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8">
 
@@ -245,8 +249,8 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <PawPrint className="w-6 h-6 text-primary" />
-            <span className="font-heading text-lg font-semibold tracking-tight">Barkfest</span>
+            <BarkfestMark size={22} />
+            <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
           </div>
           <h2 className="text-2xl font-bold">
             {step === 1 ? 'Your Barkfest Profile' : 'Put a face to the name.'}
@@ -349,11 +353,22 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
               )}
             </div>
 
+            {/* Change password link */}
+            <button
+              type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              className="text-sm font-medium hover:underline transition-opacity hover:opacity-80"
+              style={{ color: 'var(--primary)' }}
+            >
+              Change password →
+            </button>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline"
+                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary"
+                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
               >
                 Cancel
               </button>
@@ -431,7 +446,8 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 type="button"
                 onClick={() => { setStep(1); setSubmitError(null); setImageError(null) }}
                 disabled={isSubmitting}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline disabled:opacity-50"
+                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
+                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
               >
                 Back
               </button>
@@ -453,6 +469,11 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         )}
       </div>
     </div>
+
+    {changePasswordOpen && (
+      <ChangePasswordDialog onClose={() => setChangePasswordOpen(false)} />
+    )}
+  </>
   )
 }
 

@@ -1,7 +1,7 @@
 namespace Barkfest.Application.Features.Pets.DTOs;
 
 public record PetImageDto(
-    Guid Id,
+    Guid PetImageId,
     string BlobName,
     string ContentType,
     int DisplayOrder,
