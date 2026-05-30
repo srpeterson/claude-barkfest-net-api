@@ -663,3 +663,164 @@ design that reflects the owner's logged-in experience.
 ### Approach (high level)
 - Design to be agreed during the feature session
 - Consider: dropdown menu from the avatar, navigation links, notification indicators
+
+---
+
+## 22. Add Links to Footer
+
+**Priority:** Low
+**Status:** Not started
+
+### What
+Wire up the footer link columns (Company: About, Blog, Careers; Legal: Privacy Policy, Terms of Use, Contact) to real pages or external URLs. Currently these are plain text placeholders.
+
+### Why
+The footer looks complete visually but the links do nothing. Once the relevant content pages or policies exist, they should be linked.
+
+### Approach (high level)
+- Decide which items get internal routes vs external URLs (e.g. Privacy Policy and Terms of Use may be separate static pages)
+- Replace the plain `<p>` elements in the `Footer` component in `barkfest-ui/src/pages/HomePage.tsx` with `<Link>` or `<a href>` as appropriate
+- Add any new routes to `App.tsx`
+
+---
+
+## 26. Forgot Password — Full Self-Service Reset Flow
+
+**Priority:** High
+**Status:** Interim solution in place — "Forgot password?" link opens a modal directing
+users to email srpeterson@outlook.com. Replace with this automated flow when ready.
+
+### What
+A self-service password reset flow: the owner enters their registered email, receives a
+time-limited reset link, clicks it to land on a page where they set a new password.
+
+### Current interim behaviour
+Clicking "Forgot password?" on the Sign In page opens a modal that says:
+*"Woof! Automated reset is on its way. Until then, shoot us an email and we'll get your
+paws back on the keys. Don't forget to include your username: srpeterson@outlook.com"* When this feature ships, replace the modal with the real flow and
+update the support email to the official address.
+
+### Domain scaffolding already done (from Roadmap item 5)
+- `Owner.PasswordResetToken` (`string?`) — add via `SetPasswordResetToken()` method
+- `Owner.PasswordResetTokenExpiry` (`DateTime?`)
+- Migration: `AddOwnerPasswordResetToken`
+
+### Still to implement
+
+**Backend:**
+- `POST /v1/auth/forgot-password` — accepts `{ email }`, generates a short-lived
+  single-use token (30 min), persists it, sends reset email via `IEmailService`.
+  Always returns `200 OK` regardless of whether the email exists (prevents enumeration)
+- `POST /v1/auth/reset-password` — accepts `{ token, newPassword }`, validates token,
+  updates `PasswordHash`, calls `ClearPasswordResetToken()`
+- Requires `IEmailService` (Roadmap item 5) to be implemented first
+
+**Frontend:**
+- Replace the interim modal in `LoginPage.tsx` with a link to `/forgot-password`
+- `/forgot-password` — email entry form → "Check your email" confirmation screen
+- `/reset-password?token=...` — new password + confirm fields; on success navigate
+  to `/login` with a success message
+
+---
+
+## 25. Third-Party Authentication Providers (Google, Apple)
+
+**Priority:** Medium
+**Status:** Not started — UI placeholder hidden pending implementation
+
+### What
+Allow owners to register and sign in using their Google or Apple account instead of a
+username and password.
+
+### Current state
+The "or continue with" divider and the Google and Apple buttons exist in `LoginPage.tsx`
+but are commented out (search for `TODO (Roadmap #25)`). They will be restored once the
+backend OAuth flow is implemented.
+
+### Why
+Social sign-in reduces friction at registration — no password to create or remember.
+Google and Apple are the two providers expected on desktop and iOS respectively.
+
+### Approach (high level)
+
+**Backend:**
+- Add OAuth 2.0 / OpenID Connect support to the API (e.g. via a library such as
+  `Microsoft.AspNetCore.Authentication.Google` / `.Apple`)
+- New endpoints: `GET /v1/auth/google` (redirect), `GET /v1/auth/google/callback`,
+  same pattern for Apple
+- On callback: look up or create an `Owner` by the verified email; issue the same
+  `barkfest_auth` JWT as the password flow; set the HttpOnly cookie
+- `Owner.PasswordHash` remains nullable — social-only accounts have no password
+
+**Frontend:**
+- Restore the hidden block in `LoginPage.tsx` (search `TODO (Roadmap #25)`)
+- Wire each button to `window.location.href = '/v1/auth/google'` (full redirect, not fetch)
+- On return the cookie is set server-side; the `AuthContext` reads the `accountId` from
+  the login response body as usual
+
+**Infrastructure:**
+- Register OAuth app credentials in Google Cloud Console and Apple Developer portal
+- Store client ID + secret in GitHub Secrets; inject as environment variables
+
+---
+
+## 24. Dynamic Sign-In Brand Panel Mosaic
+
+**Priority:** Low
+**Status:** Not started — currently using static local images
+
+### What
+Replace the hardcoded pet photos in the Sign In page brand panel mosaic with real images
+pulled dynamically from the live browse API, so the mosaic always shows actual pets from
+the community rather than static placeholders.
+
+### Why
+Static images feel disconnected from the live platform. Showing real community pets makes
+the sign-in page feel alive and gives new visitors an immediate sense of what Barkfest
+contains.
+
+### Approach (high level)
+- Call `GET /v1/browse/images?page=1&pageSize=4` on page load (no auth required)
+- Use the first 4 results' `blobName` values to build image URLs via the existing
+  `/v1/images/...` proxy route
+- Fall back to the current static images if the fetch fails or returns fewer than 4 results
+- `staleTime` can be short (60s) — the mosaic is decorative, not data-critical
+- The 2×2 grid layout and `tall` height variants stay the same; just swap the `src`
+
+---
+
+## 23. Report Abuse
+
+**Priority:** High
+**Status:** Not started
+
+### What
+Allow any user (authenticated or public) to flag a pet image or a pet profile as abusive — inappropriate content, pornographic images, or anything that violates community standards. A report should be reviewed by an administrator before any action is taken.
+
+### Why
+Once real user content is publicly browsable, the platform needs a moderation pathway. Without a reporting mechanism, there is no way for the community to surface harmful content to administrators for review.
+
+### Approach (high level)
+
+**UI:**
+- "Report" option on the pet card (accessible via a small flag icon or a kebab menu item on the Pet Detail page, visible to all users including guests)
+- A lightweight modal: reason dropdown (Inappropriate image, Pornography, Spam, Other) + optional free-text box + Submit
+- On submit: confirmation message ("Thanks — we'll review this shortly."); no further UI action
+
+**API (new endpoints):**
+- `POST /v1/pets/{id}/report` — body `{ reason, details? }`; open to all (no auth required); returns 204
+- `GET /v1/admin/reports` — admin-only; lists all reports with pet ID, reason, reporter IP/account, timestamp
+- `DELETE /v1/admin/reports/{id}` — admin dismisses a report
+- `DELETE /v1/admin/reports/{id}/pet` — admin dismisses the report and removes the pet
+
+**Domain/Persistence:**
+- New `Report` entity: `ReportId`, `PetId` (FK), `Reason` (enum or string), `Details` (nullable), `ReportedAt`, `ReporterAccountId` (nullable — guests can also report)
+- New `IReportRepository` + `ReportRepository`
+- Migration: `CreateReportsTable`
+
+**Admin UI:**
+- Reports list in the admin area showing flagged pets with thumbnail, reason, and date
+- One-click dismiss or remove-pet actions
+
+**Rate limiting / abuse prevention:**
+- Consider limiting reports to N per IP per hour to prevent report-bombing

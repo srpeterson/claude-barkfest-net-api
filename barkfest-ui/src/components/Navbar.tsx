@@ -1,17 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogOut, PawPrint, Plus, Settings, UserCircle } from 'lucide-react'
+import { LogOut, Plus, UserCircle } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { logout } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { AddPetDialog } from '@/components/AddPetDialog'
 import { UpdateOwnerProfileDialog } from '@/components/UpdateOwnerProfileDialog'
 
+// Lucide-compatible paw icon (filled) for the dropdown
+function PawIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="5.5" cy="12.5" r="2" />
+      <circle cx="9.5" cy="7.5" r="2" />
+      <circle cx="14.5" cy="7.5" r="2" />
+      <circle cx="18.5" cy="12.5" r="2" />
+      <path d="M12 12c-2.5 0-4.5 2-4.5 4.2 0 1.6 1.2 2.3 2.4 2.3.9 0 1.4-.4 2.1-.4s1.2.4 2.1.4c1.2 0 2.4-.7 2.4-2.3C16.5 14 14.5 12 12 12z" />
+    </svg>
+  )
+}
+
 export function Navbar() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const { isAuthenticated, accountType, profileImageBlobName, signOut } = useAuth()
   const [addPetOpen, setAddPetOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -22,159 +36,378 @@ export function Navbar() {
   function handlePetAdded() {
     queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
     queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+    queryClient.invalidateQueries({ queryKey: ['owner', 'pets'] })
   }
 
   async function handleSignOut() {
+    setDropdownOpen(false)
     await logout()
     signOut()
     navigate('/')
   }
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
   return (
     <>
-      {/* Sticky transparent wrapper — pill floats 10px from top */}
-      <div className="sticky top-0 z-50 px-4 pt-[10px] pb-[10px]">
-        <nav
-          className="flex items-center justify-between h-[52px] px-[22px] rounded-full"
+      <nav
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          background: 'rgba(250,247,244,0.85)',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <div
           style={{
-            background: 'var(--primary)',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+            maxWidth: '72rem',
+            margin: '0 auto',
+            padding: '0 20px',
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              textDecoration: 'none',
+            }}
           >
-            <BarkfestMark inverted size={28} />
+            <BarkfestMark size={28} />
             <span
-              className="font-heading font-bold text-white"
-              style={{ fontSize: '20px' }}
+              className="font-heading"
+              style={{
+                fontSize: 20,
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: 'var(--foreground)',
+              }}
             >
               Barkfest
             </span>
           </Link>
 
-          {/* Right side — Admin */}
+          {/* Right — Admin */}
           {isAuthenticated && accountType === 'admin' ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-white/80 font-medium hidden sm:block">
-                Logged in as Administrator
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {!isMobile && (
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: 'var(--muted-foreground)',
+                  }}
+                >
+                  Administrator
+                </span>
+              )}
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-white transition-colors px-3 py-1.5 rounded-full hover:bg-white/10"
+                style={{
+                  height: 32,
+                  padding: '0 12px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--muted-foreground)',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
               >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <LogOut style={{ width: 16, height: 16 }} />
+                Sign Out
               </button>
             </div>
-          ) : isAuthenticated && accountType === 'owner' ? (
-            /* Owner state */
-            <div className="flex items-center gap-2">
-              {/* + Post a Pet button */}
-              <button
-                onClick={() => setAddPetOpen(true)}
-                className="w-11 h-11 rounded-full bg-white flex items-center justify-center text-primary hover:bg-white/90 transition-colors shadow-sm"
-                title="Post a Pet"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
 
-              {/* Avatar with dropdown */}
-              <div className="relative" ref={dropdownRef}>
+          ) : isAuthenticated && accountType === 'owner' ? (
+            /* Owner */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {/* Add Pet button */}
+              {isMobile ? (
                 <button
-                  onClick={() => setDropdownOpen(o => !o)}
-                  className="w-11 h-11 rounded-full overflow-hidden border-2 border-white/50 hover:border-white transition-colors"
+                  onClick={() => setAddPetOpen(true)}
+                  aria-label="Add Pet"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Plus style={{ width: 18, height: 18 }} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAddPetOpen(true)}
+                  style={{
+                    height: 32,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <Plus style={{ width: 14, height: 14 }} />
+                  Add Pet
+                </button>
+              )}
+
+              {/* Avatar + dropdown */}
+              <div style={{ position: 'relative' }} ref={dropdownRef}>
+                {dropdownOpen && (
+                  <div
+                    onClick={() => setDropdownOpen(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 298 }}
+                  />
+                )}
+                <button
+                  onClick={e => { e.stopPropagation(); setDropdownOpen(v => !v) }}
+                  aria-label="Account menu"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: 'var(--secondary)',
+                    color: 'var(--muted-foreground)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    outline: dropdownOpen ? '2px solid var(--primary)' : 'none',
+                    outlineOffset: 2,
+                    position: 'relative',
+                    zIndex: 300,
+                    padding: 0,
+                  }}
                 >
                   {profileImageBlobName ? (
                     <img
                       src={getBlobImageUrl(profileImageBlobName, 'owner-profile-images')}
                       alt="Profile"
-                      className="w-full h-full object-cover"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                      <UserCircle className="w-7 h-7 text-white" />
-                    </div>
+                    <UserCircle style={{ width: 28, height: 28 }} />
                   )}
                 </button>
 
                 {dropdownOpen && (
                   <div
-                    className="absolute right-0 top-[calc(100%+8px)] w-48 rounded-2xl overflow-hidden"
                     style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      width: 172,
                       background: 'var(--card)',
                       border: '1px solid var(--border)',
-                      boxShadow: '0 16px 48px rgba(0,0,0,0.12)',
+                      borderRadius: 12,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
+                      overflow: 'hidden',
+                      zIndex: 300,
                     }}
                   >
-                    <button
-                      onClick={() => { setDropdownOpen(false); navigate('/manage') }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-secondary transition-colors"
-                      style={{ color: 'var(--foreground)' }}
-                    >
-                      <PawPrint className="w-4 h-4 text-primary shrink-0" />
-                      My Pets
-                    </button>
-                    <button
-                      onClick={() => { setDropdownOpen(false); setProfileOpen(true) }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-secondary transition-colors"
-                      style={{ color: 'var(--foreground)' }}
-                    >
-                      <Settings className="w-4 h-4 text-primary shrink-0" />
-                      Edit Profile
-                    </button>
-                    <div className="mx-4 border-t" style={{ borderColor: 'var(--border)' }} />
-                    <button
-                      onClick={() => { setDropdownOpen(false); handleSignOut() }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-secondary transition-colors"
-                      style={{ color: 'var(--muted-foreground)' }}
-                    >
-                      <LogOut className="w-4 h-4 shrink-0" />
-                      Sign Out
-                    </button>
+                    {[
+                      {
+                        label: 'My Pets',
+                        icon: <PawIcon />,
+                        action: () => { setDropdownOpen(false); navigate('/manage') },
+                      },
+                      {
+                        label: 'Edit Profile',
+                        icon: <UserCircle style={{ width: 16, height: 16 }} />,
+                        action: () => { setDropdownOpen(false); setProfileOpen(true) },
+                      },
+                      {
+                        label: 'Sign Out',
+                        icon: <LogOut style={{ width: 16, height: 16 }} />,
+                        action: handleSignOut,
+                      },
+                    ].map(({ label, icon, action }) => (
+                      <DropdownItem
+                        key={label}
+                        label={label}
+                        icon={icon}
+                        onClick={action}
+                        dividerAbove={label === 'Sign Out'}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
             </div>
+
           ) : (
-            /* Guest state */
-            <div className="flex items-center gap-2">
-              <Link
-                to="/login"
-                className="px-4 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-full transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className={cn(
-                  'px-4 py-2 text-sm font-medium text-white rounded-full transition-colors hover:bg-white/10',
-                  'hidden sm:block'
-                )}
-                style={{ border: '1.5px solid rgba(255,255,255,0.55)' }}
-              >
-                Get started
-              </Link>
+            /* Guest */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <GhostBtn onClick={() => navigate('/login')}>Sign In</GhostBtn>
+              <OutlinedBtn onClick={() => navigate('/register')}>Get started</OutlinedBtn>
             </div>
           )}
-        </nav>
-      </div>
+        </div>
+      </nav>
 
-      {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} onSuccess={handlePetAdded} />}
-      {profileOpen && <UpdateOwnerProfileDialog onClose={() => setProfileOpen(false)} />}
+      {addPetOpen && (
+        <AddPetDialog
+          onClose={() => setAddPetOpen(false)}
+          onSuccess={handlePetAdded}
+        />
+      )}
+      {profileOpen && (
+        <UpdateOwnerProfileDialog onClose={() => setProfileOpen(false)} />
+      )}
     </>
+  )
+}
+
+function GhostBtn({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        height: 32,
+        padding: '0 12px',
+        borderRadius: 8,
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--foreground)',
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 13,
+        fontWeight: 500,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--primary-20)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      {children}
+    </button>
+  )
+}
+
+function OutlinedBtn({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        height: 32,
+        padding: '0 14px',
+        borderRadius: 8,
+        border: '1.5px solid rgba(223,103,73,0.45)',
+        background: 'transparent',
+        color: 'var(--primary)',
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 13,
+        fontWeight: 500,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'var(--primary-10)'
+        e.currentTarget.style.borderColor = 'var(--primary)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.borderColor = 'rgba(223,103,73,0.45)'
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function DropdownItem({
+  label,
+  icon,
+  onClick,
+  dividerAbove,
+}: {
+  label: string
+  icon: React.ReactNode
+  onClick: () => void
+  dividerAbove?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        height: 40,
+        padding: '0 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        background: 'transparent',
+        border: 'none',
+        borderTop: dividerAbove ? '1px solid var(--border)' : 'none',
+        cursor: 'pointer',
+        color: label === 'Sign Out' ? 'var(--muted-foreground)' : 'var(--foreground)',
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 13,
+        fontWeight: 500,
+        textAlign: 'left',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--muted)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      <span style={{ color: label === 'Sign Out' ? 'var(--muted-foreground)' : 'var(--primary)', display: 'flex' }}>
+        {icon}
+      </span>
+      {label}
+    </button>
   )
 }

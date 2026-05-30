@@ -502,7 +502,8 @@ function ProfileField({ label, id, type = 'text', required, maxLength, placehold
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
+        className="w-full h-11 rounded-xl bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
+        style={{ border: '1.5px solid var(--border)', color: 'var(--foreground)' }}
       />
     </div>
   )

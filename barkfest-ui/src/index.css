@@ -133,6 +133,13 @@
     --sidebar-ring:        oklch(0.65 0.165 32);
 }
 
+/* ── Opacity helpers not covered by Tailwind utilities in inline styles ── */
+:root {
+    --primary-10: color-mix(in srgb, var(--primary) 10%, transparent);
+    --primary-20: color-mix(in srgb, var(--primary) 20%, transparent);
+    --primary-30: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

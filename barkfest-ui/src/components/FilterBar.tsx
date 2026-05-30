@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { SlidersHorizontal, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { PetTypeBreedSelector } from '@/components/PetTypeBreedSelector'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -11,6 +10,39 @@ interface FilterBarProps {
   onPetTypeChange: (value: number) => void
   breedValue: number
   onBreedChange: (value: number) => void
+}
+
+// SVG icon components — no new lucide imports needed
+function FilterIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+      <line x1="11" y1="18" x2="13" y2="18"/>
+    </svg>
+  )
+}
+
+function XIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+    </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+  )
 }
 
 export function FilterBar({ petTypeValue, onPetTypeChange, breedValue, onBreedChange }: FilterBarProps) {
@@ -35,15 +67,18 @@ export function FilterBar({ petTypeValue, onPetTypeChange, breedValue, onBreedCh
     staleTime: Infinity,
   })
 
-  const filteredBreeds = rawBreeds
-    .filter(b => b.name.toLowerCase().includes(breedSearch.toLowerCase()))
-    .sort((a, b) => {
-      if (a.name === 'Other') return 1
-      if (b.name === 'Other') return -1
-      if (a.name === 'Mixed') return 1
-      if (b.name === 'Mixed') return -1
-      return a.name.localeCompare(b.name)
-    })
+  const filteredBreeds = [
+    { name: 'All Breeds', value: 0 } as const,
+    ...rawBreeds
+      .filter(b => b.name.toLowerCase().includes(breedSearch.toLowerCase()))
+      .sort((a, b) => {
+        if (a.name === 'Other') return 1
+        if (b.name === 'Other') return -1
+        if (a.name === 'Mixed') return 1
+        if (b.name === 'Mixed') return -1
+        return a.name.localeCompare(b.name)
+      }),
+  ]
 
   function openSheet() {
     setPendingType(petTypeValue)
@@ -68,154 +103,371 @@ export function FilterBar({ petTypeValue, onPetTypeChange, breedValue, onBreedCh
     const typeName = pt ? getPetTypeLabel(pt.name) : 'Pets'
     if (!breedValue) return typeName
     const breed = rawBreeds.find(b => b.value === breedValue)
-    return breed ? `${typeName} · ${breed.name}` : typeName
+    return breed ? breed.name : typeName
   }
 
+  /* ── Mobile ──────────────────────────────────────────────────────── */
   if (isMobile) {
     return (
       <>
-        {/* Mobile filter pill button */}
-        <div className="sticky top-[72px] z-40 flex justify-center py-3">
+        {/* Filter pill — highlighted when filters are active */}
+        <div
+          style={{
+            position: 'sticky',
+            top: 64,
+            zIndex: 40,
+            padding: '10px 16px 4px',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
           <button
             onClick={openSheet}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors"
             style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              color: 'var(--foreground)',
+              height: 44,
+              padding: '0 16px',
+              borderRadius: 22,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              border: `1.5px solid ${hasActiveFilters ? 'var(--primary)' : 'var(--border)'}`,
+              background: hasActiveFilters ? 'var(--primary-10)' : 'var(--card)',
+              color: hasActiveFilters ? 'var(--primary)' : 'var(--foreground)',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              fontWeight: hasActiveFilters ? 600 : 400,
+              cursor: 'pointer',
             }}
           >
-            <SlidersHorizontal className="w-4 h-4 text-primary" />
-            <span>{getFilterLabel()}</span>
+            <FilterIcon />
+            {getFilterLabel()}
             {hasActiveFilters && (
-              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--primary)',
+                  flexShrink: 0,
+                }}
+              />
             )}
           </button>
         </div>
 
-        {/* Bottom sheet backdrop */}
+        {/* Bottom sheet */}
         {sheetOpen && (
-          <div
-            className="fixed inset-0 z-50 animate-backdrop-in"
-            style={{ background: 'rgba(0,0,0,0.5)' }}
-            onClick={() => setSheetOpen(false)}
-          >
-            {/* Bottom sheet */}
+          <>
+            {/* Backdrop */}
             <div
-              className="absolute bottom-0 left-0 right-0 rounded-t-3xl animate-sheet-in"
-              style={{ background: 'var(--card)' }}
-              onClick={e => e.stopPropagation()}
+              onClick={() => setSheetOpen(false)}
+              className="animate-backdrop-in"
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 200,
+                background: 'rgba(0,0,0,0.3)',
+                backdropFilter: 'blur(2px)',
+              }}
+            />
+
+            {/* Sheet */}
+            <div
+              className="animate-sheet-in"
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 201,
+                background: 'var(--card)',
+                borderRadius: '20px 20px 0 0',
+                boxShadow: '0 -8px 40px rgba(0,0,0,0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                maxHeight: '80vh',
+              }}
             >
-              {/* Handle + header */}
-              <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                <div className="w-10 h-1 rounded-full bg-border absolute top-3 left-1/2 -translate-x-1/2" />
-                <span className="font-heading font-semibold text-base mt-2">Filter Pets</span>
+              {/* Drag handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px', flexShrink: 0 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
+              </div>
+
+              {/* Header */}
+              <div
+                style={{
+                  padding: '8px 20px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                }}
+              >
+                <h3
+                  className="font-heading"
+                  style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--foreground)' }}
+                >
+                  Filters
+                </h3>
                 <button
                   onClick={() => setSheetOpen(false)}
-                  className="p-1 rounded-full hover:bg-secondary transition-colors mt-2"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--muted-foreground)',
+                  }}
                 >
-                  <X className="w-5 h-5 text-muted-foreground" />
+                  <XIcon />
                 </button>
               </div>
 
-              <div className="px-5 pb-6 space-y-5">
+              {/* Scrollable content */}
+              <div style={{ overflowY: 'auto', padding: '0 20px', flex: 1 }}>
                 {/* Pet Type chips */}
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pet Type</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => { setPendingType(0); setPendingBreed(0) }}
-                      className="px-4 py-2 rounded-full text-sm font-medium transition-colors"
-                      style={{
-                        background: pendingType === 0 ? 'var(--primary)' : 'var(--secondary)',
-                        color: pendingType === 0 ? 'white' : 'var(--foreground)',
-                      }}
-                    >
-                      All Pets
-                    </button>
-                    {petTypes.map(pt => (
-                      <button
-                        key={pt.value}
-                        onClick={() => { setPendingType(pt.value); setPendingBreed(0) }}
-                        className="px-4 py-2 rounded-full text-sm font-medium transition-colors"
-                        style={{
-                          background: pendingType === pt.value ? 'var(--primary)' : 'var(--secondary)',
-                          color: pendingType === pt.value ? 'white' : 'var(--foreground)',
-                        }}
-                      >
-                        {getPetTypeLabel(pt.name)}
-                      </button>
-                    ))}
+                <div style={{ marginBottom: 20 }}>
+                  <p
+                    style={{
+                      margin: '0 0 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'var(--muted-foreground)',
+                    }}
+                  >
+                    Pet Type
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[{ value: 0, label: 'All Pets' }, ...petTypes.map(pt => ({ value: pt.value, label: getPetTypeLabel(pt.name) }))].map(
+                      ({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => { setPendingType(value); setPendingBreed(0) }}
+                          style={{
+                            height: 40,
+                            padding: '0 18px',
+                            borderRadius: 20,
+                            border: `1.5px solid ${pendingType === value ? 'var(--primary)' : 'var(--border)'}`,
+                            background: pendingType === value ? 'var(--primary-10)' : 'transparent',
+                            color: pendingType === value ? 'var(--primary)' : 'var(--foreground)',
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 13,
+                            fontWeight: pendingType === value ? 600 : 400,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
 
-                {/* Breed list — only shown when a pet type is selected */}
+                {/* Breed list — only when a type is selected */}
                 {!!pendingType && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Breed</p>
-                    <input
-                      type="text"
-                      placeholder="Search breeds..."
-                      value={breedSearch}
-                      onChange={e => setBreedSearch(e.target.value)}
-                      className="w-full h-10 rounded-xl px-3 text-sm focus:outline-none focus:ring-2"
+                  <div style={{ marginBottom: 16 }}>
+                    <p
                       style={{
-                        background: 'var(--secondary)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--foreground)',
+                        margin: '0 0 10px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--muted-foreground)',
                       }}
-                    />
-                    <div className="max-h-48 overflow-y-auto space-y-0.5">
-                      <button
-                        onClick={() => setPendingBreed(0)}
-                        className="w-full flex items-center justify-between h-11 px-3 rounded-xl text-sm transition-colors"
+                    >
+                      Breed
+                      <span
                         style={{
-                          background: pendingBreed === 0 ? 'var(--primary)/10' : 'transparent',
-                          color: pendingBreed === 0 ? 'var(--primary)' : 'var(--foreground)',
+                          fontWeight: 400,
+                          textTransform: 'none',
+                          letterSpacing: 0,
+                          marginLeft: 6,
+                          fontSize: 12,
                         }}
                       >
-                        All Breeds
-                        {pendingBreed === 0 && <span className="text-primary">✓</span>}
-                      </button>
-                      {filteredBreeds.map(b => (
+                        ({rawBreeds.length} breeds)
+                      </span>
+                    </p>
+
+                    {/* Search box */}
+                    <div style={{ position: 'relative', marginBottom: 8 }}>
+                      <span
+                        style={{
+                          position: 'absolute',
+                          left: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: 'var(--muted-foreground)',
+                          pointerEvents: 'none',
+                          display: 'flex',
+                        }}
+                      >
+                        <SearchIcon />
+                      </span>
+                      <input
+                        placeholder="Search breeds…"
+                        value={breedSearch}
+                        onChange={e => setBreedSearch(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: 40,
+                          borderRadius: 10,
+                          border: '1.5px solid var(--border)',
+                          background: 'var(--secondary)',
+                          padding: '0 36px 0 34px',
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          color: 'var(--foreground)',
+                        }}
+                      />
+                      {breedSearch && (
                         <button
-                          key={b.value}
-                          onClick={() => setPendingBreed(b.value)}
-                          className="w-full flex items-center justify-between h-11 px-3 rounded-xl text-sm transition-colors"
+                          onClick={() => setBreedSearch('')}
                           style={{
-                            background: pendingBreed === b.value ? 'rgba(223,103,73,0.1)' : 'transparent',
-                            color: pendingBreed === b.value ? 'var(--primary)' : 'var(--foreground)',
+                            position: 'absolute',
+                            right: 10,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--muted-foreground)',
+                            padding: 0,
+                            display: 'flex',
                           }}
                         >
-                          {b.name}
-                          {pendingBreed === b.value && <span className="text-primary">✓</span>}
+                          <XIcon />
                         </button>
-                      ))}
+                      )}
+                    </div>
+
+                    {/* Scrollable breed list */}
+                    <div
+                      style={{
+                        border: '1.5px solid var(--border)',
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        maxHeight: 220,
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {filteredBreeds.length === 0 ? (
+                        <p
+                          style={{
+                            padding: '14px 16px',
+                            margin: 0,
+                            fontSize: 13,
+                            color: 'var(--muted-foreground)',
+                            textAlign: 'center',
+                          }}
+                        >
+                          No breeds found
+                        </p>
+                      ) : (
+                        filteredBreeds.map((b, i) => (
+                          <button
+                            key={b.value}
+                            onClick={() => setPendingBreed(b.value)}
+                            style={{
+                              width: '100%',
+                              height: 44,
+                              padding: '0 16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: pendingBreed === b.value ? 'var(--primary-10)' : 'transparent',
+                              border: 'none',
+                              borderBottom:
+                                i < filteredBreeds.length - 1 ? '1px solid var(--border)' : 'none',
+                              cursor: 'pointer',
+                              fontFamily: "'DM Sans', sans-serif",
+                              fontSize: 14,
+                              fontWeight: pendingBreed === b.value ? 600 : 400,
+                              color: pendingBreed === b.value ? 'var(--primary)' : 'var(--foreground)',
+                              textAlign: 'left',
+                            }}
+                          >
+                            {b.name}
+                            {pendingBreed === b.value && (
+                              <span style={{ color: 'var(--primary)', display: 'flex' }}>
+                                <CheckIcon />
+                              </span>
+                            )}
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
+              </div>
 
-                {/* Show results CTA */}
+              {/* Show results CTA */}
+              <div style={{ padding: '12px 20px 32px', flexShrink: 0 }}>
                 <button
                   onClick={applyFilters}
-                  className="w-full h-12 rounded-2xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ background: 'var(--primary)' }}
+                  style={{
+                    width: '100%',
+                    height: 48,
+                    borderRadius: 12,
+                    border: 'none',
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
                 >
                   Show results
                 </button>
               </div>
             </div>
-          </div>
+          </>
         )}
       </>
     )
   }
 
+  /* ── Desktop ─────────────────────────────────────────────────────── */
   return (
-    <div className="sticky top-[72px] z-40 px-4 py-4">
-      <div className="max-w-6xl mx-auto flex gap-4 items-center justify-center">
-        <span className="text-sm text-primary font-bold">Show me:</span>
+    <div
+      style={{
+        position: 'sticky',
+        top: 64,
+        zIndex: 40,
+        padding: '16px 16px',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '72rem',
+          margin: '0 auto',
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: 'var(--primary)',
+          }}
+        >
+          Show me:
+        </span>
         <PetTypeBreedSelector
           petTypeValue={petTypeValue}
           onPetTypeChange={onPetTypeChange}

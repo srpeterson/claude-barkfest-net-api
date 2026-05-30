@@ -1,14 +1,18 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
-import { deletePet, getOwnerPets } from '@/lib/api'
+import { deletePet, getOwnerById, getOwnerPets, setOwnerVisibility } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { Navbar } from '@/components/Navbar'
 import { AddPetDialog } from '@/components/AddPetDialog'
+import { EditPetModal } from '@/components/EditPetModal'
+import type { PetDto } from '@/lib/api'
 
+// ── Age formatter ─────────────────────────────────────────────────────
 function formatAge(dateOfBirth?: string): string | null {
   if (!dateOfBirth) return null
   const dob = new Date(dateOfBirth)
@@ -21,17 +25,102 @@ function formatAge(dateOfBirth?: string): string | null {
   return years === 1 ? '1 yr' : `${years} yr`
 }
 
+// ── Switch ────────────────────────────────────────────────────────────
+function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id: string }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      id={id}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 46, height: 27, borderRadius: 999, border: 'none', cursor: 'pointer',
+        padding: 0, flexShrink: 0,
+        background: checked ? 'var(--primary)' : '#d8cfc6',
+        position: 'relative', transition: 'background 0.2s',
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute', top: 3, left: checked ? 22 : 3,
+          width: 21, height: 21, borderRadius: '50%',
+          background: '#fff', transition: 'left 0.2s',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+        }}
+      />
+    </button>
+  )
+}
+
+// ── HidePetsToggle ────────────────────────────────────────────────────
+function HidePetsToggle({ hidden, onChange, error }: { hidden: boolean; onChange: (v: boolean) => void; error?: string | null }) {
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          background: 'var(--card)',
+          border: `1px solid ${hidden ? 'var(--primary)' : 'var(--border)'}`,
+          borderRadius: 12, padding: '10px 14px 10px 16px',
+          transition: 'border-color 0.2s',
+        }}
+      >
+        <div>
+          <label
+            htmlFor="hide-pets"
+            style={{ display: 'block', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Hide my pets
+          </label>
+          <p
+            style={{
+              margin: 0, fontSize: 12,
+              color: hidden ? 'var(--primary)' : 'var(--muted-foreground)',
+              fontWeight: hidden ? 600 : 400,
+            }}
+          >
+            {hidden ? 'Hidden from the public gallery' : 'Visible in the public gallery'}
+          </p>
+        </div>
+        <Switch id="hide-pets" checked={hidden} onChange={onChange} />
+      </div>
+      {error && (
+        <p style={{ fontSize: 12, color: 'var(--destructive)', margin: '4px 0 0' }}>{error}</p>
+      )}
+    </div>
+  )
+}
+
+// ── ManagePetsPage ────────────────────────────────────────────────────
 export function ManagePetsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const isMobile = useIsMobile()
   const { accountId } = useAuth()
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [addPetOpen, setAddPetOpen] = useState(false)
+  const [editPet, setEditPet] = useState<PetDto | null>(null)
+  const [hidden, setHidden] = useState(false)
+  const [visibilityError, setVisibilityError] = useState<string | null>(null)
   const selectAllRef = useRef<HTMLInputElement>(null)
+
+  // Fetch owner to get initial visibility
+  const { data: ownerData } = useQuery({
+    queryKey: ['owner', accountId],
+    queryFn: () => getOwnerById(accountId!),
+    enabled: !!accountId,
+  })
+
+  // Sync hidden from server on first load
+  useEffect(() => {
+    if (ownerData) {
+      setHidden(!ownerData.isVisible)
+    }
+  }, [ownerData])
 
   const { data: pets = [], isLoading } = useQuery({
     queryKey: ['owner', 'pets', accountId],
@@ -92,301 +181,454 @@ export function ManagePetsPage() {
     queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
   }
 
-  const targetPet = pets.find(p => p.petId === deleteTarget)
+  async function handleToggleHidden(newHidden: boolean) {
+    const previous = hidden
+    setHidden(newHidden)
+    setVisibilityError(null)
+    try {
+      await setOwnerVisibility(accountId!, newHidden)
+    } catch {
+      setHidden(previous)
+      setVisibilityError('Failed to update visibility. Please try again.')
+    }
+  }
+
+  // Desktop grid columns
+  const desktopCols = '48px 56px 1fr 80px 80px 100px'
+  const mobileCols  = '40px 52px 1fr 96px'
+  const cols = isMobile ? mobileCols : desktopCols
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
       <Navbar />
 
-      {/* Bulk delete bar */}
-      {selected.size > 0 && (
-        <div className="sticky top-[72px] z-40 px-4 pt-2">
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px 64px' }}>
+
+        {/* Page header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            marginBottom: 24,
+            flexWrap: 'wrap',
+            gap: 16,
+          }}
+        >
+          <div>
+            <h1 className="font-heading" style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
+              My Pets
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', margin: 0 }}>
+              {pets.length} {pets.length === 1 ? 'pet' : 'pets'} in your profile
+            </p>
+          </div>
+          <HidePetsToggle hidden={hidden} onChange={handleToggleHidden} error={visibilityError} />
+        </div>
+
+        {/* Bulk delete bar — sticky inside the content column */}
+        {selected.size > 0 && (
           <div
-            className="flex items-center justify-between h-[52px] px-5 rounded-xl"
-            style={{ background: 'var(--primary)' }}
+            style={{
+              position: 'sticky', top: 68, zIndex: 40,
+              margin: '0 0 16px',
+              background: 'var(--primary)', color: '#fff',
+              borderRadius: 12, padding: '0 16px', height: 52,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
           >
-            <span className="text-sm font-semibold text-white">
-              {selected.size} selected
+            <span style={{ fontSize: 14, fontWeight: 500 }}>
+              {selected.size} pet{selected.size > 1 ? 's' : ''} selected
             </span>
-            <div className="flex items-center gap-2">
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button
                 onClick={() => setSelected(new Set())}
-                className="px-4 h-8 rounded-lg text-sm font-medium text-white transition-colors hover:bg-white/20"
-                style={{ border: '1.5px solid rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.18)' }}
+                style={{
+                  height: 32, padding: '0 14px', borderRadius: 8,
+                  border: '1.5px solid #fff',
+                  background: 'rgba(255,255,255,0.18)',
+                  color: '#fff',
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
               >
                 Clear
               </button>
               <button
                 onClick={() => setBulkDeleteOpen(true)}
-                className="px-4 h-8 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ background: 'white', color: 'var(--destructive)' }}
+                style={{
+                  height: 32, padding: '0 14px', borderRadius: 8,
+                  border: 'none', background: '#fff',
+                  color: 'var(--destructive)',
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
               >
+                <Trash2 style={{ width: 14, height: 14 }} />
                 Delete {selected.size}
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <main className="max-w-[900px] mx-auto px-6 py-8 space-y-6">
-        {/* Page header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-heading text-[28px] font-bold">My Pets</h1>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-              {pets.length} {pets.length === 1 ? 'pet' : 'pets'} in your profile
-            </p>
-          </div>
-          <button
-            onClick={() => setAddPetOpen(true)}
-            className="flex items-center gap-1.5 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{
-              height: '42px',
-              borderRadius: '10px',
-              background: 'var(--primary)',
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            Add Pet
-          </button>
-        </div>
-
-        {/* Table */}
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : pets.length === 0 ? (
-          <div
-            className="flex flex-col items-center py-20 rounded-2xl"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-          >
-            <PawPrint className="w-12 h-12 mb-4" style={{ color: 'var(--primary)', opacity: 0.4 }} />
-            <p className="font-heading font-semibold text-lg mb-1">No pets yet</p>
-            <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
-              Share your first pet with the Barkfest community!
-            </p>
-            <button
-              onClick={() => setAddPetOpen(true)}
-              className="flex items-center gap-1.5 px-5 h-10 rounded-xl text-sm font-semibold text-white"
-              style={{ background: 'var(--primary)' }}
-            >
-              <Plus className="w-4 h-4" />
-              Add your first pet
-            </button>
-          </div>
-        ) : (
-          <div
-            className="overflow-hidden rounded-2xl"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-          >
-            {/* Header row */}
+        {/* Table — dims when hidden */}
+        <div style={{ opacity: hidden ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: hidden ? 'none' : 'auto' }}>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
+              <Loader2 style={{ width: 32, height: 32, color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : pets.length === 0 ? (
             <div
-              className="hidden sm:grid items-center h-11 px-4 text-[11px] font-bold uppercase tracking-wider"
               style={{
-                background: 'rgba(223,103,73,0.08)',
-                color: 'var(--primary)',
-                gridTemplateColumns: '48px 56px 1fr 80px 80px 100px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '80px 0',
+                background: 'var(--card)', border: '1px solid var(--border)',
+                borderRadius: 16,
               }}
             >
-              <div className="flex items-center justify-center">
-                <input
-                  ref={selectAllRef}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                  className="w-[18px] h-[18px] rounded-[5px] cursor-pointer accent-primary"
-                />
-              </div>
-              <div />
-              <div>Name</div>
-              <div>Type</div>
-              <div>Age</div>
-              <div className="text-right">Actions</div>
+              <PawPrint style={{ width: 48, height: 48, marginBottom: 16, color: 'var(--primary)', opacity: 0.4 }} />
+              <p className="font-heading" style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>No pets yet</p>
+              <p style={{ fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 24 }}>
+                Share your first pet with the Barkfest community!
+              </p>
+              <button
+                onClick={() => setAddPetOpen(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  height: 40, padding: '0 20px', borderRadius: 10,
+                  border: 'none', background: 'var(--primary)', color: '#fff',
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                <Plus style={{ width: 16, height: 16 }} />
+                Add your first pet
+              </button>
             </div>
-
-            {/* Mobile select-all row */}
+          ) : (
             <div
-              className="sm:hidden flex items-center h-11 px-4 gap-3 text-sm font-medium"
-              style={{ background: 'rgba(223,103,73,0.08)', color: 'var(--primary)' }}
+              style={{
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                overflow: 'hidden',
+              }}
             >
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="w-[18px] h-[18px] rounded-[5px] cursor-pointer accent-primary"
-              />
-              <span>Select all</span>
-            </div>
-
-            {/* Pet rows */}
-            {pets.map((pet, i) => {
-              const age = formatAge(pet.dateOfBirth)
-              const isSelected = selected.has(pet.petId)
-              return (
+              {/* Desktop header row */}
+              {!isMobile && (
                 <div
-                  key={pet.petId}
-                  className="grid items-center px-4 transition-colors"
                   style={{
-                    height: '60px',
-                    gridTemplateColumns: '48px 56px 1fr 80px 80px 100px',
-                    background: isSelected ? 'rgba(223,103,73,0.10)' : 'transparent',
-                    borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                    display: 'grid', gridTemplateColumns: cols,
+                    alignItems: 'center', padding: '0 16px', height: 44,
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--primary-10)',
                   }}
                 >
-                  {/* Checkbox */}
-                  <div className="flex items-center justify-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleOne(pet.petId)}
-                      className="w-[18px] h-[18px] rounded-[5px] cursor-pointer accent-primary"
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Checkbox
+                      ref={selectAllRef}
+                      checked={allSelected}
+                      onChange={toggleAll}
                     />
                   </div>
+                  <div />
+                  {['Name', 'Type', 'Age', 'Actions'].map((h, i) => (
+                    <span
+                      key={h}
+                      style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+                        textTransform: 'uppercase', color: 'var(--primary)',
+                        textAlign: i === 3 ? 'right' : 'left',
+                      }}
+                    >
+                      {h}
+                    </span>
+                  ))}
+                </div>
+              )}
 
-                  {/* Thumbnail */}
-                  <div>
-                    {(() => {
-                      const featured = pet.images.find(i => i.isFeaturedImage) ?? pet.images[0]
-                      return featured ? (
+              {/* Mobile select-all row */}
+              {isMobile && (
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px',
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--primary-10)',
+                  }}
+                >
+                  <Checkbox ref={selectAllRef} checked={allSelected} onChange={toggleAll} />
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
+                      textTransform: 'uppercase', color: 'var(--primary)',
+                    }}
+                  >
+                    {allSelected ? 'Deselect all' : 'Select all'}
+                  </span>
+                </div>
+              )}
+
+              {/* Pet rows */}
+              {pets.map((pet, i) => {
+                const age = formatAge(pet.dateOfBirth)
+                const isSel = selected.has(pet.petId)
+                const featured = pet.images.find(img => img.isFeaturedImage) ?? pet.images[0]
+                return (
+                  <div
+                    key={pet.petId}
+                    style={{
+                      display: 'grid', gridTemplateColumns: cols,
+                      alignItems: 'center',
+                      padding: `0 ${isMobile ? 12 : 16}px`,
+                      height: isMobile ? 64 : 60,
+                      borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+                      background: isSel ? 'var(--primary-10)' : 'transparent',
+                      transition: 'background 0.12s',
+                    }}
+                  >
+                    {/* Checkbox */}
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <Checkbox checked={isSel} onChange={() => toggleOne(pet.petId)} />
+                    </div>
+
+                    {/* Thumbnail */}
+                    <div
+                      style={{
+                        width: isMobile ? 40 : 38, height: isMobile ? 40 : 38,
+                        borderRadius: 8, overflow: 'hidden',
+                        border: '1.5px solid var(--border)',
+                      }}
+                    >
+                      {featured ? (
                         <img
                           src={getBlobImageUrl(featured.blobName)}
                           alt={pet.name}
-                          className="w-10 h-10 rounded-lg object-cover"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       ) : (
-                        <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center"
-                          style={{ background: 'var(--secondary)' }}
-                        >
-                          <PawPrint className="w-5 h-5" style={{ color: 'var(--primary)' }} />
+                        <div style={{ width: '100%', height: '100%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <PawPrint style={{ width: 18, height: 18, color: 'var(--primary)' }} />
                         </div>
-                      )
-                    })()}
-                  </div>
+                      )}
+                    </div>
 
-                  {/* Name + breed (desktop) / stacked (mobile) */}
-                  <div className="min-w-0 pr-2">
-                    <p className="font-medium text-sm truncate">{pet.name}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
-                      {pet.breed}
-                    </p>
-                  </div>
+                    {/* Name + breed (mobile shows type/age too) */}
+                    <div style={{ paddingLeft: 4, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: isMobile ? 13 : 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {pet.name}
+                      </p>
+                      <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {isMobile
+                          ? [pet.breed, pet.petType, age].filter(Boolean).join(' · ')
+                          : pet.breed}
+                      </p>
+                    </div>
 
-                  {/* Type (hidden on mobile via grid col) */}
-                  <div className="hidden sm:block text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                    {pet.petType}
-                  </div>
+                    {/* Desktop-only: Type */}
+                    {!isMobile && (
+                      <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{pet.petType}</span>
+                    )}
 
-                  {/* Age */}
-                  <div className="hidden sm:block text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                    {age ?? '—'}
-                  </div>
+                    {/* Desktop-only: Age */}
+                    {!isMobile && (
+                      <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{age ?? '—'}</span>
+                    )}
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => navigate(`/pets/${pet.petId}?from=manage`)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
-                      title="View"
-                    >
-                      <Eye className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    <button
-                      onClick={() => {/* TODO: EditPetModal */}}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
-                      title="Edit"
-                    >
-                      <Pencil className="w-4 h-4 text-muted-foreground" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(pet.petId)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </button>
+                    {/* Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: isMobile ? 0 : 2 }}>
+                      <IconBtn title="View" onClick={() => navigate(`/pets/${pet.petId}?from=manage`)}>
+                        <Eye style={{ width: 15, height: 15 }} />
+                      </IconBtn>
+                      <IconBtn title="Edit" onClick={() => setEditPet(pet)}>
+                        <Pencil style={{ width: 15, height: 15 }} />
+                      </IconBtn>
+                      <IconBtn
+                        title="Delete"
+                        danger
+                        onClick={() => setDeleteTarget({ id: pet.petId, name: pet.name })}
+                      >
+                        <Trash2 style={{ width: 15, height: 15 }} />
+                      </IconBtn>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </main>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Single delete modal */}
-      {deleteTarget && targetPet && (
-        <DeleteModal
-          petName={targetPet.name}
-          isDeleting={isDeleting}
-          onCancel={() => setDeleteTarget(null)}
-          onConfirm={() => handleDeleteOne(deleteTarget)}
+      {/* ── Dialogs ────────────────────────────────────────────────── */}
+
+      {addPetOpen && (
+        <AddPetDialog
+          onClose={() => setAddPetOpen(false)}
+          onSuccess={handlePetAdded}
         />
       )}
 
-      {/* Bulk delete modal */}
+      {editPet && (
+        <EditPetModal
+          pet={editPet}
+          onClose={() => setEditPet(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
+            queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+            queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+            setEditPet(null)
+          }}
+        />
+      )}
+
+      {/* Single delete confirm */}
+      {deleteTarget && (
+        <ConfirmDelete
+          name={deleteTarget.name}
+          isDeleting={isDeleting}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={() => handleDeleteOne(deleteTarget.id)}
+        />
+      )}
+
+      {/* Bulk delete confirm */}
       {bulkDeleteOpen && (
-        <DeleteModal
-          petName={`${selected.size} pets`}
+        <ConfirmDelete
+          name={`${selected.size} pets`}
           isDeleting={isDeleting}
           onCancel={() => setBulkDeleteOpen(false)}
           onConfirm={handleBulkDelete}
         />
       )}
 
-      {addPetOpen && <AddPetDialog onClose={() => setAddPetOpen(false)} onSuccess={handlePetAdded} />}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
 
-function DeleteModal({
-  petName,
+// ── Shared micro-components ───────────────────────────────────────────
+
+import { forwardRef } from 'react'
+
+const Checkbox = forwardRef<
+  HTMLInputElement,
+  { checked: boolean; onChange: () => void }
+>(({ checked, onChange }, ref) => (
+  <input
+    ref={ref}
+    type="checkbox"
+    checked={checked}
+    onChange={onChange}
+    style={{
+      width: 18, height: 18, borderRadius: 5,
+      border: '1.5px solid var(--border)',
+      background: checked ? 'var(--primary)' : 'var(--card)',
+      cursor: 'pointer',
+      appearance: 'none', WebkitAppearance: 'none',
+      flexShrink: 0, transition: 'all 0.12s',
+      accentColor: 'var(--primary)',
+    }}
+  />
+))
+Checkbox.displayName = 'Checkbox'
+
+function IconBtn({
+  children,
+  title,
+  onClick,
+  danger,
+}: {
+  children: React.ReactNode
+  title: string
+  onClick: () => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      style={{
+        width: 34, height: 34, borderRadius: 8,
+        border: 'none', background: 'transparent',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--muted-foreground)',
+        transition: 'background 0.12s, color 0.12s',
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = danger ? 'rgba(229,72,77,0.1)' : 'var(--secondary)'
+        e.currentTarget.style.color = danger ? 'var(--destructive)' : 'var(--foreground)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.color = 'var(--muted-foreground)'
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function ConfirmDelete({
+  name,
   isDeleting,
   onCancel,
   onConfirm,
 }: {
-  petName: string
+  name: string
   isDeleting: boolean
   onCancel: () => void
   onConfirm: () => void
 }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center animate-backdrop-in px-4"
-      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(3px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      }}
     >
       <div
-        className="w-full max-w-[360px] animate-dialog-appear"
         style={{
-          background: 'var(--card)',
-          borderRadius: '20px',
-          padding: '28px',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.22)',
+          background: 'var(--card)', borderRadius: 20, padding: 28,
+          maxWidth: 360, width: '100%',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
         }}
       >
-        <div className="flex items-center gap-2 mb-5">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <BarkfestMark size={22} />
-          <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
+          <span className="font-heading" style={{ fontSize: 17, fontWeight: 700 }}>Barkfest</span>
         </div>
-        <h3 className="font-heading font-bold text-lg mb-2">Delete {petName}?</h3>
-        <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
-          This will permanently remove {petName} and all associated photos. This cannot be undone.
+        <h3 className="font-heading" style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
+          Delete {name}?
+        </h3>
+        <p style={{ fontSize: 14, color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: 22 }}>
+          This will permanently remove {name} and all their photos. This can't be undone.
         </p>
-        <div className="flex gap-3">
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={onCancel}
-            className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary"
-            style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
+            style={{
+              flex: 1, height: 42, borderRadius: 10,
+              border: '1.5px solid var(--border)', background: 'transparent',
+              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
+              cursor: 'pointer', color: 'var(--foreground)',
+            }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={isDeleting}
-            className="flex-1 h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={{ background: 'var(--destructive)' }}
+            style={{
+              flex: 1, height: 42, borderRadius: 10,
+              border: 'none', background: 'var(--destructive)', color: '#fff',
+              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600,
+              cursor: isDeleting ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              opacity: isDeleting ? 0.6 : 1,
+            }}
           >
-            {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isDeleting && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
             Delete
           </button>
         </div>

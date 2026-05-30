@@ -4,50 +4,24 @@ interface BarkfestMarkProps {
   className?: string
 }
 
-export function BarkfestMark({ inverted = false, size = 40, className }: BarkfestMarkProps) {
-  const fill = 'var(--primary)'
-
-  if (inverted) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 80 80"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className={className}
-      >
-        <rect width="80" height="80" rx="20" fill="white" />
-        <rect x="16" y="8" width="14" height="58" rx="7" fill={fill} />
-        <circle cx="48" cy="54" r="20" fill={fill} />
-        <circle cx="48" cy="54" r="13" fill="white" />
-        <circle cx="48" cy="54" r="8.5" fill={fill} />
-        <ellipse cx="48" cy="57.5" rx="3" ry="2.5" fill="white" />
-        <circle cx="43.5" cy="52" r="1.8" fill="white" />
-        <circle cx="48" cy="50.5" r="1.8" fill="white" />
-        <circle cx="52.5" cy="52" r="1.8" fill="white" />
-      </svg>
-    )
-  }
-
+export function BarkfestMark({ inverted = false, size = 28, className }: BarkfestMarkProps) {
+  const color = inverted ? '#ffffff' : 'var(--primary)'
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 80 80"
+      viewBox="0 0 24 24"
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
-      <rect width="80" height="80" rx="20" fill={fill} />
-      <rect x="16" y="8" width="14" height="58" rx="7" fill="white" />
-      <circle cx="48" cy="54" r="20" fill="white" />
-      <circle cx="48" cy="54" r="13" fill={fill} />
-      <circle cx="48" cy="54" r="8.5" fill="white" />
-      <ellipse cx="48" cy="57.5" rx="3" ry="2.5" fill={fill} />
-      <circle cx="43.5" cy="52" r="1.8" fill={fill} />
-      <circle cx="48" cy="50.5" r="1.8" fill={fill} />
-      <circle cx="52.5" cy="52" r="1.8" fill={fill} />
+      <circle cx="11" cy="4" r="2" />
+      <circle cx="18" cy="8" r="2" />
+      <circle cx="20" cy="16" r="2" />
+      <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
     </svg>
   )
 }

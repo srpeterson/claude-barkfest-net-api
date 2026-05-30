@@ -1,9 +1,10 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import isEmail from 'validator/lib/isEmail'
-import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
+import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiError, checkDisplayName, getOwnerById, login, register, setAuthToken } from '@/lib/api'
+import { BarkfestMark } from '@/components/BarkfestMark'
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
 const STRENGTH_COLORS = [
@@ -137,8 +138,8 @@ export function RegisterDialog() {
 
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <PawPrint className="w-6 h-6 text-primary" />
-            <span className="font-heading text-lg font-semibold tracking-tight">Barkfest</span>
+            <BarkfestMark size={22} />
+            <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
           </div>
           <h2 className="text-2xl font-bold">Welcome to Barkfest!</h2>
           <p className="text-sm text-muted-foreground mt-1">Create your account to get started.</p>

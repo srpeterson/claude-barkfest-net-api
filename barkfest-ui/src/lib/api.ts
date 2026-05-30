@@ -330,3 +330,16 @@ export function changePassword(ownerId: string, currentPassword: string, newPass
     body: JSON.stringify({ currentPassword, newPassword }),
   })
 }
+
+// TODO: Confirm endpoint contract with backend team before activating.
+// Expected: PUT /v1/owners/{id}/visibility  body: { hidden: boolean }  →  204 No Content
+// When hidden=true the owner's pets are excluded from the public browse gallery (server-side).
+export function setOwnerVisibility(_ownerId: string, _hidden: boolean): Promise<void> {
+  // Stub — resolves immediately so optimistic UI works. Wire to real endpoint when available.
+  return Promise.resolve()
+}
+
+// DELETE /v1/pets/{petId}/images/{imageId}
+export function removePetImage(petId: string, imageId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}/images/${imageId}`, { method: 'DELETE' })
+}

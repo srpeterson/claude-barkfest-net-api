@@ -211,3 +211,62 @@ pnpm --dir barkfest-ui test:ui
 ```
 
 Frontend tests do **not** require Docker or a running API — they are pure unit and component tests.
+
+---
+
+## Testing on a Mobile Device
+
+Both your development machine and phone must be on the same Wi-Fi network.
+
+**1. Start Aspire as normal**
+
+```bash
+dotnet run --project src/Barkfest.AppHost
+```
+
+Wait until all services are healthy. Note the API port shown next to `barkfest-api` in the Aspire dashboard.
+
+**2. Stop the `barkfest-ui` resource in the Aspire dashboard**
+
+Find `barkfest-ui` in the dashboard and stop it. SQL Server, Azurite, and the .NET API continue running — you are only stopping the Vite process that Aspire started.
+
+**3. Find your machine's local IP address**
+
+```bash
+ipconfig
+```
+
+Look for the **IPv4 Address** under your Wi-Fi adapter — something like `192.168.1.45`. This is machine-specific and will differ on every developer's machine.
+
+**4. Create `barkfest-ui/.env` (already gitignored)**
+
+```
+VITE_API_BASE_URL=http://<your-local-ip>:<api-port>
+```
+
+For example:
+
+```
+VITE_API_BASE_URL=http://192.168.1.45:7234
+```
+
+The API port is the one shown in the Aspire dashboard for `barkfest-api`. Do **not** commit this file — it is machine-specific and `.gitignore` already excludes it.
+
+**5. Start Vite manually with `--host`**
+
+```bash
+cd barkfest-ui
+pnpm dev --host
+```
+
+Vite will print a **Network** URL, for example:
+
+```
+  ➜  Network: http://192.168.1.45:5173
+```
+
+**6. Open that URL on your phone**
+
+Enter the Network URL in your mobile browser. The frontend will connect to the real API and database running via Aspire.
+
+**When you are done**, stop the Vite terminal. The next time you start Aspire normally it will bring `barkfest-ui` back up automatically.

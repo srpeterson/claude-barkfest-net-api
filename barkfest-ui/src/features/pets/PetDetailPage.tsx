@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Loader2, MoreHorizontal, Pencil, Trash2, UserCircle, X } from 'lucide-react'
 import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { useAuth } from '@/hooks/useAuth'
-import { BarkfestMark } from '@/components/BarkfestMark'
 import { Navbar } from '@/components/Navbar'
+import { EditPetModal } from '@/components/EditPetModal'
+
+// ── Helpers ───────────────────────────────────────────────────────────
 
 function formatAge(dateOfBirth?: string): string | null {
   if (!dateOfBirth) return null
@@ -15,14 +17,16 @@ function formatAge(dateOfBirth?: string): string | null {
   let months = (today.getFullYear() - dob.getFullYear()) * 12 + (today.getMonth() - dob.getMonth())
   if (today.getDate() < dob.getDate()) months--
   months = Math.max(months, 0)
-  if (months < 12) return months === 1 ? '1 month' : `${months} months`
+  if (months < 12) return months === 1 ? '1 month old' : `${months} months old`
   const years = Math.floor(months / 12)
-  return years === 1 ? '1 year' : `${years} years`
+  return years === 1 ? '1 year old' : `${years} years old`
 }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
+
+// ── PetDetailPage ─────────────────────────────────────────────────────
 
 export function PetDetailPage() {
   const { petId } = useParams<{ petId: string }>()
@@ -35,6 +39,7 @@ export function PetDetailPage() {
   const [likeCount, setLikeCount] = useState<number | null>(null)
   const [kebabOpen, setKebabOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -44,7 +49,6 @@ export function PetDetailPage() {
     enabled: !!petId,
   })
 
-  // Fetch owner info — only available for authenticated users (endpoint requires JWT)
   const { data: owner } = useQuery({
     queryKey: ['owner', pet?.ownerId],
     queryFn: () => getOwnerById(pet!.ownerId),
@@ -55,8 +59,20 @@ export function PetDetailPage() {
   const displayLikes = likeCount !== null ? likeCount : (pet?.likes ?? 0)
   const fromManage = searchParams.get('from') === 'manage'
 
+  // Keyboard nav for lightbox
+  useEffect(() => {
+    if (lightboxIndex === null || !pet) return
+    const fn = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxIndex(null)
+      if (e.key === 'ArrowLeft') setLightboxIndex(i => i === null ? null : (i - 1 + pet.images.length) % pet.images.length)
+      if (e.key === 'ArrowRight') setLightboxIndex(i => i === null ? null : (i + 1) % pet.images.length)
+    }
+    window.addEventListener('keydown', fn)
+    return () => window.removeEventListener('keydown', fn)
+  }, [lightboxIndex, pet])
+
   async function handleLike() {
-    if (!pet) return
+    if (!pet || isOwner) return
     const next = !liked
     const prev = likeCount !== null ? likeCount : pet.likes
     setLiked(next)
@@ -83,15 +99,10 @@ export function PetDetailPage() {
     }
   }
 
-  function handleLightboxNav(dir: 1 | -1) {
-    if (lightboxIndex === null || !pet) return
-    const count = pet.images.length
-    setLightboxIndex((lightboxIndex + dir + count) % count)
-  }
-
+  // ── Loading / error states ────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+      <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center pt-32">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -102,7 +113,7 @@ export function PetDetailPage() {
 
   if (isError || !pet) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+      <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex flex-col items-center justify-center pt-32 gap-4">
           <p className="text-muted-foreground">Pet not found.</p>
@@ -116,191 +127,256 @@ export function PetDetailPage() {
   const age = formatAge(pet.dateOfBirth)
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-      {/* Custom navbar for pet detail — back link */}
-      <div className="sticky top-0 z-50 px-4 pt-[10px] pb-[10px]">
-        <nav
-          className="flex items-center justify-between h-[52px] px-[22px] rounded-full"
-          style={{ background: 'var(--primary)', boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }}
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      {/* Back nav */}
+      <div className="max-w-[860px] mx-auto px-6 pt-6 pb-2">
+        <Link
+          to={fromManage ? '/manage' : '/'}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 13,
+            color: 'var(--muted-foreground)',
+            textDecoration: 'none',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--foreground)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted-foreground)')}
         >
-          <Link
-            to={fromManage ? '/manage' : '/'}
-            className="flex items-center gap-1.5 text-sm font-medium text-white hover:opacity-80 transition-opacity"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {fromManage ? 'My Pets' : 'Back to Barkfest'}
-          </Link>
-        </nav>
+          <ArrowLeft className="w-4 h-4" />
+          {fromManage ? 'My Pets' : 'Back to Barkfest'}
+        </Link>
       </div>
 
-      {/* Hero image — full bleed */}
-      <div
-        className="relative overflow-hidden"
-        style={{ height: 'clamp(320px, 45vw, 520px)' }}
-      >
-        {heroImage ? (
-          <img
-            src={getBlobImageUrl(heroImage.blobName)}
-            alt={pet.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-secondary flex items-center justify-center">
-            <span className="text-6xl">🐾</span>
-          </div>
-        )}
+      {/* ── Hero — full-bleed, overflow visible so kebab dropdown can escape ── */}
+      <div style={{ position: 'relative', height: 'clamp(320px, 45vw, 520px)' }}>
 
-        {/* Gradient overlay */}
+        {/* Image + gradient — clipped independently */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          {heroImage ? (
+            <img
+              src={getBlobImageUrl(heroImage.blobName)}
+              alt={pet.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 64 }}>🐾</span>
+            </div>
+          )}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)' }} />
+        </div>
+
+        {/* Name + badges — bottom-left */}
         <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)' }}
-        />
-
-        {/* Name + badges pinned bottom-left */}
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-8">
-          <h1
-            className="font-heading font-bold text-white drop-shadow mb-2"
-            style={{ fontSize: 'clamp(32px, 4vw, 56px)' }}
-          >
-            {pet.name}
-          </h1>
-          <div className="flex flex-wrap gap-2">
-            {age && (
-              <span
-                className="px-3 py-1 rounded-full text-sm text-white font-medium"
-                style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)' }}
-              >
-                {age}
-              </span>
-            )}
-            {pet.breed && (
-              <span
-                className="px-3 py-1 rounded-full text-sm text-white font-medium"
-                style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)' }}
-              >
-                {pet.breed}
-              </span>
-            )}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '0 32px 64px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <h1
+              className="font-heading"
+              style={{
+                fontSize: 'clamp(32px, 4vw, 56px)',
+                fontWeight: 700,
+                color: '#fff',
+                lineHeight: 1.1,
+                marginBottom: 12,
+                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}
+            >
+              {pet.name}
+            </h1>
+            {/* Age + breed badges */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {age && <DarkChip>{age}</DarkChip>}
+              {pet.breed && <DarkChip>{pet.breed}</DarkChip>}
+            </div>
           </div>
         </div>
 
-        {/* Owner kebab — top right */}
+        {/* Owner kebab — top-right, z-index above hero but not clipped */}
         {isOwner && (
-          <div className="absolute top-4 right-4">
-            <button
-              onClick={() => setKebabOpen(o => !o)}
-              className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-80"
-              style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)' }}
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
-
-            {kebabOpen && (
-              <div
-                className="absolute right-0 top-[calc(100%+8px)] w-40 rounded-2xl overflow-hidden"
-                style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }}
+          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+            <div style={{ position: 'relative' }}>
+              {kebabOpen && (
+                <div onClick={() => setKebabOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+              )}
+              <button
+                onClick={() => setKebabOpen(o => !o)}
+                style={{
+                  width: 38, height: 38, borderRadius: '50%',
+                  border: 'none', cursor: 'pointer',
+                  background: 'rgba(0,0,0,0.35)',
+                  backdropFilter: 'blur(6px)',
+                  color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
               >
-                <button
-                  onClick={() => { setKebabOpen(false) /* TODO: open EditPetModal */ }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors"
-                  style={{ color: 'var(--foreground)' }}
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+
+              {kebabOpen && (
+                <div
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    width: 160,
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 12,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    overflow: 'hidden',
+                    zIndex: 100,
+                  }}
                 >
-                  <Pencil className="w-4 h-4 text-primary shrink-0" />
-                  Edit pet
-                </button>
-                <button
-                  onClick={() => { setKebabOpen(false); setDeleteOpen(true) }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors"
-                  style={{ color: 'var(--destructive)' }}
-                >
-                  <Trash2 className="w-4 h-4 shrink-0" />
-                  Delete pet
-                </button>
-              </div>
-            )}
+                  <KebabItem
+                    icon={<Pencil className="w-3.5 h-3.5" />}
+                    label="Edit pet"
+                    color="var(--foreground)"
+                    onClick={() => { setKebabOpen(false); setEditOpen(true) }}
+                  />
+                  <KebabItem
+                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                    label="Delete pet"
+                    color="var(--destructive)"
+                    onClick={() => { setKebabOpen(false); setDeleteOpen(true) }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Floating info card */}
-      <div className="max-w-2xl mx-auto px-4">
+      {/* ── Floating info card ─────────────────────────────────────── */}
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px' }}>
         <div
-          className="relative rounded-[20px] p-7 sm:p-8"
           style={{
             background: 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 20,
+            padding: '28px 32px',
+            marginTop: -40,
+            position: 'relative',
             boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-            marginTop: '-40px',
           }}
         >
           {/* Description */}
           {pet.description && (
-            <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--muted-foreground)' }}>
+            <p style={{ fontSize: 15, color: 'var(--muted-foreground)', lineHeight: 1.75, marginBottom: 20 }}>
               {pet.description}
             </p>
           )}
 
-          <div className="border-t mb-5" style={{ borderColor: 'var(--border)' }} />
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: 20 }} />
 
-          {/* Owner row + Like button */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
+          {/* Owner row + like button */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+
+            {/* Owner */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
               {owner?.profileImage?.blobName ? (
                 <img
                   src={getBlobImageUrl(owner.profileImage.blobName, 'owner-profile-images')}
                   alt={owner.displayName ?? owner.username}
-                  className="w-9 h-9 rounded-full object-cover shrink-0"
+                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }}
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <UserCircle className="w-6 h-6 text-muted-foreground" />
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <UserCircle className="w-5 h-5 text-muted-foreground" />
                 </div>
               )}
-              <div className="min-w-0">
+              <div style={{ minWidth: 0 }}>
                 {owner?.displayName && (
-                  <p className="text-sm font-semibold leading-tight truncate">{owner.displayName}</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--foreground)', lineHeight: 1.2 }}>
+                    {owner.displayName}
+                  </p>
                 )}
-                <p className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-foreground)' }}>
                   {owner ? `@${owner.username} · ` : ''}{formatDate(pet.createdAt)}
                 </p>
               </div>
             </div>
 
             {/* Like button */}
-            <button
-              onClick={isOwner ? undefined : handleLike}
-              disabled={isOwner}
-              title={isOwner ? "Can't like your own pet" : undefined}
-              className="flex items-center gap-2 px-4 h-[38px] rounded-[20px] text-sm font-medium transition-colors shrink-0"
-              style={{
-                border: `1.5px solid ${liked ? '#e5484d' : 'var(--border)'}`,
-                background: liked ? 'rgba(229,72,77,0.08)' : 'transparent',
-                color: liked ? '#e5484d' : 'var(--muted-foreground)',
-                opacity: isOwner ? 0.45 : 1,
-                cursor: isOwner ? 'not-allowed' : 'pointer',
-              }}
-            >
-              <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-              {displayLikes}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+              <button
+                onClick={handleLike}
+                disabled={isOwner}
+                title={isOwner ? "You can't like your own pet" : undefined}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  height: 38,
+                  padding: '0 16px',
+                  borderRadius: 20,
+                  border: `1.5px solid ${liked ? '#e5484d' : 'var(--border)'}`,
+                  background: liked ? 'rgba(229,72,77,0.08)' : 'transparent',
+                  color: isOwner ? 'var(--border)' : liked ? '#e5484d' : 'var(--muted-foreground)',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: liked ? 600 : 400,
+                  cursor: isOwner ? 'not-allowed' : 'pointer',
+                  opacity: isOwner ? 0.45 : 1,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <Heart
+                  className="w-4 h-4"
+                  fill={liked ? '#e5484d' : 'none'}
+                  stroke={liked ? '#e5484d' : 'currentColor'}
+                />
+                {displayLikes}
+              </button>
+              {isOwner && (
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>
+                  Can't like your own pet
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Photo grid */}
+      {/* ── Photos ────────────────────────────────────────────────── */}
       {pet.images.length > 0 && (
-        <div className="max-w-2xl mx-auto px-4 mt-6 pb-20">
-          <h2 className="font-heading font-semibold text-lg mb-4">Photos</h2>
-          <div className="grid grid-cols-3 gap-[10px]">
+        <div style={{ maxWidth: 860, margin: '40px auto 0', padding: '0 24px 56px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
+            <h2
+              className="font-heading"
+              style={{ fontSize: 20, fontWeight: 700, margin: 0 }}
+            >
+              Photos
+            </h2>
+            <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+              {pet.images.length}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {pet.images.map((img, idx) => (
               <button
                 key={img.petImageId}
                 onClick={() => setLightboxIndex(idx)}
-                className="aspect-square rounded-[10px] overflow-hidden group"
+                style={{ aspectRatio: '1', borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: 'none', padding: 0, position: 'relative', display: 'block' }}
               >
                 <img
                   src={getBlobImageUrl(img.blobName)}
                   alt={`${pet.name} photo ${idx + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-300"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease', display: 'block' }}
+                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.06)')}
+                  onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </button>
             ))}
@@ -308,90 +384,96 @@ export function PetDetailPage() {
         </div>
       )}
 
-      {/* Lightbox */}
+      {/* ── Lightbox ───────────────────────────────────────────────── */}
       {lightboxIndex !== null && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center animate-backdrop-in"
-          style={{ background: 'rgba(0,0,0,0.92)' }}
           onClick={() => setLightboxIndex(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, animation: 'fade-in 0.2s ease' }}
         >
+          {/* Close */}
           <button
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
             onClick={() => setLightboxIndex(null)}
+            style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <X className="w-5 h-5" />
           </button>
 
-          <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            onClick={e => { e.stopPropagation(); handleLightboxNav(-1) }}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <img
-            src={getBlobImageUrl(pet.images[lightboxIndex].blobName)}
-            alt={`${pet.name} photo ${lightboxIndex + 1}`}
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl"
+          {/* Image */}
+          <div
             onClick={e => e.stopPropagation()}
-          />
-
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            onClick={e => { e.stopPropagation(); handleLightboxNav(1) }}
+            style={{ position: 'relative', maxWidth: 900, maxHeight: '85vh', width: '100%' }}
           >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+            <img
+              src={getBlobImageUrl(pet.images[lightboxIndex].blobName)}
+              alt={`${pet.name} photo ${lightboxIndex + 1}`}
+              style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 12, display: 'block' }}
+            />
+            {/* Counter */}
+            <div
+              style={{ position: 'absolute', bottom: -36, left: '50%', transform: 'translateX(-50%)', fontSize: 13, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}
+            >
+              {lightboxIndex + 1} / {pet.images.length}
+            </div>
+          </div>
 
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
-            {lightboxIndex + 1} / {pet.images.length}
-          </span>
+          {/* Arrows */}
+          {pet.images.length > 1 && (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i - 1 + pet.images.length) % pet.images.length) }}
+                style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i + 1) % pet.images.length) }}
+                style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      {/* Delete confirmation modal */}
+      {editOpen && pet && (
+        <EditPetModal
+          pet={pet}
+          onClose={() => setEditOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['pet', petId] })
+            queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+            queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+            setEditOpen(false)
+          }}
+        />
+      )}
+
+      {/* ── Delete confirmation ────────────────────────────────────── */}
       {deleteOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center animate-backdrop-in px-4"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
         >
           <div
-            className="w-full max-w-[360px] animate-dialog-appear"
-            style={{
-              background: 'var(--card)',
-              borderRadius: '20px',
-              padding: '28px',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.22)',
-            }}
+            style={{ background: 'var(--card)', borderRadius: 20, padding: 28, maxWidth: 360, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.15)' }}
           >
-            <div className="flex items-center gap-2 mb-5">
-              <BarkfestMark size={22} />
-              <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
-            </div>
-            <h3 className="font-heading font-bold text-lg mb-2">Delete pet?</h3>
-            <p className="text-sm mb-1" style={{ color: 'var(--muted-foreground)' }}>
-              You're about to permanently delete <strong>{pet.name}</strong>.
+            <h3 className="font-heading" style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
+              Delete {pet.name}?
+            </h3>
+            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: 22 }}>
+              This will permanently remove {pet.name} and all their photos. This can't be undone.
             </p>
-            <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
-              This will remove all photos and cannot be undone.
-            </p>
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => setDeleteOpen(false)}
-                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary"
-                style={{
-                  border: '1.5px solid var(--border)',
-                  background: 'transparent',
-                  color: 'var(--muted-foreground)',
-                }}
+                style={{ flex: 1, height: 42, borderRadius: 10, border: '1.5px solid var(--border)', background: 'transparent', fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 500, cursor: 'pointer', color: 'var(--foreground)' }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
-                style={{ background: 'var(--destructive)' }}
+                style={{ flex: 1, height: 42, borderRadius: 10, border: 'none', background: 'var(--destructive)', color: '#fff', fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isDeleting ? 0.6 : 1 }}
               >
                 {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Delete
@@ -400,6 +482,54 @@ export function PetDetailPage() {
           </div>
         </div>
       )}
+
+      <style>{`@keyframes fade-in { from { opacity:0 } to { opacity:1 } }`}</style>
     </div>
+  )
+}
+
+// ── Shared small components ───────────────────────────────────────────
+
+function DarkChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        height: 26,
+        padding: '0 12px',
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 500,
+        background: 'rgba(255,255,255,0.2)',
+        color: '#fff',
+        border: '1px solid rgba(255,255,255,0.3)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+function KebabItem({
+  icon,
+  label,
+  color,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  color: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ width: '100%', height: 40, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 9, background: 'transparent', border: 'none', cursor: 'pointer', color, fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500, textAlign: 'left' }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--secondary)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      {icon}{label}
+    </button>
   )
 }

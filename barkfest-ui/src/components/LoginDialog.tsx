@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
+import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
+import { BarkfestMark } from '@/components/BarkfestMark'
 
 export function LoginDialog() {
   const { dialog, closeDialog, openRegisterDialog, signIn } = useAuth()
@@ -9,7 +10,7 @@ export function LoginDialog() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const allFieldsFilled = username.trim() !== '' && password !== ''
@@ -70,8 +71,8 @@ export function LoginDialog() {
 
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <PawPrint className="w-6 h-6 text-primary" />
-            <span className="font-heading text-lg font-semibold tracking-tight">Barkfest</span>
+            <BarkfestMark size={22} />
+            <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
           </div>
           <h2 className="font-heading text-2xl font-bold">Welcome back!</h2>
           <p className="text-sm text-muted-foreground mt-1">Sign in to share your pet's story.</p>
@@ -120,13 +121,12 @@ export function LoginDialog() {
             </div>
           </div>
 
-          {/* Hidden until admin UI is part of the MVP — remove `hidden` to restore */}
-          <label className="hidden flex items-center gap-2 cursor-pointer select-none">
+          {/* Admin checkbox — visible but disabled per design spec (admin login via Scalar) */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, opacity: 0.4, cursor: 'not-allowed', userSelect: 'none' }}>
             <input
               type="checkbox"
-              checked={isAdmin}
-              onChange={e => setIsAdmin(e.target.checked)}
-              className="w-4 h-4 rounded border-input accent-primary cursor-pointer"
+              disabled
+              style={{ width: 16, height: 16, borderRadius: 4, accentColor: 'var(--primary)', cursor: 'not-allowed' }}
             />
             <span className="text-sm text-muted-foreground">I am an Administrator</span>
           </label>
