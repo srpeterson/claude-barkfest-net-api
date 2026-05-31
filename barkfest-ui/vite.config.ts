@@ -13,6 +13,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/v1': {
+        target: 'https://localhost:7101',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   test: {
     globals: true,
