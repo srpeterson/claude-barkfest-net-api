@@ -19,7 +19,7 @@ public class Owner
     public string PasswordHash { get; private set; } = string.Empty;
     public bool IsEmailVerified { get; private set; } = false;
     public string? VerificationToken { get; private set; }
-    public bool Active { get; private set; } = true;
+    public bool IsActive { get; private set; } = true;
     public bool IsVisible { get; private set; } = true;
     public ProfileImage? ProfileImage { get; private set; }
     public IReadOnlyCollection<Pet> Pets => _pets.AsReadOnly();
@@ -163,7 +163,7 @@ public class Owner
         return owner;
     }
 
-    public void SetActive(bool active) => Active = active;
+    public void SetIsActive(bool isActive) => IsActive = isActive;
 
     public void SetIsVisible(bool isVisible) => IsVisible = isVisible;
 

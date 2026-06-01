@@ -23,7 +23,7 @@ public class ActiveOwnerMiddleware(RequestDelegate next)
             {
                 var owner = await ownerRepository.GetByIdAsync(ownerId, context.RequestAborted);
 
-                if (owner is not null && !owner.Active)
+                if (owner is not null && !owner.IsActive)
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return;

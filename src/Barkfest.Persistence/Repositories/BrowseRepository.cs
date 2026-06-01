@@ -16,7 +16,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             .Include(pi => pi.Pet)
                 .ThenInclude(p => p.Owner)
             .Where(pi => pi.IsFeaturedImage)
-            .Where(pi => pi.Pet.Owner.Active && pi.Pet.Owner.IsVisible)
+            .Where(pi => pi.Pet.Owner.IsActive && pi.Pet.Owner.IsVisible)
             .AsQueryable();
 
         if (petType is not null)

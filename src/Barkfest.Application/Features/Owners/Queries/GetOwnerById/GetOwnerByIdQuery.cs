@@ -19,8 +19,8 @@ public class GetOwnerByIdQueryHandler(IOwnerRepository ownerRepository, ICurrent
         if (owner is null)
             throw new NotFoundException(nameof(Owner), request.Id);
 
-        // Active is admin-controlled — inactive owners are hidden from everyone except admins.
-        if (!owner.Active && !currentUserService.IsAdmin)
+        // IsActive is admin-controlled — inactive owners are hidden from everyone except admins.
+        if (!owner.IsActive && !currentUserService.IsAdmin)
             throw new NotFoundException(nameof(Owner), request.Id);
 
         // IsVisible is owner-controlled — hidden from others, but the owner can always see their own profile.

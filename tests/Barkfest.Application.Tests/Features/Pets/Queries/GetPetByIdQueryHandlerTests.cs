@@ -49,7 +49,7 @@ public class GetPetByIdQueryHandlerTests
     {
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         var pet = new PetBuilder().WithOwnerId(owner.Id).Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
@@ -64,7 +64,7 @@ public class GetPetByIdQueryHandlerTests
     {
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         var pet = new PetBuilder().WithOwnerId(owner.Id).WithName("Rex").Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);

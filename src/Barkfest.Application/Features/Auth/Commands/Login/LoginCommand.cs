@@ -24,7 +24,7 @@ public class LoginCommandHandler(
         if (!passwordHasher.Verify(request.Password, owner.PasswordHash))
             throw new NotFoundException(nameof(Owner), "username", request.Username);
 
-        if (!owner.Active)
+        if (!owner.IsActive)
             throw new ForbiddenException();
 
         var token = jwtTokenService.GenerateOwnerToken(owner);

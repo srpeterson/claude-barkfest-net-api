@@ -19,7 +19,7 @@ public class GetPetsByOwnerIdQueryHandler(
     {
         var owner = await ownerRepository.GetByIdAsync(request.OwnerId, cancellationToken);
 
-        if (owner is null || (!owner.Active && !currentUserService.IsAdmin))
+        if (owner is null || (!owner.IsActive && !currentUserService.IsAdmin))
             throw new NotFoundException(nameof(Owner), request.OwnerId);
 
         if (!owner.IsVisible && !currentUserService.IsAdmin && currentUserService.OwnerId != owner.Id)

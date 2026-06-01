@@ -47,7 +47,7 @@ public class GetOwnerByIdQueryHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
         // IsAdmin returns false by default (NSubstitute default for bool)
 
@@ -60,7 +60,7 @@ public class GetOwnerByIdQueryHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().WithFirstName("John").Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
         _currentUserService.IsAdmin.Returns(true);
 
