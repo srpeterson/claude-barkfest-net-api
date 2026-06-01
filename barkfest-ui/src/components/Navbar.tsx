@@ -4,7 +4,7 @@ import { LogOut, Plus, UserCircle } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { logout, getBrowseBreeds, getBrowsePetTypes } from '@/lib/api'
+import { logout, getBrowseBreeds, getBrowsePetTypes, getOwnerById } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { getPetTypeLabel } from '@/config/petTypes'
 import { BarkfestMark } from '@/components/BarkfestMark'
@@ -76,7 +76,22 @@ function PawIcon() {
 export function Navbar({ filterProps }: NavbarProps) {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const { isAuthenticated, accountType, profileImageBlobName, signOut } = useAuth()
+  const { isAuthenticated, accountType, profileImageBlobName, accountId, signOut } = useAuth()
+
+  // Keep the profile image in sync with the server so changes on another
+  // device (or another tab) are picked up when the user returns to this one.
+  const { data: freshBlobName } = useQuery({
+    queryKey: ['owner', accountId, 'profile-image'],
+    queryFn: async () => {
+      const owner = await getOwnerById(accountId!)
+      return owner.profileImage?.blobName ?? null
+    },
+    enabled: isAuthenticated && accountType === 'owner' && !!accountId,
+    staleTime: 30 * 1000,
+    initialData: profileImageBlobName,
+  })
+
+  const displayBlobName = freshBlobName ?? profileImageBlobName
   const [addPetOpen, setAddPetOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -437,14 +452,14 @@ export function Navbar({ filterProps }: NavbarProps) {
                       padding: 0,
                     }}
                   >
-                    {profileImageBlobName ? (
+                    <UserCircle style={{ width: 24, height: 24 }} />
+                    {displayBlobName && (
                       <img
-                        src={getBlobImageUrl(profileImageBlobName, 'owner-profile-images')}
+                        src={getBlobImageUrl(displayBlobName, 'owner-profile-images')}
                         alt="Profile"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={e => { e.currentTarget.style.display = 'none' }}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                       />
-                    ) : (
-                      <UserCircle style={{ width: 24, height: 24 }} />
                     )}
                   </button>
 

@@ -207,10 +207,13 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         await uploadOwnerProfileImage(accountId, newImageFile)
         // Re-fetch to get the server-assigned blob name
         const updated = await getOwnerById(accountId)
-        setProfileImage(updated.profileImage?.blobName ?? null)
+        const newBlobName = updated.profileImage?.blobName ?? null
+        setProfileImage(newBlobName)
+        queryClient.setQueryData(['owner', accountId, 'profile-image'], newBlobName)
       } else if (imageCleared && existingBlobName) {
         await removeOwnerProfileImage(accountId)
         setProfileImage(null)
+        queryClient.setQueryData(['owner', accountId, 'profile-image'], null)
       }
       // No image change — context unchanged
 

@@ -37,6 +37,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    cache: 'no-store',
     headers,
   })
 

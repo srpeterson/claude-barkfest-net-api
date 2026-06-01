@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { login } from '@/lib/api'
+import { getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 
 // ── Icon helpers ─────────────────────────────────────────────────────
@@ -106,7 +106,15 @@ export function LoginPage() {
     setError('')
     try {
       const result = await login(username, password)
-      signIn(result.accountId, 'owner', result.accessToken)
+      let profileImageBlobName: string | null = null
+      try {
+        setAuthToken(result.accessToken)
+        const owner = await getOwnerById(result.accountId)
+        profileImageBlobName = owner.profileImage?.blobName ?? null
+      } catch {
+        // Non-fatal — proceed with null profile image
+      }
+      signIn(result.accountId, 'owner', result.accessToken, profileImageBlobName)
       navigate('/')
     } catch {
       setError('Invalid username or password.')
