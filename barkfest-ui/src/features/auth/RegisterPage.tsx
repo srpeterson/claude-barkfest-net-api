@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEv
 import { Link, useNavigate } from 'react-router-dom'
 import zxcvbn from 'zxcvbn'
 import { useAuth } from '@/hooks/useAuth'
-import { checkDisplayName, login, register } from '@/lib/api'
+import { checkDisplayName, checkUsername, login, register } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -97,7 +97,8 @@ function focusOut(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
   e.target.style.boxShadow = 'none'
 }
 
-// ── DisplayName availability state ────────────────────────────────────
+// ── Username / DisplayName availability state ─────────────────────────
+type UnStatus = 'idle' | 'checking' | 'available' | 'taken'
 type DnStatus = 'idle' | 'checking' | 'available' | 'taken'
 
 // ── Form state ────────────────────────────────────────────────────────
@@ -126,13 +127,16 @@ export function RegisterPage() {
     confirmPassword: '',
   })
   const [showPw, setShowPw]       = useState(false)
+  const [unStatus, setUnStatus]   = useState<UnStatus>('idle')
   const [dnStatus, setDnStatus]   = useState<DnStatus>('idle')
   const [error, setError]         = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const debounceUnRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
   const debounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const strength        = zxcvbn(form.password)
   const emailBad        = form.email.trim() !== '' && !EMAIL_REGEX.test(form.email.trim())
+  const unTooShort      = form.username.trim().length > 0 && form.username.trim().length < 5
   const dnStripped      = form.displayName.replace(/\s/g, '')
   const dnTooShort      = dnStripped.length > 0 && dnStripped.length < 4
   const pwMismatch      = form.confirmPassword !== '' && form.password !== form.confirmPassword
@@ -144,6 +148,8 @@ export function RegisterPage() {
     form.email.trim() &&
     !emailBad &&
     form.username.trim() &&
+    !unTooShort &&
+    unStatus === 'available' &&
     form.displayName.trim() &&
     !dnTooShort &&
     dnStatus === 'available' &&
@@ -157,6 +163,28 @@ export function RegisterPage() {
     const { name, value } = e.target
     setForm(f => ({ ...f, [name]: value }))
   }
+
+  const checkUN = useCallback((value: string) => {
+    if (debounceUnRef.current) clearTimeout(debounceUnRef.current)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.length < 5) {
+      setUnStatus('idle')
+      return
+    }
+    setUnStatus('checking')
+    debounceUnRef.current = setTimeout(async () => {
+      try {
+        const available = await checkUsername(trimmed)
+        setUnStatus(available ? 'available' : 'taken')
+      } catch {
+        setUnStatus('idle')
+      }
+    }, 500)
+  }, [])
+
+  useEffect(() => {
+    checkUN(form.username)
+  }, [form.username, checkUN])
 
   const checkDN = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -246,17 +274,17 @@ export function RegisterPage() {
         {/* Testimonial card */}
         <div style={{ marginTop: 40, padding: '20px 24px', background: 'rgba(255,255,255,0.12)', borderRadius: 16 }}>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 14 }}>
-            "Finally a place to share my cat's daily chaos without it getting lost in a general social feed."
+            "Finally a place to share my dog's daily shenanigans without it getting lost in a general social feed."
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img
-              src={PET_IMAGES[1]}
+              src="/pets/pet-6.jpg"
               alt=""
               style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.4)' }}
             />
             <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#fff', margin: 0 }}>Sara L.</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: 0 }}>Cat mum · joined 2024</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#fff', margin: 0 }}>Stephen P.</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: 0 }}>Tascha's dad · joined 2026</p>
             </div>
           </div>
         </div>
@@ -294,7 +322,7 @@ export function RegisterPage() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '48px 40px 64px',
+          padding: '80px 40px 64px',
           overflowY: 'auto',
         }}
       >
@@ -392,6 +420,21 @@ export function RegisterPage() {
                 value={form.username} onChange={handleChange}
                 style={INPUT_BASE} onFocus={focusIn} onBlur={focusOut}
               />
+              {form.username.trim() && (
+                unTooShort ? (
+                  <p style={ERROR_HINT}>At least 5 characters required</p>
+                ) : unStatus === 'checking' ? (
+                  <p style={{ ...HINT, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Spinner />Checking availability…
+                  </p>
+                ) : unStatus === 'available' ? (
+                  <p style={{ ...HINT, color: '#1a7f4b', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <CheckIcon />Available
+                  </p>
+                ) : unStatus === 'taken' ? (
+                  <p style={ERROR_HINT}>Username not available</p>
+                ) : null
+              )}
             </div>
 
             {/* Display name with availability check */}
@@ -419,7 +462,7 @@ export function RegisterPage() {
                     <CheckIcon />Available
                   </p>
                 ) : dnStatus === 'taken' ? (
-                  <p style={ERROR_HINT}>Already taken — try another</p>
+                  <p style={ERROR_HINT}>Display name not available</p>
                 ) : null
               )}
             </div>
