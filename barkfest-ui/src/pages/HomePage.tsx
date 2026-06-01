@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { HeroSection } from '@/components/HeroSection'
 import { PetGrid } from '@/components/PetGrid'
@@ -9,111 +10,52 @@ import type { BrowseImageDto, PagedResult } from '@/types/browse'
 
 const PAGE_SIZE = 6
 
-function ChevLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m15 18-6-6 6-6"/>
-    </svg>
-  )
-}
-function ChevRight() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m9 18 6-6-6-6"/>
-    </svg>
-  )
-}
-
 function Footer() {
   const year = new Date().getFullYear()
-  const linkStyle: React.CSSProperties = {
-    fontSize: 13,
-    color: 'var(--foreground)',
-    textDecoration: 'none',
-    opacity: 0.6,
-    display: 'block',
-    marginBottom: 10,
-    fontFamily: "'DM Sans', sans-serif",
-    transition: 'opacity 0.15s',
-  }
-  const colHead: React.CSSProperties = {
-    margin: '0 0 12px',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: 'var(--muted-foreground)',
-  }
-
   return (
-    <footer
-      style={{
-        borderTop: '1px solid var(--border)',
-        background: 'var(--card)',
-        padding: '40px 24px 0',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '72rem',
-          margin: '0 auto',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 56,
-          alignItems: 'flex-start',
-        }}
-      >
+    <footer className="border-t border-border bg-card px-6 pt-10 pb-0">
+      <div className="max-w-[72rem] mx-auto flex flex-wrap gap-14 items-start">
+
         {/* Brand column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 220 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="flex flex-col gap-3.5 max-w-[220px]">
+          <div className="flex items-center gap-2">
             <BarkfestMark size={24} />
-            <span
-              className="font-heading"
-              style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--foreground)' }}
-            >
+            <span className="font-heading text-[17px] font-bold tracking-[-0.02em] text-foreground">
               Barkfest
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted-foreground)', lineHeight: 1.65 }}>
+          <p className="m-0 text-[13px] text-muted-foreground leading-relaxed">
             A community where pet lovers share photos and stories of their furry friends.
           </p>
         </div>
 
         {/* Link columns */}
-        <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
+        <div className="flex gap-12 flex-wrap">
           <div>
-            <p style={colHead}>Company</p>
+            <p className="m-0 mb-3 text-[11px] font-bold tracking-[0.08em] uppercase text-muted-foreground">
+              Company
+            </p>
             {['About', 'Blog', 'Careers'].map(l => (
-              <p key={l} style={{ ...linkStyle, cursor: 'default' }}>{l}</p>
+              <p key={l} className="text-[13px] text-foreground/60 block mb-2.5 cursor-default">{l}</p>
             ))}
           </div>
           <div>
-            <p style={colHead}>Legal</p>
+            <p className="m-0 mb-3 text-[11px] font-bold tracking-[0.08em] uppercase text-muted-foreground">
+              Legal
+            </p>
             {['Privacy Policy', 'Terms of Use', 'Contact'].map(l => (
-              <p key={l} style={{ ...linkStyle, cursor: 'default' }}>{l}</p>
+              <p key={l} className="text-[13px] text-foreground/60 block mb-2.5 cursor-default">{l}</p>
             ))}
           </div>
         </div>
       </div>
 
       {/* Bottom bar */}
-      <div
-        style={{
-          maxWidth: '72rem',
-          margin: '32px auto 0',
-          padding: '16px 0 24px',
-          borderTop: '1px solid var(--border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 8,
-        }}
-      >
-        <p style={{ margin: 0, fontSize: 12, color: 'var(--muted-foreground)' }}>
+      <div className="max-w-[72rem] mx-auto mt-8 py-6 border-t border-border flex justify-between items-center flex-wrap gap-2">
+        <p className="m-0 text-xs text-muted-foreground">
           © {year} Barkfest. All rights reserved.
         </p>
-        <p style={{ margin: 0, fontSize: 12, color: 'var(--muted-foreground)' }}>
+        <p className="m-0 text-xs text-muted-foreground">
           Made with love for pet lovers.
         </p>
       </div>
@@ -122,7 +64,7 @@ function Footer() {
 }
 
 export function HomePage() {
-  const [page, setPage]               = useState(1)
+  const [page, setPage]                 = useState(1)
   const [petTypeValue, setPetTypeValue] = useState(0)
   const [breedValue, setBreedValue]     = useState(0)
 
@@ -153,7 +95,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar
         filterProps={{
           petTypeValue,
@@ -163,75 +105,34 @@ export function HomePage() {
         }}
       />
       <HeroSection petTypeValue={petTypeValue} breedValue={breedValue} />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6" style={{ flex: 1, width: '100%' }}>
+
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6">
         <PetGrid pets={pets} isLoading={isLoading} hasActiveFilters={hasActiveFilters} />
 
-        {/* Pagination — only shown when there is more than one page */}
+        {/* Pagination */}
         {(hasPrev || hasMore) && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 16 }}>
+          <div className="flex items-center justify-center gap-3 pt-4">
             <button
               onClick={() => setPage(p => p - 1)}
               disabled={!hasPrev}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 32,
-                padding: '0 12px',
-                borderRadius: 8,
-                border: '1px solid var(--primary)',
-                background: 'transparent',
-                color: 'var(--primary)',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: !hasPrev ? 'not-allowed' : 'pointer',
-                opacity: !hasPrev ? 0.3 : 1,
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              onMouseEnter={e => { if (hasPrev) e.currentTarget.style.background = 'var(--primary-10)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary bg-transparent text-primary text-[13px] font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 hover:enabled:bg-primary/10 transition-colors"
             >
-              <ChevLeft />Previous
+              <ChevronLeft className="w-4 h-4" />Previous
             </button>
-            <span
-              style={{
-                padding: '6px 16px',
-                borderRadius: 999,
-                background: 'var(--primary-10)',
-                color: 'var(--primary)',
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
+            <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[13px] font-semibold">
               Page {page}
             </span>
             <button
               onClick={() => setPage(p => p + 1)}
               disabled={!hasMore}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 32,
-                padding: '0 12px',
-                borderRadius: 8,
-                border: '1px solid var(--primary)',
-                background: 'transparent',
-                color: 'var(--primary)',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: !hasMore ? 'not-allowed' : 'pointer',
-                opacity: !hasMore ? 0.3 : 1,
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-              onMouseEnter={e => { if (hasMore) e.currentTarget.style.background = 'var(--primary-10)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary bg-transparent text-primary text-[13px] font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 hover:enabled:bg-primary/10 transition-colors"
             >
-              Next<ChevRight />
+              Next<ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}
       </main>
+
       <Footer />
     </div>
   )

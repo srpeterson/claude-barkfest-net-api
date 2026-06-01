@@ -136,6 +136,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
           <button
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close"
             className="absolute top-5 right-5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
           >
             <X className="w-5 h-5" />
@@ -303,8 +304,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary"
-                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
@@ -374,6 +374,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                       type="button"
                       onClick={e => { e.stopPropagation(); removeImage(i) }}
                       disabled={isSubmitting}
+                      aria-label="Remove photo"
                       className="absolute top-1.5 right-1.5 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80 transition-colors disabled:opacity-40"
                     >
                       <X className="w-3 h-3" />
@@ -402,8 +403,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                 type="button"
                 onClick={() => { setStep(1); setError(null); setUploadError(null) }}
                 disabled={isSubmitting}
-                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
-                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50"
               >
                 Back
               </button>

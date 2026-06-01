@@ -10,7 +10,7 @@ export function ProtectedRoute() {
     if (!isAuthenticated) {
       openLoginDialog()
     }
-  }, [])
+  }, [isAuthenticated, openLoginDialog])
 
   return isOwner ? <Outlet /> : <Navigate to="/" replace />
 }

@@ -2,31 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Loader2, MoreHorizontal, Pencil, Trash2, UserCircle, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/Navbar'
 import { EditPetModal } from '@/components/EditPetModal'
 
-// ── Helpers ───────────────────────────────────────────────────────────
-
-function formatAge(dateOfBirth?: string): string | null {
-  if (!dateOfBirth) return null
-  const dob = new Date(dateOfBirth)
-  const today = new Date()
-  let months = (today.getFullYear() - dob.getFullYear()) * 12 + (today.getMonth() - dob.getMonth())
-  if (today.getDate() < dob.getDate()) months--
-  months = Math.max(months, 0)
-  if (months < 12) return months === 1 ? '1 month old' : `${months} months old`
-  const years = Math.floor(months / 12)
-  return years === 1 ? '1 year old' : `${years} years old`
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
-
-// ── PetDetailPage ─────────────────────────────────────────────────────
 
 export function PetDetailPage() {
   const { petId } = useParams<{ petId: string }>()
@@ -35,13 +21,13 @@ export function PetDetailPage() {
   const queryClient = useQueryClient()
   const { accountId, isAuthenticated, accountType } = useAuth()
 
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState<number | null>(null)
-  const [kebabOpen, setKebabOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [liked, setLiked]                   = useState(false)
+  const [likeCount, setLikeCount]           = useState<number | null>(null)
+  const [kebabOpen, setKebabOpen]           = useState(false)
+  const [deleteOpen, setDeleteOpen]         = useState(false)
+  const [editOpen, setEditOpen]             = useState(false)
+  const [lightboxIndex, setLightboxIndex]   = useState<number | null>(null)
+  const [isDeleting, setIsDeleting]         = useState(false)
 
   const { data: pet, isLoading, isError } = useQuery({
     queryKey: ['pet', petId],
@@ -52,10 +38,10 @@ export function PetDetailPage() {
   const { data: owner } = useQuery({
     queryKey: ['owner', pet?.ownerId],
     queryFn: () => getOwnerById(pet!.ownerId),
-    enabled: !!pet?.ownerId && isAuthenticated,
+    enabled: !!pet?.ownerId,
   })
 
-  const isOwner = isAuthenticated && accountType === 'owner' && accountId === pet?.ownerId
+  const isOwner    = isAuthenticated && accountType === 'owner' && accountId === pet?.ownerId
   const displayLikes = likeCount !== null ? likeCount : (pet?.likes ?? 0)
   const fromManage = searchParams.get('from') === 'manage'
 
@@ -99,7 +85,6 @@ export function PetDetailPage() {
     }
   }
 
-  // ── Loading / error states ────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -124,7 +109,7 @@ export function PetDetailPage() {
   }
 
   const heroImage = pet.images.find(i => i.isFeaturedImage) ?? pet.images[0]
-  const age = formatAge(pet.dateOfBirth)
+  const age = formatAge(pet.dateOfBirth, 'long')
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,121 +119,75 @@ export function PetDetailPage() {
       <div className="max-w-[860px] mx-auto px-6 pt-6 pb-2">
         <Link
           to={fromManage ? '/manage' : '/'}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 13,
-            color: 'var(--muted-foreground)',
-            textDecoration: 'none',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--foreground)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted-foreground)')}
+          className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
           {fromManage ? 'My Pets' : 'Back to Barkfest'}
         </Link>
       </div>
 
-      {/* ── Hero — full-bleed, overflow visible so kebab dropdown can escape ── */}
-      <div style={{ position: 'relative', height: 'clamp(320px, 45vw, 520px)' }}>
+      {/* ── Hero ── */}
+      <div className="relative" style={{ height: 'clamp(320px, 45vw, 520px)' }}>
 
-        {/* Image + gradient — clipped independently */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+        {/* Image + gradient */}
+        <div className="absolute inset-0 overflow-hidden">
           {heroImage ? (
             <img
               src={getBlobImageUrl(heroImage.blobName)}
               alt={pet.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              className="w-full h-full object-cover block"
             />
           ) : (
-            <div style={{ width: '100%', height: '100%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 64 }}>🐾</span>
+            <div className="w-full h-full bg-secondary flex items-center justify-center">
+              <span className="text-[64px]">🐾</span>
             </div>
           )}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)' }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
         </div>
 
-        {/* Name + badges — bottom-left */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: '0 32px 64px',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-          }}
-        >
+        {/* Name + badges */}
+        <div className="absolute bottom-0 left-0 right-0 px-8 pb-16 flex items-end justify-between">
           <div>
             <h1
-              className="font-heading"
-              style={{
-                fontSize: 'clamp(32px, 4vw, 56px)',
-                fontWeight: 700,
-                color: '#fff',
-                lineHeight: 1.1,
-                marginBottom: 12,
-                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              }}
+              className="font-heading font-bold text-white leading-[1.1] mb-3 drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+              style={{ fontSize: 'clamp(32px, 4vw, 56px)' }}
             >
               {pet.name}
             </h1>
-            {/* Age + breed badges */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div className="flex gap-1.5 flex-wrap">
               {age && <DarkChip>{age}</DarkChip>}
               {pet.breed && <DarkChip>{pet.breed}</DarkChip>}
             </div>
           </div>
         </div>
 
-        {/* Owner kebab — top-right, z-index above hero but not clipped */}
+        {/* Owner kebab */}
         {isOwner && (
-          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
-            <div style={{ position: 'relative' }}>
+          <div className="absolute top-4 right-4 z-10">
+            <div className="relative">
               {kebabOpen && (
-                <div onClick={() => setKebabOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+                <div onClick={() => setKebabOpen(false)} className="fixed inset-0 z-[90]" />
               )}
               <button
                 onClick={() => setKebabOpen(o => !o)}
-                style={{
-                  width: 38, height: 38, borderRadius: '50%',
-                  border: 'none', cursor: 'pointer',
-                  background: 'rgba(0,0,0,0.35)',
-                  backdropFilter: 'blur(6px)',
-                  color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
+                aria-label="Pet options"
+                className="w-[38px] h-[38px] rounded-full border-0 cursor-pointer bg-black/35 backdrop-blur-[6px] text-white flex items-center justify-center hover:bg-black/50 transition-colors"
               >
                 <MoreHorizontal className="w-5 h-5" />
               </button>
 
               {kebabOpen && (
-                <div
-                  style={{
-                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                    width: 160,
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 12,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                    overflow: 'hidden',
-                    zIndex: 100,
-                  }}
-                >
+                <div className="absolute top-[calc(100%+8px)] right-0 w-40 bg-card border border-border rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden z-[100]">
                   <KebabItem
                     icon={<Pencil className="w-3.5 h-3.5" />}
                     label="Edit pet"
-                    color="var(--foreground)"
+                    className="text-foreground"
                     onClick={() => { setKebabOpen(false); setEditOpen(true) }}
                   />
                   <KebabItem
                     icon={<Trash2 className="w-3.5 h-3.5" />}
                     label="Delete pet"
-                    color="var(--destructive)"
+                    className="text-destructive"
                     onClick={() => { setKebabOpen(false); setDeleteOpen(true) }}
                   />
                 </div>
@@ -258,79 +197,57 @@ export function PetDetailPage() {
         )}
       </div>
 
-      {/* ── Floating info card ─────────────────────────────────────── */}
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px' }}>
-        <div
-          style={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 20,
-            padding: '28px 32px',
-            marginTop: -40,
-            position: 'relative',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-          }}
-        >
-          {/* Description */}
+      {/* ── Floating info card ── */}
+      <div className="max-w-[860px] mx-auto px-6">
+        <div className="bg-card border border-border rounded-[20px] px-8 py-7 -mt-10 relative shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
+
           {pet.description && (
-            <p style={{ fontSize: 15, color: 'var(--muted-foreground)', lineHeight: 1.75, marginBottom: 20 }}>
-              {pet.description}
-            </p>
+            <p className="text-[15px] text-muted-foreground leading-[1.75] mb-5">{pet.description}</p>
           )}
 
-          <div style={{ height: 1, background: 'var(--border)', marginBottom: 20 }} />
+          <div className="h-px bg-border mb-5" />
 
           {/* Owner row + like button */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div className="flex items-center justify-between flex-wrap gap-3">
 
             {/* Owner */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div className="flex items-center gap-2.5 min-w-0">
               {owner?.profileImage?.blobName ? (
                 <img
                   src={getBlobImageUrl(owner.profileImage.blobName, 'owner-profile-images')}
                   alt={owner.displayName ?? owner.username}
-                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }}
+                  className="w-[34px] h-[34px] rounded-full object-cover border-2 border-border shrink-0"
                 />
               ) : (
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="w-[34px] h-[34px] rounded-full bg-secondary flex items-center justify-center shrink-0">
                   <UserCircle className="w-5 h-5 text-muted-foreground" />
                 </div>
               )}
-              <div style={{ minWidth: 0 }}>
+              <div className="min-w-0">
                 {owner?.displayName && (
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--foreground)', lineHeight: 1.2 }}>
+                  <p className="m-0 text-[13px] font-semibold text-foreground leading-[1.2]">
                     {owner.displayName}
                   </p>
                 )}
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                <p className="m-0 text-[11px] text-muted-foreground">
                   {owner ? `@${owner.username} · ` : ''}{formatDate(pet.createdAt)}
                 </p>
               </div>
             </div>
 
             {/* Like button */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+            <div className="flex flex-col items-end gap-1">
               <button
                 onClick={handleLike}
                 disabled={isOwner}
                 title={isOwner ? "You can't like your own pet" : undefined}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  height: 38,
-                  padding: '0 16px',
-                  borderRadius: 20,
-                  border: `1.5px solid ${liked ? '#e5484d' : 'var(--border)'}`,
-                  background: liked ? 'rgba(229,72,77,0.08)' : 'transparent',
-                  color: isOwner ? 'var(--border)' : liked ? '#e5484d' : 'var(--muted-foreground)',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 14,
-                  fontWeight: liked ? 600 : 400,
-                  cursor: isOwner ? 'not-allowed' : 'pointer',
-                  opacity: isOwner ? 0.45 : 1,
-                  transition: 'all 0.15s',
-                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 h-[38px] px-4 rounded-full border-[1.5px] text-sm cursor-pointer transition-all',
+                  liked
+                    ? 'border-[#e5484d] bg-[#e5484d]/[0.08] text-[#e5484d] font-semibold'
+                    : 'border-border bg-transparent text-muted-foreground font-normal',
+                  isOwner && 'border-border text-border cursor-not-allowed opacity-45'
+                )}
               >
                 <Heart
                   className="w-4 h-4"
@@ -340,43 +257,32 @@ export function PetDetailPage() {
                 {displayLikes}
               </button>
               {isOwner && (
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>
-                  Can't like your own pet
-                </p>
+                <p className="text-[11px] text-muted-foreground m-0">Can't like your own pet</p>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Photos ────────────────────────────────────────────────── */}
+      {/* ── Photos ── */}
       {pet.images.length > 0 && (
-        <div style={{ maxWidth: 860, margin: '40px auto 0', padding: '0 24px 56px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-            <h2
-              className="font-heading"
-              style={{ fontSize: 20, fontWeight: 700, margin: 0 }}
-            >
-              Photos
-            </h2>
-            <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
-              {pet.images.length}
-            </span>
+        <div className="max-w-[860px] mx-auto mt-10 px-6 pb-14">
+          <div className="flex items-baseline gap-2 mb-3.5">
+            <h2 className="font-heading text-xl font-bold m-0">Photos</h2>
+            <span className="text-[13px] text-muted-foreground">{pet.images.length}</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div className="grid grid-cols-3 gap-2.5">
             {pet.images.map((img, idx) => (
               <button
                 key={img.petImageId}
                 onClick={() => setLightboxIndex(idx)}
-                style={{ aspectRatio: '1', borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: 'none', padding: 0, position: 'relative', display: 'block' }}
+                className="aspect-square rounded-[10px] overflow-hidden cursor-pointer border-0 p-0 relative block group"
               >
                 <img
                   src={getBlobImageUrl(img.blobName)}
                   alt={`${pet.name} photo ${idx + 1}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease', display: 'block' }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                  className="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.06]"
                 />
               </button>
             ))}
@@ -384,50 +290,48 @@ export function PetDetailPage() {
         </div>
       )}
 
-      {/* ── Lightbox ───────────────────────────────────────────────── */}
+      {/* ── Lightbox ── */}
       {lightboxIndex !== null && (
         <div
           onClick={() => setLightboxIndex(null)}
-          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, animation: 'fade-in 0.2s ease' }}
+          className="fixed inset-0 z-[500] bg-black/[0.92] flex items-center justify-center p-6"
+          style={{ animation: 'fade-in 0.2s ease' }}
         >
-          {/* Close */}
           <button
             onClick={() => setLightboxIndex(null)}
-            style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Close"
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 border-0 cursor-pointer text-white flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
 
-          {/* Image */}
           <div
             onClick={e => e.stopPropagation()}
-            style={{ position: 'relative', maxWidth: 900, maxHeight: '85vh', width: '100%' }}
+            className="relative max-w-[900px] max-h-[85vh] w-full"
           >
             <img
               src={getBlobImageUrl(pet.images[lightboxIndex].blobName)}
               alt={`${pet.name} photo ${lightboxIndex + 1}`}
-              style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 12, display: 'block' }}
+              className="w-full max-h-[80vh] object-contain rounded-xl block"
             />
-            {/* Counter */}
-            <div
-              style={{ position: 'absolute', bottom: -36, left: '50%', transform: 'translateX(-50%)', fontSize: 13, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}
-            >
+            <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 text-[13px] text-white/60 whitespace-nowrap">
               {lightboxIndex + 1} / {pet.images.length}
             </div>
           </div>
 
-          {/* Arrows */}
           {pet.images.length > 1 && (
             <>
               <button
                 onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i - 1 + pet.images.length) % pet.images.length) }}
-                style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label="Previous photo"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/[0.12] border-0 cursor-pointer text-white flex items-center justify-center hover:bg-white/20 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i + 1) % pet.images.length) }}
-                style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label="Next photo"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/[0.12] border-0 cursor-pointer text-white flex items-center justify-center hover:bg-white/20 transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -449,33 +353,27 @@ export function PetDetailPage() {
         />
       )}
 
-      {/* ── Delete confirmation ────────────────────────────────────── */}
+      {/* ── Delete confirmation ── */}
       {deleteOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-        >
-          <div
-            style={{ background: 'var(--card)', borderRadius: 20, padding: 28, maxWidth: 360, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.15)' }}
-          >
-            <h3 className="font-heading" style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
-              Delete {pet.name}?
-            </h3>
-            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: 22 }}>
+        <div className="fixed inset-0 z-[500] bg-black/45 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-card rounded-[20px] p-7 max-w-[360px] w-full shadow-[0_24px_64px_rgba(0,0,0,0.15)]">
+            <h3 className="font-heading text-xl font-bold mb-2.5">Delete {pet.name}?</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-[22px]">
               This will permanently remove {pet.name} and all their photos. This can't be undone.
             </p>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setDeleteOpen(false)}
-                style={{ flex: 1, height: 42, borderRadius: 10, border: '1.5px solid var(--border)', background: 'transparent', fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 500, cursor: 'pointer', color: 'var(--foreground)' }}
+                className="flex-1 h-[42px] rounded-[10px] border-[1.5px] border-border bg-transparent text-foreground text-sm font-medium cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                style={{ flex: 1, height: 42, borderRadius: 10, border: 'none', background: 'var(--destructive)', color: '#fff', fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: isDeleting ? 0.6 : 1 }}
+                className="flex-1 h-[42px] rounded-[10px] border-0 bg-destructive text-white text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Delete
               </button>
             </div>
@@ -488,46 +386,29 @@ export function PetDetailPage() {
   )
 }
 
-// ── Shared small components ───────────────────────────────────────────
-
 function DarkChip({ children }: { children: React.ReactNode }) {
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        height: 26,
-        padding: '0 12px',
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 500,
-        background: 'rgba(255,255,255,0.2)',
-        color: '#fff',
-        border: '1px solid rgba(255,255,255,0.3)',
-      }}
-    >
+    <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
       {children}
     </span>
   )
 }
 
 function KebabItem({
-  icon,
-  label,
-  color,
-  onClick,
+  icon, label, className, onClick,
 }: {
   icon: React.ReactNode
   label: string
-  color: string
+  className?: string
   onClick: () => void
 }) {
   return (
     <button
       onClick={onClick}
-      style={{ width: '100%', height: 40, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 9, background: 'transparent', border: 'none', cursor: 'pointer', color, fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 500, textAlign: 'left' }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'var(--secondary)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      className={cn(
+        'w-full h-10 px-3.5 flex items-center gap-[9px] bg-transparent border-0 cursor-pointer text-[13px] font-medium text-left hover:bg-secondary transition-colors',
+        className
+      )}
     >
       {icon}{label}
     </button>

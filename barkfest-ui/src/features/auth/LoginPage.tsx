@@ -1,54 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
-
-// ── Icon helpers ─────────────────────────────────────────────────────
-function ArrowLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m15 18-6-6 6-6"/>
-    </svg>
-  )
-}
-
-function EyeOpen() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  )
-}
-
-function EyeOff() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
-      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
-      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
-      <line x1="2" x2="22" y1="2" y2="22"/>
-    </svg>
-  )
-}
-
-function Spinner() {
-  return (
-    <span
-      style={{
-        width: 16,
-        height: 16,
-        border: '2px solid rgba(255,255,255,0.4)',
-        borderTopColor: '#fff',
-        borderRadius: '50%',
-        display: 'inline-block',
-        flexShrink: 0,
-        animation: 'spin 0.7s linear infinite',
-      }}
-    />
-  )
-}
 
 // Brand panel mosaic — local pet photos served from public/pets/
 // TODO (Roadmap #24): replace with live browse API images
@@ -59,43 +14,23 @@ const PET_IMAGES = [
   { src: '/pets/pet-4.jpg', tall: false },
 ]
 
-// ── Shared input style ────────────────────────────────────────────────
-const INPUT_BASE: React.CSSProperties = {
-  width: '100%',
-  height: 48,
-  border: '1.5px solid var(--border)',
-  borderRadius: 12,
-  background: 'var(--card)',
-  color: 'var(--foreground)',
-  padding: '0 14px',
-  fontFamily: "'DM Sans', sans-serif",
-  fontSize: 14,
-  outline: 'none',
-  boxSizing: 'border-box',
-  transition: 'border-color 0.15s, box-shadow 0.15s',
-}
+const inputCls = [
+  'w-full h-12 rounded-xl border-[1.5px] border-border',
+  'bg-card text-foreground px-3.5 text-sm',
+  'outline-none box-border transition',
+  'focus:border-primary focus:ring-2 focus:ring-primary/30',
+].join(' ')
 
-function focusIn(e: React.FocusEvent<HTMLInputElement>) {
-  e.target.style.borderColor = 'var(--primary)'
-  e.target.style.boxShadow = '0 0 0 3px var(--primary-10)'
-}
-function focusOut(e: React.FocusEvent<HTMLInputElement>) {
-  e.target.style.borderColor = 'var(--border)'
-  e.target.style.boxShadow = 'none'
-}
-
-
-// ── LoginPage ─────────────────────────────────────────────────────────
 export function LoginPage() {
   const navigate = useNavigate()
   const { signIn } = useAuth()
 
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPw,        setShowPw]        = useState(false)
-  const [error,         setError]         = useState('')
-  const [forgotOpen,    setForgotOpen]    = useState(false)
-  const [loading,  setLoading]  = useState(false)
+  const [username, setUsername]   = useState('')
+  const [password, setPassword]   = useState('')
+  const [showPw, setShowPw]       = useState(false)
+  const [error, setError]         = useState('')
+  const [forgotOpen, setForgotOpen] = useState(false)
+  const [loading, setLoading]     = useState(false)
 
   const allFilled = username.trim() !== '' && password !== ''
 
@@ -124,135 +59,74 @@ export function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="flex min-h-screen">
 
       {/* ── Brand panel — 42%, hidden ≤680px ── */}
       <div
-        className="brand-panel"
-        style={{
-          width: '42%',
-          background: 'var(--primary)',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '40px 48px',
-          position: 'sticky',
-          top: 0,
-          alignSelf: 'flex-start',
-          minHeight: '100vh',
-        }}
+        className="brand-panel w-[42%] min-h-screen bg-primary flex flex-col p-[40px_48px] sticky top-0 self-start"
       >
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="flex items-center gap-2.5">
           <BarkfestMark size={32} inverted />
-          <span
-            className="font-heading"
-            style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}
-          >
-            Barkfest
-          </span>
+          <span className="font-heading text-xl font-bold text-white tracking-[-0.02em]">Barkfest</span>
         </div>
 
         {/* Headline */}
-        <div style={{ marginTop: 52 }}>
-          <h1
-            className="font-heading"
-            style={{
-              fontSize: 'clamp(26px, 2.8vw, 38px)',
-              fontWeight: 700,
-              color: '#fff',
-              lineHeight: 1.25,
-              marginBottom: 14,
-            }}
-          >
+        <div className="mt-[52px]">
+          <h1 className="font-heading font-bold text-white leading-[1.25] mb-3.5 text-[clamp(26px,2.8vw,38px)]">
             Good to have<br />you back.
           </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', lineHeight: 1.65, maxWidth: 280, margin: 0 }}>
+          <p className="text-[15px] text-white/70 leading-relaxed max-w-[280px] m-0">
             Your pet's stories are waiting. Sign in to see what the community has been sharing.
           </p>
         </div>
 
         {/* 2×2 photo mosaic */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 10,
-            marginTop: 40,
-            flex: 1,
-            maxHeight: 340,
-          }}
-        >
+        <div className="grid grid-cols-2 gap-2.5 mt-10 flex-1 max-h-[340px]">
           {PET_IMAGES.map((p, i) => (
-            <div
-              key={i}
-              style={{ borderRadius: 16, overflow: 'hidden', height: p.tall ? 180 : 140 }}
-            >
-              <img src={p.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <div key={i} className="rounded-2xl overflow-hidden" style={{ height: p.tall ? 180 : 140 }}>
+              <img src={p.src} alt="" className="w-full h-full object-cover block" />
             </div>
           ))}
         </div>
 
         {/* Copyright */}
-        <p style={{ marginTop: 'auto', paddingTop: 64, fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+        <p className="mt-auto pt-16 text-xs text-white/50">
           © {new Date().getFullYear()} Barkfest · Privacy · Terms
         </p>
       </div>
 
       {/* ── Form panel ── */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          padding: '80px 40px 48px',
-          minHeight: '100vh',
-        }}
-      >
+      <div className="flex-1 flex flex-col items-center justify-start px-10 pt-20 pb-12 min-h-screen">
+
         {/* Back link */}
-        <div style={{ width: '100%', maxWidth: 380, marginBottom: 0 }}>
+        <div className="w-full max-w-[380px]">
           <Link
             to="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 13,
-              color: 'var(--muted-foreground)',
-              textDecoration: 'none',
-              marginBottom: 32,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--foreground)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted-foreground)')}
+            className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline mb-8 transition-colors hover:text-foreground"
           >
-            <ArrowLeft />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
             Back to Barkfest
           </Link>
         </div>
 
-        <div style={{ width: '100%', maxWidth: 380 }}>
-          {/* Mobile logo — hidden on desktop via brand panel presence */}
-          <div className="mobile-auth-header" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+        <div className="w-full max-w-[380px]">
+          {/* Mobile logo */}
+          <div className="mobile-auth-header hidden items-center gap-2.5 mb-8">
             <BarkfestMark size={28} />
-            <span className="font-heading" style={{ fontSize: 18, fontWeight: 700 }}>Barkfest</span>
+            <span className="font-heading text-[18px] font-bold">Barkfest</span>
           </div>
 
           {/* Heading */}
-          <div style={{ marginBottom: 36 }}>
-            <h2
-              className="font-heading"
-              style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, marginBottom: 6 }}
-            >
+          <div className="mb-9">
+            <h2 className="font-heading font-bold mb-1.5 text-[clamp(22px,2.5vw,30px)]">
               Welcome back!
             </h2>
-            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', margin: 0 }}>
+            <p className="text-sm text-muted-foreground m-0">
               New here?{' '}
-              <Link
-                to="/register"
-                style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}
-              >
+              <Link to="/register" className="text-primary font-semibold no-underline">
                 Create an account
               </Link>
             </p>
@@ -261,12 +135,9 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} noValidate>
 
             {/* Username */}
-            <div style={{ marginBottom: 20 }}>
-              <label
-                htmlFor="si-un"
-                style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--foreground)' }}
-              >
-                Username <span style={{ color: 'var(--destructive)' }}>*</span>
+            <div className="mb-5">
+              <label htmlFor="si-un" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Username <span className="text-destructive">*</span>
               </label>
               <input
                 id="si-un"
@@ -277,30 +148,25 @@ export function LoginPage() {
                 placeholder="Your username"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                style={INPUT_BASE}
-                onFocus={focusIn}
-                onBlur={focusOut}
+                className={inputCls}
               />
             </div>
 
             {/* Password */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                <label
-                  htmlFor="si-pw"
-                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', margin: 0 }}
-                >
-                  Password <span style={{ color: 'var(--destructive)' }}>*</span>
+            <div className="mb-5">
+              <div className="flex justify-between items-baseline mb-1.5">
+                <label htmlFor="si-pw" className="text-[13px] font-semibold text-foreground m-0">
+                  Password <span className="text-destructive">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setForgotOpen(true)}
-                  style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  className="text-xs text-primary font-medium bg-transparent border-0 cursor-pointer p-0"
                 >
                   Forgot password?
                 </button>
               </div>
-              <div style={{ position: 'relative' }}>
+              <div className="relative">
                 <input
                   id="si-pw"
                   type={showPw ? 'text' : 'password'}
@@ -308,64 +174,29 @@ export function LoginPage() {
                   maxLength={72}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  style={{ ...INPUT_BASE, paddingRight: 48 }}
-                  onFocus={focusIn}
-                  onBlur={focusOut}
+                  className={inputCls + ' pr-12'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(v => !v)}
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 0,
-                    height: 48,
-                    width: 48,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--muted-foreground)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-0 h-12 w-12 flex items-center justify-center bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPw ? <EyeOff /> : <EyeOpen />}
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <p style={{ fontSize: 13, color: 'var(--destructive)', marginBottom: 12, textAlign: 'center' }}>
-                {error}
-              </p>
+              <p className="text-[13px] text-destructive text-center mb-3">{error}</p>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={!allFilled || loading}
-              style={{
-                width: '100%',
-                height: 52,
-                borderRadius: 14,
-                border: 'none',
-                background: 'var(--primary)',
-                color: '#fff',
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: !allFilled || loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'opacity 0.15s',
-                opacity: !allFilled || loading ? 0.45 : 1,
-                marginTop: 8,
-              }}
+              className="w-full h-[52px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
             >
-              {loading && <Spinner />}
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
@@ -373,7 +204,7 @@ export function LoginPage() {
           {/* TODO (Roadmap #25): "or continue with" divider + Google/Apple buttons hidden until
               third-party OAuth providers are implemented. Restore this block when ready. */}
 
-          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted-foreground)', marginTop: 24, lineHeight: 1.5 }}>
+          <p className="text-center text-xs text-muted-foreground mt-6 leading-relaxed">
             Privacy Policy · Terms of Use
           </p>
         </div>
@@ -382,32 +213,30 @@ export function LoginPage() {
       {/* ── Forgot password modal ── */}
       {forgotOpen && (
         <div
-          className="animate-backdrop-in"
-          style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: 16 }}
+          className="animate-backdrop-in fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
           onClick={() => setForgotOpen(false)}
         >
           <div
-            className="animate-dialog-appear"
+            className="animate-dialog-appear w-full max-w-[360px] bg-card rounded-[20px] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.18)] relative"
             onClick={e => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: 360, background: 'var(--card)', borderRadius: 20, padding: 28, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', position: 'relative' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div className="flex items-center gap-2 mb-4">
               <BarkfestMark size={22} />
-              <span className="font-heading" style={{ fontSize: 17, fontWeight: 700 }}>Barkfest</span>
+              <span className="font-heading text-[17px] font-bold">Barkfest</span>
             </div>
-            <h3 className="font-heading" style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Forgot your password?</h3>
-            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', lineHeight: 1.65, marginBottom: 6 }}>
+            <h3 className="font-heading text-xl font-bold mb-2">Forgot your password?</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-1.5">
               Woof! Automated reset is on its way. Until then, shoot us an email and we'll get your paws back on the keys. Don't forget to include your username:
             </p>
             <a
               href="mailto:srpeterson@outlook.com"
-              style={{ fontSize: 14, fontWeight: 600, color: 'var(--primary)', textDecoration: 'none', display: 'inline-block', marginBottom: 22 }}
+              className="text-sm font-semibold text-primary no-underline inline-block mb-[22px]"
             >
               srpeterson@outlook.com
             </a>
             <button
               onClick={() => setForgotOpen(false)}
-              style={{ display: 'block', width: '100%', height: 42, borderRadius: 10, border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)', fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+              className="block w-full h-[42px] rounded-[10px] border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium cursor-pointer"
             >
               Close
             </button>
@@ -415,13 +244,11 @@ export function LoginPage() {
         </div>
       )}
 
-      {/* ── Responsive: hide brand panel ≤680px ── */}
       <style>{`
         @media (max-width: 680px) {
           .brand-panel { display: none !important; }
           .mobile-auth-header { display: flex !important; }
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )

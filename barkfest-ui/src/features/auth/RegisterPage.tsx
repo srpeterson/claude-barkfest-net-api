@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { checkDisplayName, checkUsername, login, register } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 
-// ── Constants ─────────────────────────────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
-const STRENGTH_COLORS = ['#e5484d', '#f76b15', '#d4a017', 'var(--accent)', 'var(--accent)']
+const STRENGTH_BG     = ['bg-[#e5484d]', 'bg-[#f76b15]', 'bg-[#d4a017]', 'bg-accent', 'bg-accent']
+const STRENGTH_TEXT   = ['text-[#e5484d]', 'text-[#f76b15]', 'text-[#d4a017]', 'text-accent', 'text-accent']
 
 const PET_IMAGES = [
   'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=120&h=120&fit=crop&auto=format',
@@ -19,89 +21,16 @@ const PET_IMAGES = [
   'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=120&h=120&fit=crop&auto=format',
 ]
 
-// ── Icon helpers ──────────────────────────────────────────────────────
-function ArrowLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m15 18-6-6 6-6"/>
-    </svg>
-  )
-}
+const inputCls = [
+  'w-full h-[46px] rounded-xl border-[1.5px] border-border',
+  'bg-card text-foreground px-3.5 text-sm',
+  'outline-none box-border transition',
+  'focus:border-primary focus:ring-2 focus:ring-primary/30',
+].join(' ')
 
-function EyeOpen() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  )
-}
-
-function EyeOff() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
-      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
-      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
-      <line x1="2" x2="22" y1="2" y2="22"/>
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  )
-}
-
-function Spinner() {
-  return (
-    <span
-      style={{
-        width: 10,
-        height: 10,
-        border: '2px solid var(--muted-foreground)',
-        borderTopColor: 'transparent',
-        borderRadius: '50%',
-        display: 'inline-block',
-        animation: 'spin 0.6s linear infinite',
-      }}
-    />
-  )
-}
-
-// ── Shared input style ────────────────────────────────────────────────
-const INPUT_BASE: React.CSSProperties = {
-  width: '100%',
-  height: 46,
-  border: '1.5px solid var(--border)',
-  borderRadius: 12,
-  background: 'var(--card)',
-  color: 'var(--foreground)',
-  padding: '0 14px',
-  fontFamily: "'DM Sans', sans-serif",
-  fontSize: 14,
-  outline: 'none',
-  boxSizing: 'border-box',
-  transition: 'border-color 0.15s, box-shadow 0.15s',
-}
-
-function focusIn(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
-  e.target.style.borderColor = 'var(--primary)'
-  e.target.style.boxShadow = '0 0 0 3px var(--primary-10)'
-}
-function focusOut(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
-  e.target.style.borderColor = 'var(--border)'
-  e.target.style.boxShadow = 'none'
-}
-
-// ── Username / DisplayName availability state ─────────────────────────
 type UnStatus = 'idle' | 'checking' | 'available' | 'taken'
 type DnStatus = 'idle' | 'checking' | 'available' | 'taken'
 
-// ── Form state ────────────────────────────────────────────────────────
 interface FormState {
   firstName: string
   lastName: string
@@ -112,19 +41,13 @@ interface FormState {
   confirmPassword: string
 }
 
-// ── RegisterPage ──────────────────────────────────────────────────────
 export function RegisterPage() {
   const navigate = useNavigate()
   const { signIn } = useAuth()
 
   const [form, setForm] = useState<FormState>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    username: '',
-    displayName: '',
-    password: '',
-    confirmPassword: '',
+    firstName: '', lastName: '', email: '', username: '',
+    displayName: '', password: '', confirmPassword: '',
   })
   const [showPw, setShowPw]       = useState(false)
   const [unStatus, setUnStatus]   = useState<UnStatus>('idle')
@@ -134,13 +57,13 @@ export function RegisterPage() {
   const debounceUnRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
   const debounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const strength        = zxcvbn(form.password)
-  const emailBad        = form.email.trim() !== '' && !EMAIL_REGEX.test(form.email.trim())
-  const unTooShort      = form.username.trim().length > 0 && form.username.trim().length < 5
-  const dnStripped      = form.displayName.replace(/\s/g, '')
-  const dnTooShort      = dnStripped.length > 0 && dnStripped.length < 4
-  const pwMismatch      = form.confirmPassword !== '' && form.password !== form.confirmPassword
-  const pwWeak          = form.password.length > 0 && strength.score < 2
+  const strength   = zxcvbn(form.password)
+  const emailBad   = form.email.trim() !== '' && !EMAIL_REGEX.test(form.email.trim())
+  const unTooShort = form.username.trim().length > 0 && form.username.trim().length < 5
+  const dnStripped = form.displayName.replace(/\s/g, '')
+  const dnTooShort = dnStripped.length > 0 && dnStripped.length < 4
+  const pwMismatch = form.confirmPassword !== '' && form.password !== form.confirmPassword
+  const pwWeak     = form.password.length > 0 && strength.score < 2
 
   const canSubmit =
     form.firstName.trim() &&
@@ -167,10 +90,7 @@ export function RegisterPage() {
   const checkUN = useCallback((value: string) => {
     if (debounceUnRef.current) clearTimeout(debounceUnRef.current)
     const trimmed = value.trim()
-    if (!trimmed || trimmed.length < 5) {
-      setUnStatus('idle')
-      return
-    }
+    if (!trimmed || trimmed.length < 5) { setUnStatus('idle'); return }
     setUnStatus('checking')
     debounceUnRef.current = setTimeout(async () => {
       try {
@@ -182,17 +102,12 @@ export function RegisterPage() {
     }, 500)
   }, [])
 
-  useEffect(() => {
-    checkUN(form.username)
-  }, [form.username, checkUN])
+  useEffect(() => { checkUN(form.username) }, [form.username, checkUN])
 
   const checkDN = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     const trimmed = value.trim()
-    if (!trimmed || trimmed.replace(/\s/g, '').length < 4) {
-      setDnStatus('idle')
-      return
-    }
+    if (!trimmed || trimmed.replace(/\s/g, '').length < 4) { setDnStatus('idle'); return }
     setDnStatus('checking')
     debounceRef.current = setTimeout(async () => {
       try {
@@ -204,9 +119,7 @@ export function RegisterPage() {
     }, 500)
   }, [])
 
-  useEffect(() => {
-    checkDN(form.displayName)
-  }, [form.displayName, checkDN])
+  useEffect(() => { checkDN(form.displayName) }, [form.displayName, checkDN])
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -233,214 +146,178 @@ export function RegisterPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="flex min-h-screen">
 
       {/* ── Brand panel — 42%, hidden ≤680px ── */}
-      <div
-        className="brand-panel"
-        style={{
-          width: '42%',
-          minHeight: '100vh',
-          background: 'var(--primary)',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '40px 48px',
-          position: 'sticky',
-          top: 0,
-          alignSelf: 'flex-start',
-        }}
-      >
+      <div className="brand-panel w-[42%] min-h-screen bg-primary flex flex-col p-[40px_48px] sticky top-0 self-start">
+
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="flex items-center gap-2.5">
           <BarkfestMark size={32} inverted />
-          <span className="font-heading" style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
-            Barkfest
-          </span>
+          <span className="font-heading text-xl font-bold text-white tracking-[-0.02em]">Barkfest</span>
         </div>
 
         {/* Headline */}
-        <div style={{ marginTop: 56 }}>
-          <h1
-            className="font-heading"
-            style={{ fontSize: 'clamp(28px, 3vw, 40px)', fontWeight: 700, color: '#fff', lineHeight: 1.2, marginBottom: 16 }}
-          >
+        <div className="mt-14">
+          <h1 className="font-heading font-bold text-white leading-[1.2] mb-4 text-[clamp(28px,3vw,40px)]">
             Every pet has a<br />story to tell.
           </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, maxWidth: 300, margin: 0 }}>
+          <p className="text-[15px] text-white/75 leading-relaxed max-w-[300px] m-0">
             Join a community of pet lovers sharing photos, stories, and the everyday magic of life with animals.
           </p>
         </div>
 
         {/* Testimonial card */}
-        <div style={{ marginTop: 40, padding: '20px 24px', background: 'rgba(255,255,255,0.12)', borderRadius: 16 }}>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 14 }}>
+        <div className="mt-10 p-5 bg-white/[0.12] rounded-2xl">
+          <p className="text-[13px] text-white/85 leading-relaxed italic mb-3.5">
             "Finally a place to share my dog's daily shenanigans without it getting lost in a general social feed."
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="flex items-center gap-2.5">
             <img
               src="/pets/pet-6.jpg"
               alt=""
-              style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.4)' }}
+              className="w-8 h-8 rounded-full object-cover border-2 border-white/40"
             />
             <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#fff', margin: 0 }}>Stephen P.</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: 0 }}>Tascha's dad · joined 2026</p>
+              <p className="text-xs font-semibold text-white m-0">Stephen P.</p>
+              <p className="text-[11px] text-white/60 m-0">Tascha's dad · joined 2026</p>
             </div>
           </div>
         </div>
 
-        {/* Pet strip — overlapping circular thumbnails */}
-        <div style={{ display: 'flex', marginTop: 'auto', paddingTop: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+        {/* Pet strip */}
+        <div className="flex mt-auto pt-8">
+          <div className="flex items-center">
             {PET_IMAGES.map((src, i) => (
               <div
                 key={i}
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  border: '2.5px solid rgba(255,255,255,0.5)',
-                  marginLeft: i === 0 ? 0 : -14,
-                  flexShrink: 0,
-                }}
+                className="w-[52px] h-[52px] rounded-full overflow-hidden border-[2.5px] border-white/50 shrink-0"
+                style={{ marginLeft: i === 0 ? 0 : -14 }}
               >
-                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <img src={src} alt="" className="w-full h-full object-cover block" />
               </div>
             ))}
           </div>
-          <p style={{ marginLeft: 14, fontSize: 13, color: 'rgba(255,255,255,0.75)', alignSelf: 'center' }}>
-            Join <strong style={{ color: '#fff' }}>hundreds</strong> of pet lovers
+          <p className="ml-3.5 text-[13px] text-white/75 self-center">
+            Join <strong className="text-white">hundreds</strong> of pet lovers
           </p>
         </div>
       </div>
 
       {/* ── Form panel ── */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '80px 40px 64px',
-          overflowY: 'auto',
-        }}
-      >
+      <div className="flex-1 flex flex-col items-center px-10 pt-20 pb-16 overflow-y-auto">
+
         {/* Back link */}
-        <div style={{ width: '100%', maxWidth: 420, marginBottom: 0 }}>
+        <div className="w-full max-w-[420px]">
           <Link
             to="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 13,
-              color: 'var(--muted-foreground)',
-              textDecoration: 'none',
-              marginBottom: 32,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--foreground)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted-foreground)')}
+            className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline mb-8 transition-colors hover:text-foreground"
           >
-            <ArrowLeft />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
             Back to Barkfest
           </Link>
         </div>
 
-        <div style={{ width: '100%', maxWidth: 420 }}>
+        <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
-          <div className="mobile-auth-header" style={{ display: 'none', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+          <div className="mobile-auth-header hidden items-center gap-2.5 mb-7">
             <BarkfestMark size={28} />
-            <span className="font-heading" style={{ fontSize: 18, fontWeight: 700 }}>Barkfest</span>
+            <span className="font-heading text-[18px] font-bold">Barkfest</span>
           </div>
 
           {/* Heading */}
-          <div style={{ marginBottom: 32 }}>
-            <h2
-              className="font-heading"
-              style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, marginBottom: 6 }}
-            >
+          <div className="mb-8">
+            <h2 className="font-heading font-bold mb-1.5 text-[clamp(22px,2.5vw,30px)]">
               Create your account
             </h2>
-            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', margin: 0 }}>
+            <p className="text-sm text-muted-foreground m-0">
               Already have one?{' '}
-              <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
-                Sign in
-              </Link>
+              <Link to="/login" className="text-primary font-semibold no-underline">Sign in</Link>
             </p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
 
-            {/* First / Last name — 2-col */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
+            {/* First / Last name */}
+            <div className="grid grid-cols-2 gap-3 mb-[18px]">
               <div>
-                <label htmlFor="r-fn" style={LABEL}>First name <Required /></label>
+                <label htmlFor="r-fn" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                  First name <Required />
+                </label>
                 <input
                   id="r-fn" name="firstName" type="text"
                   autoComplete="given-name" maxLength={50} autoFocus
                   placeholder="Jane"
                   value={form.firstName} onChange={handleChange}
-                  style={INPUT_BASE} onFocus={focusIn} onBlur={focusOut}
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label htmlFor="r-ln" style={LABEL}>Last name <Required /></label>
+                <label htmlFor="r-ln" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                  Last name <Required />
+                </label>
                 <input
                   id="r-ln" name="lastName" type="text"
                   autoComplete="family-name" maxLength={100}
                   placeholder="Doe"
                   value={form.lastName} onChange={handleChange}
-                  style={INPUT_BASE} onFocus={focusIn} onBlur={focusOut}
+                  className={inputCls}
                 />
               </div>
             </div>
 
             {/* Email */}
-            <div style={{ marginBottom: 18 }}>
-              <label htmlFor="r-em" style={LABEL}>Email <Required /></label>
+            <div className="mb-[18px]">
+              <label htmlFor="r-em" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Email <Required />
+              </label>
               <input
                 id="r-em" name="email" type="email"
                 autoComplete="email" maxLength={75}
                 placeholder="you@example.com"
                 value={form.email} onChange={handleChange}
-                style={INPUT_BASE} onFocus={focusIn} onBlur={focusOut}
+                className={inputCls}
               />
-              {emailBad && <p style={ERROR_HINT}>Must be a valid email address.</p>}
+              {emailBad && <p className="text-xs text-destructive mt-1">Must be a valid email address.</p>}
             </div>
 
             {/* Username */}
-            <div style={{ marginBottom: 18 }}>
-              <label htmlFor="r-un" style={LABEL}>Username <Required /></label>
+            <div className="mb-[18px]">
+              <label htmlFor="r-un" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Username <Required />
+              </label>
               <input
                 id="r-un" name="username" type="text"
                 autoComplete="username" maxLength={25}
                 placeholder="Pick a username"
                 value={form.username} onChange={handleChange}
-                style={INPUT_BASE} onFocus={focusIn} onBlur={focusOut}
+                className={inputCls}
               />
               {form.username.trim() && (
                 unTooShort ? (
-                  <p style={ERROR_HINT}>At least 5 characters required</p>
+                  <p className="text-xs text-destructive mt-1">At least 5 characters required</p>
                 ) : unStatus === 'checking' ? (
-                  <p style={{ ...HINT, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Spinner />Checking availability…
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />Checking availability…
                   </p>
                 ) : unStatus === 'available' ? (
-                  <p style={{ ...HINT, color: '#1a7f4b', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <CheckIcon />Available
+                  <p className="text-xs text-[#1a7f4b] mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />Available
                   </p>
                 ) : unStatus === 'taken' ? (
-                  <p style={ERROR_HINT}>Username not available</p>
+                  <p className="text-xs text-destructive mt-1">Username not available</p>
                 ) : null
               )}
             </div>
 
-            {/* Display name with availability check */}
-            <div style={{ marginBottom: 18 }}>
-              <label htmlFor="r-dn" style={LABEL}>Display name <Required /></label>
-              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, marginTop: 0 }}>
+            {/* Display name */}
+            <div className="mb-[18px]">
+              <label htmlFor="r-dn" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Display name <Required />
+              </label>
+              <p className="text-xs text-muted-foreground mb-1.5 mt-0">
                 Shown on your pet cards — e.g. "Cool Pet Dad"
               </p>
               <input
@@ -448,139 +325,109 @@ export function RegisterPage() {
                 autoComplete="nickname" maxLength={25}
                 placeholder="e.g. Cool Pet Dad"
                 value={form.displayName} onChange={handleChange}
-                style={INPUT_BASE} onFocus={focusIn} onBlur={focusOut}
+                className={inputCls}
               />
               {form.displayName.trim() && (
                 dnTooShort ? (
-                  <p style={ERROR_HINT}>At least 4 characters required</p>
+                  <p className="text-xs text-destructive mt-1">At least 4 characters required</p>
                 ) : dnStatus === 'checking' ? (
-                  <p style={{ ...HINT, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Spinner />Checking availability…
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />Checking availability…
                   </p>
                 ) : dnStatus === 'available' ? (
-                  <p style={{ ...HINT, color: '#1a7f4b', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <CheckIcon />Available
+                  <p className="text-xs text-[#1a7f4b] mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />Available
                   </p>
                 ) : dnStatus === 'taken' ? (
-                  <p style={ERROR_HINT}>Display name not available</p>
+                  <p className="text-xs text-destructive mt-1">Display name not available</p>
                 ) : null
               )}
             </div>
 
             {/* Password */}
-            <div style={{ marginBottom: 18 }}>
-              <label htmlFor="r-pw" style={LABEL}>Password <Required /></label>
-              <div style={{ position: 'relative' }}>
+            <div className="mb-[18px]">
+              <label htmlFor="r-pw" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Password <Required />
+              </label>
+              <div className="relative">
                 <input
                   id="r-pw" name="password"
                   type={showPw ? 'text' : 'password'}
                   autoComplete="new-password" minLength={10} maxLength={72}
                   value={form.password} onChange={handleChange}
-                  style={{ ...INPUT_BASE, paddingRight: 44 }}
-                  onFocus={focusIn} onBlur={focusOut}
+                  className={inputCls + ' pr-11'}
                 />
                 <button
-                  type="button" onClick={() => setShowPw(v => !v)}
-                  style={{
-                    position: 'absolute', right: 0, top: 0,
-                    height: 46, width: 44,
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--muted-foreground)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-0 h-[46px] w-11 flex items-center justify-center bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPw ? <EyeOff /> : <EyeOpen />}
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {form.password && (
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-[3px]">
                     {[0, 1, 2, 3].map(i => (
                       <div
                         key={i}
-                        style={{
-                          flex: 1, height: 3, borderRadius: 2,
-                          background: i < strength.score ? STRENGTH_COLORS[strength.score] : 'var(--border)',
-                          transition: 'background 0.25s',
-                        }}
+                        className={cn(
+                          'flex-1 h-[3px] rounded-sm transition-colors',
+                          i < strength.score ? STRENGTH_BG[strength.score] : 'bg-border'
+                        )}
                       />
                     ))}
                   </div>
-                  <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: STRENGTH_COLORS[strength.score] }}>
+                  <p className={cn('text-[11px] font-semibold m-0', STRENGTH_TEXT[strength.score])}>
                     {STRENGTH_LABELS[strength.score]}
                   </p>
                 </div>
               )}
               {pwWeak && strength.feedback?.suggestions?.[0] && (
-                <p style={ERROR_HINT}>{strength.feedback.suggestions[0]}</p>
+                <p className="text-xs text-destructive mt-1">{strength.feedback.suggestions[0]}</p>
               )}
             </div>
 
             {/* Confirm password */}
-            <div style={{ marginBottom: 18 }}>
-              <label htmlFor="r-cpw" style={LABEL}>Confirm password <Required /></label>
-              <div style={{ position: 'relative' }}>
+            <div className="mb-[18px]">
+              <label htmlFor="r-cpw" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Confirm password <Required />
+              </label>
+              <div className="relative">
                 <input
                   id="r-cpw" name="confirmPassword"
                   type={showPw ? 'text' : 'password'}
                   autoComplete="new-password" maxLength={72}
                   value={form.confirmPassword} onChange={handleChange}
-                  style={{ ...INPUT_BASE, paddingRight: 44 }}
-                  onFocus={focusIn} onBlur={focusOut}
+                  className={inputCls + ' pr-11'}
                 />
                 <button
-                  type="button" onClick={() => setShowPw(v => !v)}
-                  style={{
-                    position: 'absolute', right: 0, top: 0,
-                    height: 46, width: 44,
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--muted-foreground)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-0 h-[46px] w-11 flex items-center justify-center bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPw ? <EyeOff /> : <EyeOpen />}
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {pwMismatch && <p style={ERROR_HINT}>Passwords do not match.</p>}
+              {pwMismatch && <p className="text-xs text-destructive mt-1">Passwords do not match.</p>}
             </div>
 
             {error && (
-              <p style={{ fontSize: 13, color: 'var(--destructive)', textAlign: 'center', marginBottom: 10 }}>
-                {error}
-              </p>
+              <p className="text-[13px] text-destructive text-center mb-2.5">{error}</p>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={!canSubmit || isLoading}
-              style={{
-                width: '100%',
-                height: 50,
-                borderRadius: 14,
-                border: 'none',
-                background: 'var(--primary)',
-                color: '#fff',
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: !canSubmit || isLoading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                opacity: !canSubmit || isLoading ? 0.45 : 1,
-                transition: 'opacity 0.15s',
-                marginTop: 8,
-              }}
+              className="w-full h-[50px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
             >
-              {isLoading && (
-                <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
-              )}
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {isLoading ? 'Creating your account…' : 'Create account'}
             </button>
 
-            <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--muted-foreground)', marginTop: 16 }}>
+            <p className="text-center text-[13px] text-muted-foreground mt-4">
               By creating an account you agree to our Terms and Privacy Policy.
             </p>
           </form>
@@ -592,33 +439,11 @@ export function RegisterPage() {
           .brand-panel { display: none !important; }
           .mobile-auth-header { display: flex !important; }
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )
 }
 
-// ── Shared micro-components / styles ─────────────────────────────────
-const LABEL: React.CSSProperties = {
-  display: 'block',
-  fontSize: 13,
-  fontWeight: 600,
-  marginBottom: 6,
-  color: 'var(--foreground)',
-}
-
-const HINT: React.CSSProperties = {
-  fontSize: 12,
-  color: 'var(--muted-foreground)',
-  margin: '4px 0 0',
-}
-
-const ERROR_HINT: React.CSSProperties = {
-  fontSize: 12,
-  color: 'var(--destructive)',
-  margin: '4px 0 0',
-}
-
 function Required() {
-  return <span style={{ color: 'var(--destructive)', marginLeft: 2 }}>*</span>
+  return <span className="text-destructive ml-0.5">*</span>
 }

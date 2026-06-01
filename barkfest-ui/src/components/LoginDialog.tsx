@@ -56,6 +56,7 @@ function LoginDialogInner() {
       >
         <button
           onClick={closeDialog}
+          aria-label="Close"
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-5 h-5" />
@@ -106,6 +107,7 @@ function LoginDialogInner() {
               <button
                 type="button"
                 onClick={() => setForm(f => ({ ...f, showPassword: !f.showPassword }))}
+                aria-label={form.showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {form.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

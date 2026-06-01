@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react'
+import { forwardRef, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getOwnerPets, setOwnerVisibility } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { BarkfestMark } from '@/components/BarkfestMark'
@@ -11,19 +13,6 @@ import { Navbar } from '@/components/Navbar'
 import { AddPetDialog } from '@/components/AddPetDialog'
 import { EditPetModal } from '@/components/EditPetModal'
 import type { PetDto } from '@/lib/api'
-
-// ── Age formatter ─────────────────────────────────────────────────────
-function formatAge(dateOfBirth?: string): string | null {
-  if (!dateOfBirth) return null
-  const dob = new Date(dateOfBirth)
-  const today = new Date()
-  let months = (today.getFullYear() - dob.getFullYear()) * 12 + (today.getMonth() - dob.getMonth())
-  if (today.getDate() < dob.getDate()) months--
-  months = Math.max(months, 0)
-  if (months < 12) return months === 1 ? '1 mo' : `${months} mo`
-  const years = Math.floor(months / 12)
-  return years === 1 ? '1 yr' : `${years} yr`
-}
 
 // ── Switch ────────────────────────────────────────────────────────────
 function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id: string }) {
@@ -33,20 +22,16 @@ function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boo
       aria-checked={checked}
       id={id}
       onClick={() => onChange(!checked)}
-      style={{
-        width: 46, height: 27, borderRadius: 999, border: 'none', cursor: 'pointer',
-        padding: 0, flexShrink: 0,
-        background: checked ? 'var(--primary)' : '#d8cfc6',
-        position: 'relative', transition: 'background 0.2s',
-      }}
+      className={cn(
+        'relative w-[46px] h-[27px] rounded-full border-0 cursor-pointer p-0 shrink-0 transition-colors',
+        checked ? 'bg-primary' : 'bg-[#d8cfc6]'
+      )}
     >
       <span
-        style={{
-          position: 'absolute', top: 3, left: checked ? 22 : 3,
-          width: 21, height: 21, borderRadius: '50%',
-          background: '#fff', transition: 'left 0.2s',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-        }}
+        className={cn(
+          'absolute top-[3px] w-[21px] h-[21px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-[left]',
+          checked ? 'left-[22px]' : 'left-[3px]'
+        )}
       />
     </button>
   )
@@ -56,59 +41,42 @@ function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boo
 function HidePetsToggle({ hidden, onChange, error }: { hidden: boolean; onChange: (v: boolean) => void; error?: string | null }) {
   return (
     <div>
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: 14,
-          background: 'var(--card)',
-          border: `1px solid ${hidden ? 'var(--primary)' : 'var(--border)'}`,
-          borderRadius: 12, padding: '10px 14px 10px 16px',
-          transition: 'border-color 0.2s',
-        }}
-      >
+      <div className={cn(
+        'flex items-center gap-3.5 bg-card rounded-xl px-4 py-2.5 border transition-colors',
+        hidden ? 'border-primary' : 'border-border'
+      )}>
         <div>
-          <label
-            htmlFor="hide-pets"
-            style={{ display: 'block', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-          >
+          <label htmlFor="hide-pets" className="block text-sm font-semibold cursor-pointer">
             Hide my pets
           </label>
-          <p
-            style={{
-              margin: 0, fontSize: 12,
-              color: hidden ? 'var(--primary)' : 'var(--muted-foreground)',
-              fontWeight: hidden ? 600 : 400,
-            }}
-          >
+          <p className={cn('m-0 text-xs font-medium', hidden ? 'text-primary' : 'text-muted-foreground font-normal')}>
             {hidden ? 'Hidden from the public gallery' : 'Visible in the public gallery'}
           </p>
         </div>
         <Switch id="hide-pets" checked={hidden} onChange={onChange} />
       </div>
-      {error && (
-        <p style={{ fontSize: 12, color: 'var(--destructive)', margin: '4px 0 0' }}>{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </div>
   )
 }
 
 // ── ManagePetsPage ────────────────────────────────────────────────────
 export function ManagePetsPage() {
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
   const queryClient = useQueryClient()
-  const isMobile = useIsMobile()
+  const isMobile    = useIsMobile()
   const { accountId } = useAuth()
 
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [addPetOpen, setAddPetOpen] = useState(false)
-  const [editPet, setEditPet] = useState<PetDto | null>(null)
+  const [selected, setSelected]               = useState<Set<string>>(new Set())
+  const [deleteTarget, setDeleteTarget]       = useState<{ id: string; name: string } | null>(null)
+  const [bulkDeleteOpen, setBulkDeleteOpen]   = useState(false)
+  const [isDeleting, setIsDeleting]           = useState(false)
+  const [addPetOpen, setAddPetOpen]           = useState(false)
+  const [editPet, setEditPet]                 = useState<PetDto | null>(null)
   const [optimisticHidden, setOptimisticHidden] = useState<boolean | null>(null)
   const [visibilityError, setVisibilityError] = useState<string | null>(null)
   const selectAllRef = useRef<HTMLInputElement>(null)
 
-  // Fetch owner to get initial visibility
   const { data: ownerData } = useQuery({
     queryKey: ['owner', accountId],
     queryFn: () => getOwnerById(accountId!),
@@ -123,7 +91,6 @@ export function ManagePetsPage() {
     enabled: !!accountId,
   })
 
-  // Keep indeterminate state on select-all checkbox in sync
   if (selectAllRef.current) {
     selectAllRef.current.indeterminate = selected.size > 0 && selected.size < pets.length
   }
@@ -188,151 +155,92 @@ export function ManagePetsPage() {
     }
   }
 
-  // Desktop grid columns
   const desktopCols = '48px 56px 1fr 80px 80px 100px'
   const mobileCols  = '40px 52px 1fr 96px'
   const cols = isMobile ? mobileCols : desktopCols
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
+    <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px 64px' }}>
+      <div className="max-w-[900px] mx-auto px-6 pt-8 pb-16">
 
         {/* Page header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            marginBottom: 24,
-            flexWrap: 'wrap',
-            gap: 16,
-          }}
-        >
+        <div className="flex items-end justify-between mb-6 flex-wrap gap-4">
           <div>
-            <h1 className="font-heading" style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
-              My Pets
-            </h1>
-            <p style={{ fontSize: 14, color: 'var(--muted-foreground)', margin: 0 }}>
+            <h1 className="font-heading text-[28px] font-bold mb-1">My Pets</h1>
+            <p className="text-sm text-muted-foreground m-0">
               {pets.length} {pets.length === 1 ? 'pet' : 'pets'} in your profile
             </p>
           </div>
           <HidePetsToggle hidden={hidden} onChange={handleToggleHidden} error={visibilityError} />
         </div>
 
-        {/* Bulk delete bar — sticky inside the content column */}
+        {/* Bulk delete bar */}
         {selected.size > 0 && (
-          <div
-            style={{
-              position: 'sticky', top: 68, zIndex: 40,
-              margin: '0 0 16px',
-              background: 'var(--primary)', color: '#fff',
-              borderRadius: 12, padding: '0 16px', height: 52,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}
-          >
-            <span style={{ fontSize: 14, fontWeight: 500 }}>
+          <div className="sticky top-[68px] z-40 mb-4 bg-primary text-white rounded-xl px-4 h-[52px] flex items-center justify-between">
+            <span className="text-sm font-medium">
               {selected.size} pet{selected.size > 1 ? 's' : ''} selected
             </span>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="flex gap-2.5 items-center">
               <button
                 onClick={() => setSelected(new Set())}
-                style={{
-                  height: 32, padding: '0 14px', borderRadius: 8,
-                  border: '1.5px solid #fff',
-                  background: 'rgba(255,255,255,0.18)',
-                  color: '#fff',
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                }}
+                className="h-8 px-3.5 rounded-lg border-[1.5px] border-white bg-white/[0.18] text-white text-[13px] font-semibold cursor-pointer"
               >
                 Clear
               </button>
               <button
                 onClick={() => setBulkDeleteOpen(true)}
-                style={{
-                  height: 32, padding: '0 14px', borderRadius: 8,
-                  border: 'none', background: '#fff',
-                  color: 'var(--destructive)',
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}
+                className="h-8 px-3.5 rounded-lg border-0 bg-white text-destructive text-[13px] font-bold cursor-pointer flex items-center gap-1.5"
               >
-                <Trash2 style={{ width: 14, height: 14 }} />
+                <Trash2 className="w-3.5 h-3.5" />
                 Delete {selected.size}
               </button>
             </div>
           </div>
         )}
 
-        {/* Table — dims when hidden */}
-        <div style={{ opacity: hidden ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: hidden ? 'none' : 'auto' }}>
+        {/* Table */}
+        <div className={cn('transition-opacity', hidden ? 'opacity-50 pointer-events-none' : 'opacity-100')}>
           {isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
-              <Loader2 style={{ width: 32, height: 32, color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           ) : pets.length === 0 ? (
-            <div
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                padding: '80px 0',
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 16,
-              }}
-            >
-              <PawPrint style={{ width: 48, height: 48, marginBottom: 16, color: 'var(--primary)', opacity: 0.4 }} />
-              <p className="font-heading" style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>No pets yet</p>
-              <p style={{ fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 24 }}>
+            <div className="flex flex-col items-center py-20 bg-card border border-border rounded-2xl">
+              <PawPrint className="w-12 h-12 mb-4 text-primary opacity-40" />
+              <p className="font-heading text-[18px] font-semibold mb-1.5">No pets yet</p>
+              <p className="text-sm text-muted-foreground mb-6">
                 Share your first pet with the Barkfest community!
               </p>
               <button
                 onClick={() => setAddPetOpen(true)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  height: 40, padding: '0 20px', borderRadius: 10,
-                  border: 'none', background: 'var(--primary)', color: '#fff',
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                }}
+                className="flex items-center gap-1.5 h-10 px-5 rounded-[10px] border-0 bg-primary text-white text-sm font-semibold cursor-pointer"
               >
-                <Plus style={{ width: 16, height: 16 }} />
+                <Plus className="w-4 h-4" />
                 Add your first pet
               </button>
             </div>
           ) : (
-            <div
-              style={{
-                background: 'var(--card)',
-                border: '1px solid var(--border)',
-                borderRadius: 16,
-                overflow: 'hidden',
-              }}
-            >
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+
               {/* Desktop header row */}
               {!isMobile && (
                 <div
-                  style={{
-                    display: 'grid', gridTemplateColumns: cols,
-                    alignItems: 'center', padding: '0 16px', height: 44,
-                    borderBottom: '1px solid var(--border)',
-                    background: 'var(--primary-10)',
-                  }}
+                  className="grid items-center px-4 h-11 border-b border-border bg-primary/10"
+                  style={{ gridTemplateColumns: cols }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <Checkbox
-                      ref={selectAllRef}
-                      checked={allSelected}
-                      onChange={toggleAll}
-                    />
+                  <div className="flex justify-center">
+                    <Checkbox ref={selectAllRef} checked={allSelected} onChange={toggleAll} />
                   </div>
                   <div />
                   {['Name', 'Type', 'Age', 'Actions'].map((h, i) => (
                     <span
                       key={h}
-                      style={{
-                        fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                        textTransform: 'uppercase', color: 'var(--primary)',
-                        textAlign: i === 3 ? 'right' : 'left',
-                      }}
+                      className={cn(
+                        'text-[11px] font-bold tracking-[0.06em] uppercase text-primary',
+                        i === 3 ? 'text-right' : 'text-left'
+                      )}
                     >
                       {h}
                     </span>
@@ -342,21 +250,9 @@ export function ManagePetsPage() {
 
               {/* Mobile select-all row */}
               {isMobile && (
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 14px',
-                    borderBottom: '1px solid var(--border)',
-                    background: 'var(--primary-10)',
-                  }}
-                >
+                <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-border bg-primary/10">
                   <Checkbox ref={selectAllRef} checked={allSelected} onChange={toggleAll} />
-                  <span
-                    style={{
-                      fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
-                      textTransform: 'uppercase', color: 'var(--primary)',
-                    }}
-                  >
+                  <span className="text-xs font-bold tracking-[0.06em] uppercase text-primary">
                     {allSelected ? 'Deselect all' : 'Select all'}
                   </span>
                 </div>
@@ -364,54 +260,52 @@ export function ManagePetsPage() {
 
               {/* Pet rows */}
               {pets.map((pet, i) => {
-                const age = formatAge(pet.dateOfBirth)
-                const isSel = selected.has(pet.petId)
+                const age      = formatAge(pet.dateOfBirth, 'short')
+                const isSel    = selected.has(pet.petId)
                 const featured = pet.images.find(img => img.isFeaturedImage) ?? pet.images[0]
                 return (
                   <div
                     key={pet.petId}
+                    className={cn(
+                      'grid items-center transition-colors',
+                      isSel ? 'bg-primary/10' : 'bg-transparent',
+                      i === 0 ? '' : 'border-t border-border'
+                    )}
                     style={{
-                      display: 'grid', gridTemplateColumns: cols,
-                      alignItems: 'center',
+                      gridTemplateColumns: cols,
                       padding: `0 ${isMobile ? 12 : 16}px`,
                       height: isMobile ? 64 : 60,
-                      borderTop: i === 0 ? 'none' : '1px solid var(--border)',
-                      background: isSel ? 'var(--primary-10)' : 'transparent',
-                      transition: 'background 0.12s',
                     }}
                   >
                     {/* Checkbox */}
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div className="flex justify-center">
                       <Checkbox checked={isSel} onChange={() => toggleOne(pet.petId)} />
                     </div>
 
                     {/* Thumbnail */}
                     <div
-                      style={{
-                        width: isMobile ? 40 : 38, height: isMobile ? 40 : 38,
-                        borderRadius: 8, overflow: 'hidden',
-                        border: '1.5px solid var(--border)',
-                      }}
+                      className="rounded-lg overflow-hidden border-[1.5px] border-border"
+                      style={{ width: isMobile ? 40 : 38, height: isMobile ? 40 : 38 }}
                     >
                       {featured ? (
                         <img
                           src={getBlobImageUrl(featured.blobName)}
                           alt={pet.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          className="w-full h-full object-cover block"
                         />
                       ) : (
-                        <div style={{ width: '100%', height: '100%', background: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <PawPrint style={{ width: 18, height: 18, color: 'var(--primary)' }} />
+                        <div className="w-full h-full bg-secondary flex items-center justify-center">
+                          <PawPrint className="w-[18px] h-[18px] text-primary" />
                         </div>
                       )}
                     </div>
 
-                    {/* Name + breed (mobile shows type/age too) */}
-                    <div style={{ paddingLeft: 4, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: isMobile ? 13 : 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {/* Name + breed */}
+                    <div className="pl-1 min-w-0">
+                      <p className={cn('m-0 font-semibold overflow-hidden text-ellipsis whitespace-nowrap', isMobile ? 'text-[13px]' : 'text-sm')}>
                         {pet.name}
                       </p>
-                      <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p className="m-0 text-[11px] text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
                         {isMobile
                           ? [pet.breed, pet.petType, age].filter(Boolean).join(' · ')
                           : pet.breed}
@@ -420,28 +314,24 @@ export function ManagePetsPage() {
 
                     {/* Desktop-only: Type */}
                     {!isMobile && (
-                      <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{pet.petType}</span>
+                      <span className="text-[13px] text-muted-foreground">{pet.petType}</span>
                     )}
 
                     {/* Desktop-only: Age */}
                     {!isMobile && (
-                      <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{age ?? '—'}</span>
+                      <span className="text-[13px] text-muted-foreground">{age ?? '—'}</span>
                     )}
 
                     {/* Actions */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: isMobile ? 0 : 2 }}>
+                    <div className={cn('flex justify-end', isMobile ? 'gap-0' : 'gap-0.5')}>
                       <IconBtn title="View" onClick={() => navigate(`/pets/${pet.petId}?from=manage`)}>
-                        <Eye style={{ width: 15, height: 15 }} />
+                        <Eye className="w-[15px] h-[15px]" />
                       </IconBtn>
                       <IconBtn title="Edit" onClick={() => setEditPet(pet)}>
-                        <Pencil style={{ width: 15, height: 15 }} />
+                        <Pencil className="w-[15px] h-[15px]" />
                       </IconBtn>
-                      <IconBtn
-                        title="Delete"
-                        danger
-                        onClick={() => setDeleteTarget({ id: pet.petId, name: pet.name })}
-                      >
-                        <Trash2 style={{ width: 15, height: 15 }} />
+                      <IconBtn title="Delete" danger onClick={() => setDeleteTarget({ id: pet.petId, name: pet.name })}>
+                        <Trash2 className="w-[15px] h-[15px]" />
                       </IconBtn>
                     </div>
                   </div>
@@ -452,13 +342,10 @@ export function ManagePetsPage() {
         </div>
       </div>
 
-      {/* ── Dialogs ────────────────────────────────────────────────── */}
+      {/* ── Dialogs ── */}
 
       {addPetOpen && (
-        <AddPetDialog
-          onClose={() => setAddPetOpen(false)}
-          onSuccess={handlePetAdded}
-        />
+        <AddPetDialog onClose={() => setAddPetOpen(false)} onSuccess={handlePetAdded} />
       )}
 
       {editPet && (
@@ -474,7 +361,6 @@ export function ManagePetsPage() {
         />
       )}
 
-      {/* Single delete confirm */}
       {deleteTarget && (
         <ConfirmDelete
           name={deleteTarget.name}
@@ -484,7 +370,6 @@ export function ManagePetsPage() {
         />
       )}
 
-      {/* Bulk delete confirm */}
       {bulkDeleteOpen && (
         <ConfirmDelete
           name={`${selected.size} pets`}
@@ -493,43 +378,28 @@ export function ManagePetsPage() {
           onConfirm={handleBulkDelete}
         />
       )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
 
 // ── Shared micro-components ───────────────────────────────────────────
 
-import { forwardRef } from 'react'
-
-const Checkbox = forwardRef<
-  HTMLInputElement,
-  { checked: boolean; onChange: () => void }
->(({ checked, onChange }, ref) => (
-  <input
-    ref={ref}
-    type="checkbox"
-    checked={checked}
-    onChange={onChange}
-    style={{
-      width: 18, height: 18, borderRadius: 5,
-      border: '1.5px solid var(--border)',
-      background: checked ? 'var(--primary)' : 'var(--card)',
-      cursor: 'pointer',
-      appearance: 'none', WebkitAppearance: 'none',
-      flexShrink: 0, transition: 'all 0.12s',
-      accentColor: 'var(--primary)',
-    }}
-  />
-))
+const Checkbox = forwardRef<HTMLInputElement, { checked: boolean; onChange: () => void }>(
+  ({ checked, onChange }, ref) => (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      className="w-[18px] h-[18px] rounded-[5px] border-[1.5px] border-border cursor-pointer shrink-0 transition-all accent-primary"
+      style={{ background: checked ? 'var(--primary)' : 'var(--card)', appearance: 'none', WebkitAppearance: 'none' }}
+    />
+  )
+)
 Checkbox.displayName = 'Checkbox'
 
 function IconBtn({
-  children,
-  title,
-  onClick,
-  danger,
+  children, title, onClick, danger,
 }: {
   children: React.ReactNode
   title: string
@@ -539,24 +409,14 @@ function IconBtn({
   return (
     <button
       title={title}
+      aria-label={title}
       onClick={onClick}
-      style={{
-        width: 34, height: 34, borderRadius: 8,
-        border: 'none', background: 'transparent',
-        cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--muted-foreground)',
-        transition: 'background 0.12s, color 0.12s',
-        flexShrink: 0,
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = danger ? 'rgba(229,72,77,0.1)' : 'var(--secondary)'
-        e.currentTarget.style.color = danger ? 'var(--destructive)' : 'var(--foreground)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.color = 'var(--muted-foreground)'
-      }}
+      className={cn(
+        'w-[34px] h-[34px] rounded-lg border-0 bg-transparent cursor-pointer flex items-center justify-center text-muted-foreground shrink-0 transition-colors',
+        danger
+          ? 'hover:bg-[#e5484d]/10 hover:text-destructive'
+          : 'hover:bg-secondary hover:text-foreground'
+      )}
     >
       {children}
     </button>
@@ -564,10 +424,7 @@ function IconBtn({
 }
 
 function ConfirmDelete({
-  name,
-  isDeleting,
-  onCancel,
-  onConfirm,
+  name, isDeleting, onCancel, onConfirm,
 }: {
   name: string
   isDeleting: boolean
@@ -575,55 +432,29 @@ function ConfirmDelete({
   onConfirm: () => void
 }) {
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(3px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      }}
-    >
-      <div
-        style={{
-          background: 'var(--card)', borderRadius: 20, padding: 28,
-          maxWidth: 360, width: '100%',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+    <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+      <div className="bg-card rounded-[20px] p-7 max-w-[360px] w-full shadow-[0_24px_64px_rgba(0,0,0,0.15)]">
+        <div className="flex items-center gap-2 mb-4">
           <BarkfestMark size={22} />
-          <span className="font-heading" style={{ fontSize: 17, fontWeight: 700 }}>Barkfest</span>
+          <span className="font-heading text-[17px] font-bold">Barkfest</span>
         </div>
-        <h3 className="font-heading" style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
-          Delete {name}?
-        </h3>
-        <p style={{ fontSize: 14, color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: 22 }}>
+        <h3 className="font-heading text-xl font-bold mb-2.5">Delete {name}?</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-[22px]">
           This will permanently remove {name} and all their photos. This can't be undone.
         </p>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="flex gap-2.5">
           <button
             onClick={onCancel}
-            style={{
-              flex: 1, height: 42, borderRadius: 10,
-              border: '1.5px solid var(--border)', background: 'transparent',
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
-              cursor: 'pointer', color: 'var(--foreground)',
-            }}
+            className="flex-1 h-[42px] rounded-[10px] border-[1.5px] border-border bg-transparent text-foreground text-sm font-medium cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={isDeleting}
-            style={{
-              flex: 1, height: 42, borderRadius: 10,
-              border: 'none', background: 'var(--destructive)', color: '#fff',
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600,
-              cursor: isDeleting ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              opacity: isDeleting ? 0.6 : 1,
-            }}
+            className="flex-1 h-[42px] rounded-[10px] border-0 bg-destructive text-white text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isDeleting && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
+            {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Delete
           </button>
         </div>

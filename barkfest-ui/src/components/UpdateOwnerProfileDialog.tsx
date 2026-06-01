@@ -246,6 +246,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         <button
           onClick={onClose}
           disabled={isSubmitting}
+          aria-label="Close"
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
           <X className="w-5 h-5" />
@@ -372,8 +373,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary"
-                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
@@ -405,6 +405,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                     type="button"
                     onClick={handleClearImage}
                     disabled={isSubmitting}
+                    aria-label="Remove photo"
                     className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center justify-center shadow-sm disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -451,8 +452,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 type="button"
                 onClick={() => { setStep(1); setSubmitError(null); setImageError(null) }}
                 disabled={isSubmitting}
-                className="flex-1 h-11 rounded-xl text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
-                style={{ border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted-foreground)' }}
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50"
               >
                 Back
               </button>
@@ -507,8 +507,7 @@ function ProfileField({ label, id, type = 'text', required, maxLength, placehold
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full h-11 rounded-xl bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
-        style={{ border: '1.5px solid var(--border)', color: 'var(--foreground)' }}
+        className="w-full h-11 rounded-xl border-[1.5px] border-border bg-background text-foreground px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground transition"
       />
     </div>
   )

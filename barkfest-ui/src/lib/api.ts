@@ -183,7 +183,7 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.()
-      throw new Error('Unauthorized')
+      throw new ApiError('Unauthorized', 401)
     }
     const text = await response.text()
     let message = `HTTP ${response.status}`
@@ -191,7 +191,7 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
       const problem = JSON.parse(text)
       message = problem.detail || problem.title || message
     } catch { /* use status code fallback */ }
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
 
   const text = await response.text()
@@ -218,7 +218,7 @@ export async function createPet(data: CreatePetRequest): Promise<string> {
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.()
-      throw new Error('Unauthorized')
+      throw new ApiError('Unauthorized', 401)
     }
     const text = await response.text()
     let message = `HTTP ${response.status}`
@@ -226,7 +226,7 @@ export async function createPet(data: CreatePetRequest): Promise<string> {
       const problem = JSON.parse(text)
       message = problem.detail || problem.title || message
     } catch { /* use status code fallback */ }
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
 
   const location = response.headers.get('Location')

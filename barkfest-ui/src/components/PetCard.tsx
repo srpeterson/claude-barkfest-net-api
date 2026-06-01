@@ -3,23 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { formatAge } from '@/lib/formatAge'
 import type { BrowseImageDto } from '@/types/browse'
-
-function formatAge(dateOfBirth?: string): string | null {
-  if (!dateOfBirth) return null
-
-  const dob = new Date(dateOfBirth)
-  const today = new Date()
-
-  let months = (today.getFullYear() - dob.getFullYear()) * 12
-    + (today.getMonth() - dob.getMonth())
-  if (today.getDate() < dob.getDate()) months--
-  months = Math.max(months, 0)
-
-  if (months < 12) return months === 1 ? '1 month' : `${months} months`
-  const years = Math.floor(months / 12)
-  return years === 1 ? '1 year' : `${years} years`
-}
 
 interface PetCardProps {
   pet: BrowseImageDto
@@ -28,7 +13,7 @@ interface PetCardProps {
 
 export function PetCard({ pet, index }: PetCardProps) {
   const navigate = useNavigate()
-  const age = formatAge(pet.dateOfBirth)
+  const age = formatAge(pet.dateOfBirth, 'long')
 
   return (
     <div
