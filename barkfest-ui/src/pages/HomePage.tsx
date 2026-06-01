@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navbar } from '@/components/Navbar'
 import { HeroSection } from '@/components/HeroSection'
-import { FilterBar } from '@/components/FilterBar'
 import { PetGrid } from '@/components/PetGrid'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { getBrowseImages } from '@/lib/api'
@@ -155,16 +154,15 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-background" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Navbar />
-      <FilterBar
-        petTypeValue={petTypeValue}
-        onPetTypeChange={handleTypeChange}
-        breedValue={breedValue}
-        onBreedChange={handleBreedChange}
+      <Navbar
+        filterProps={{
+          petTypeValue,
+          onPetTypeChange: handleTypeChange,
+          breedValue,
+          onBreedChange: handleBreedChange,
+        }}
       />
-      <div className="-mt-12">
-        <HeroSection petTypeValue={petTypeValue} breedValue={breedValue} />
-      </div>
+      <HeroSection petTypeValue={petTypeValue} breedValue={breedValue} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6" style={{ flex: 1, width: '100%' }}>
         <PetGrid pets={pets} isLoading={isLoading} hasActiveFilters={hasActiveFilters} />
 
