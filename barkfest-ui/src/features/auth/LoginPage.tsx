@@ -99,7 +99,7 @@ export function LoginPage() {
 
   const allFilled = username.trim() !== '' && password !== ''
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!allFilled) return
     setLoading(true)

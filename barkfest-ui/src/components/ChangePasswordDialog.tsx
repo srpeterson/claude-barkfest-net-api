@@ -56,7 +56,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
   const allFilled     = current !== '' && next !== '' && confirm !== ''
   const canSubmit     = allFilled && !pwWeak && !pwMismatch && !isLoading
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit || !accountId) return
     setError(null)

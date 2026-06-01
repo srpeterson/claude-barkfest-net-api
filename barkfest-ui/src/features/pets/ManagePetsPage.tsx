@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -104,7 +104,7 @@ export function ManagePetsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [addPetOpen, setAddPetOpen] = useState(false)
   const [editPet, setEditPet] = useState<PetDto | null>(null)
-  const [hidden, setHidden] = useState(false)
+  const [optimisticHidden, setOptimisticHidden] = useState<boolean | null>(null)
   const [visibilityError, setVisibilityError] = useState<string | null>(null)
   const selectAllRef = useRef<HTMLInputElement>(null)
 
@@ -115,12 +115,7 @@ export function ManagePetsPage() {
     enabled: !!accountId,
   })
 
-  // Sync hidden from server on first load
-  useEffect(() => {
-    if (ownerData) {
-      setHidden(!ownerData.isVisible)
-    }
-  }, [ownerData])
+  const hidden = optimisticHidden ?? (ownerData ? !ownerData.isVisible : false)
 
   const { data: pets = [], isLoading } = useQuery({
     queryKey: ['owner', 'pets', accountId],
@@ -183,12 +178,12 @@ export function ManagePetsPage() {
 
   async function handleToggleHidden(newHidden: boolean) {
     const previous = hidden
-    setHidden(newHidden)
+    setOptimisticHidden(newHidden)
     setVisibilityError(null)
     try {
       await setOwnerVisibility(accountId!, newHidden)
     } catch {
-      setHidden(previous)
+      setOptimisticHidden(previous)
       setVisibilityError('Failed to update visibility. Please try again.')
     }
   }

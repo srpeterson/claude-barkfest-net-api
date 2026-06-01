@@ -1,39 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 
 export function LoginDialog() {
-  const { dialog, closeDialog, signIn } = useAuth()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isAdmin] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const allFieldsFilled = username.trim() !== '' && password !== ''
-
-  useEffect(() => {
-    if (dialog !== 'login') {
-      setUsername('')
-      setPassword('')
-      setShowPassword(false)
-      setError(null)
-    }
-  }, [dialog])
-
+  const { dialog } = useAuth()
   if (dialog !== 'login') return null
+  return <LoginDialogInner />
+}
 
-  async function handleSubmit(e: React.FormEvent) {
+function LoginDialogInner() {
+  const { closeDialog, signIn } = useAuth()
+  const [form, setForm] = useState({ username: '', password: '', showPassword: false, error: null as string | null })
+  const [isLoading, setIsLoading] = useState(false)
+  const isAdmin = false
+
+  const allFieldsFilled = form.username.trim() !== '' && form.password !== ''
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
+    setForm(f => ({ ...f, error: null }))
     setIsLoading(true)
     try {
       const result = isAdmin
-        ? await adminLogin(username, password)
-        : await login(username, password)
+        ? await adminLogin(form.username, form.password)
+        : await login(form.username, form.password)
 
       let profileImageBlobName: string | null = null
       if (!isAdmin) {
@@ -49,7 +41,7 @@ export function LoginDialog() {
       signIn(result.accountId, isAdmin ? 'admin' : 'owner', result.accessToken, profileImageBlobName)
       closeDialog()
     } catch {
-      setError('Invalid username or password.')
+      setForm(f => ({ ...f, error: 'Invalid username or password.' }))
     } finally {
       setIsLoading(false)
     }
@@ -90,8 +82,8 @@ export function LoginDialog() {
               placeholder="Your username"
               required
               maxLength={25}
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              value={form.username}
+              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
               className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 placeholder:text-muted-foreground"
             />
           </div>
@@ -103,20 +95,20 @@ export function LoginDialog() {
             <div className="relative">
               <input
                 id="login-password"
-                type={showPassword ? 'text' : 'password'}
+                type={form.showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
                 maxLength={50}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 className="w-full h-11 rounded-xl border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(v => !v)}
+                onClick={() => setForm(f => ({ ...f, showPassword: !f.showPassword }))}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {form.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -131,7 +123,7 @@ export function LoginDialog() {
             <span className="text-sm text-muted-foreground">I am an Administrator</span>
           </label>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {form.error && <p className="text-sm text-destructive">{form.error}</p>}
 
           <button
             type="submit"

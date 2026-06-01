@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import zxcvbn from 'zxcvbn'
 import { useAuth } from '@/hooks/useAuth'
@@ -208,7 +208,7 @@ export function RegisterPage() {
     checkDN(form.displayName)
   }, [form.displayName, checkDN])
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit) return
     setError(null)

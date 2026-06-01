@@ -64,7 +64,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
   const initialPetTypeValue = petTypeNameToValue(pet.petType)
   const [name, setName]           = useState(pet.name)
   const [petTypeValue, setPetTypeValue] = useState(initialPetTypeValue)
-  const [breedValue, setBreedValue]     = useState(0) // resolved once breed list loads
+  const [userBreedValue, setUserBreedValue] = useState<number | null>(null)
   const [dateOfBirth, setDateOfBirth]   = useState(pet.dateOfBirth ?? '')
   const [description, setDescription]   = useState(pet.description ?? '')
 
@@ -75,13 +75,8 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
     enabled: !!initialPetTypeValue,
     staleTime: Infinity,
   })
-  useEffect(() => {
-    if (breedValue === 0 && initialBreeds.length > 0 && pet.breed) {
-      const match = initialBreeds.find(b => b.name === pet.breed)
-      if (match) setBreedValue(match.value)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialBreeds])
+  const resolvedBreedValue = initialBreeds.find(b => b.name === pet.breed)?.value ?? 0
+  const breedValue = userBreedValue ?? resolvedBreedValue
 
   const today = new Date().toISOString().split('T')[0]
   const step1Valid = name.trim() !== '' && petTypeValue !== 0 && breedValue !== 0 && description.trim() !== ''
@@ -267,9 +262,9 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <PetTypeBreedFormFields
                 petTypeValue={petTypeValue}
-                onPetTypeChange={v => { setPetTypeValue(v); setBreedValue(0) }}
+                onPetTypeChange={v => { setPetTypeValue(v); setUserBreedValue(0) }}
                 breedValue={breedValue}
-                onBreedChange={setBreedValue}
+                onBreedChange={setUserBreedValue}
               />
             </div>
 

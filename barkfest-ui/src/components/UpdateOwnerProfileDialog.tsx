@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { flushSync } from 'react-dom'
 import isEmail from 'validator/lib/isEmail'
 import { useQueryClient } from '@tanstack/react-query'
@@ -49,6 +49,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   // Display name availability check
   const [displayNameAvailable, setDisplayNameAvailable] = useState<boolean | null>(null)
   const [displayNameChecking, setDisplayNameChecking] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Step 2 — profile image ────────────────────────────────────────────
   const [existingBlobName, setExistingBlobName] = useState<string | null>(null)
@@ -108,20 +109,19 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   }, [accountId])
 
   // ── Display name availability check ──────────────────────────────────
-  useEffect(() => {
-    // Skip if empty, too short, or matches the saved value
-    if (!displayName.trim() || displayNameTooShort || !displayNameChanged) {
+  const checkDN = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.replace(/\s/g, '').length < 4 || trimmed === savedDisplayName.trim()) {
       setDisplayNameAvailable(null)
       setDisplayNameChecking(false)
       return
     }
-
     setDisplayNameAvailable(null)
-
-    const timer = setTimeout(async () => {
+    debounceRef.current = setTimeout(async () => {
       setDisplayNameChecking(true)
       try {
-        const available = await checkDisplayName(displayName)
+        const available = await checkDisplayName(trimmed)
         setDisplayNameAvailable(available)
       } catch {
         setDisplayNameAvailable(null)
@@ -129,9 +129,11 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         setDisplayNameChecking(false)
       }
     }, 500)
+  }, [savedDisplayName])
 
-    return () => clearTimeout(timer)
-  }, [displayName])
+  useEffect(() => {
+    checkDN(displayName)
+  }, [displayName, checkDN])
 
   // ── Revoke object URL on unmount ──────────────────────────────────────
   useEffect(() => {
