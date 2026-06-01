@@ -114,6 +114,13 @@ export async function checkDisplayName(value: string): Promise<boolean> {
   return result.available
 }
 
+export async function checkUsername(value: string): Promise<boolean> {
+  const result = await request<{ available: boolean }>(
+    `/v1/auth/check-username?value=${encodeURIComponent(value)}`
+  )
+  return result.available
+}
+
 export function logout(): Promise<void> {
   return request<void>('/v1/auth/logout', { method: 'POST' })
 }

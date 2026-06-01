@@ -5,7 +5,7 @@ import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 
 export function LoginDialog() {
-  const { dialog, closeDialog, openRegisterDialog, signIn } = useAuth()
+  const { dialog, closeDialog, signIn } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -143,17 +143,6 @@ export function LoginDialog() {
           </button>
         </form>
 
-        {!isAdmin && (
-          <p className="text-center text-sm text-muted-foreground mt-5">
-            Don't have an account?{' '}
-            <button
-              onClick={openRegisterDialog}
-              className="text-primary font-medium hover:underline"
-            >
-              Join the barkfest!
-            </button>
-          </p>
-        )}
       </div>
     </div>
   )

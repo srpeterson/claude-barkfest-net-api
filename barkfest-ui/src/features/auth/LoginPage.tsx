@@ -197,8 +197,8 @@ export function LoginPage() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px 40px',
+          justifyContent: 'flex-start',
+          padding: '80px 40px 48px',
           minHeight: '100vh',
         }}
       >

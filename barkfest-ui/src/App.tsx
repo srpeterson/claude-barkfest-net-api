@@ -9,7 +9,6 @@ import { RegisterPage }      from '@/features/auth/RegisterPage'
 import { ShellLayout }       from '@/layouts/ShellLayout'
 import { ProtectedRoute }    from '@/components/ProtectedRoute'
 import { LoginDialog }       from '@/components/LoginDialog'
-import { RegisterDialog }    from '@/components/RegisterDialog'
 import { HomePage }          from '@/pages/HomePage'
 import { useAuth }           from '@/hooks/useAuth'
 import { setAuthToken, setUnauthorizedHandler } from '@/lib/api'
@@ -49,9 +48,8 @@ export function App() {
         </Route>
       </Routes>
 
-      {/* Auth dialogs — rendered over any page (session expiry fallback) */}
+      {/* Login dialog — rendered over any page on JWT expiry */}
       <LoginDialog />
-      <RegisterDialog />
     </>
   )
 }
