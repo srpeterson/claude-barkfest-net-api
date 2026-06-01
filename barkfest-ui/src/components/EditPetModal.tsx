@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ChevronRight, Loader2, Star, X } from 'lucide-react'
+import { useDropzone } from 'react-dropzone'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { BarkfestMark } from '@/components/BarkfestMark'
+import { DropZone } from '@/components/ui/DropZone'
 import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import {
@@ -77,27 +79,28 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
 
   type NewImg = { file: File; previewUrl: string }
   const [newImages, setNewImages] = useState<NewImg[]>([])
-  const [isDragging, setIsDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const createdUrls  = useRef<string[]>([])
+  const createdUrls = useRef<string[]>([])
 
   useEffect(() => {
     return () => { createdUrls.current.forEach(url => URL.revokeObjectURL(url)) }
   }, [])
 
-  function addFiles(files: FileList | null) {
-    if (!files) return
-    const valid = Array.from(files).filter(f =>
-      ['image/jpeg', 'image/jpg', 'image/png'].includes(f.type)
-    )
+  const onDrop = useCallback((accepted: File[]) => {
     const remaining = MAX_IMAGES - existingVisible.length - newImages.length
-    const toAdd = valid.slice(0, remaining).map(f => {
+    const toAdd = accepted.slice(0, remaining).map(f => {
       const url = URL.createObjectURL(f)
       createdUrls.current.push(url)
       return { file: f, previewUrl: url }
     })
     setNewImages(prev => [...prev, ...toAdd])
-  }
+  }, [existingVisible.length, newImages.length])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
+    multiple: true,
+    disabled: existingVisible.length + newImages.length >= MAX_IMAGES,
+  })
 
   function removeNew(index: number) {
     const removed = newImages[index]
@@ -312,27 +315,12 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
 
             {/* Add more drop target */}
             {slotsLeft > 0 && (
-              <label
-                onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
-                className={cn(
-                  'flex items-center justify-center h-[60px] rounded-xl cursor-pointer border-2 border-dashed text-[13px] transition-colors',
-                  isDragging
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-secondary text-muted-foreground'
-                )}
-              >
-                + Add more · {slotsLeft} remaining
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png"
-                  multiple
-                  className="hidden"
-                  onChange={e => { addFiles(e.target.files); e.target.value = '' }}
-                />
-              </label>
+              <DropZone
+                getRootProps={getRootProps}
+                getInputProps={getInputProps}
+                isDragActive={isDragActive}
+                hint={`JPG or PNG · up to ${slotsLeft} more`}
+              />
             )}
 
             {totalImages === 0 && (

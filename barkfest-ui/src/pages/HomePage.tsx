@@ -68,8 +68,14 @@ export function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [page, setPage]                 = useState(1)
-  const [petTypeValue, setPetTypeValue] = useState(() => Number(searchParams.get('petTypeValue') || 0))
-  const [breedValue, setBreedValue]     = useState(() => Number(searchParams.get('breedValue') || 0))
+  const [petTypeValue, setPetTypeValue] = useState(() =>
+    Number(searchParams.get('petTypeValue')) ||
+    Number(localStorage.getItem('barkfest_filter_type') || 0)
+  )
+  const [breedValue, setBreedValue]     = useState(() =>
+    Number(searchParams.get('breedValue')) ||
+    Number(localStorage.getItem('barkfest_filter_breed') || 0)
+  )
 
   const { data, isLoading } = useQuery<PagedResult<BrowseImageDto>>({
     queryKey: ['browse', 'images', page, petTypeValue, breedValue],
@@ -90,6 +96,8 @@ export function HomePage() {
     setPetTypeValue(val)
     setBreedValue(0)
     setPage(1)
+    localStorage.setItem('barkfest_filter_type', String(val))
+    localStorage.setItem('barkfest_filter_breed', '0')
     const next = new URLSearchParams()
     if (val) next.set('petTypeValue', String(val))
     setSearchParams(next, { replace: true })
@@ -98,6 +106,7 @@ export function HomePage() {
   const handleBreedChange = (val: number) => {
     setBreedValue(val)
     setPage(1)
+    localStorage.setItem('barkfest_filter_breed', String(val))
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       if (val) next.set('breedValue', String(val))
