@@ -117,13 +117,13 @@ export function PetDetailPage() {
 
       {/* Back nav */}
       <div className="max-w-[860px] mx-auto px-6 pt-6 pb-2">
-        <Link
-          to={fromManage ? '/manage' : '/'}
-          className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline transition-colors hover:text-foreground"
+        <button
+          onClick={() => fromManage ? navigate('/manage') : navigate(-1)}
+          className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground bg-transparent border-0 cursor-pointer p-0 transition-colors hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
           {fromManage ? 'My Pets' : 'Back to Barkfest'}
-        </Link>
+        </button>
       </div>
 
       {/* ── Hero ── */}

@@ -49,13 +49,17 @@ export function MobileFilterSheet({ filterProps, onClose }: MobileFilterSheetPro
       }),
   ]
 
+  function getButtonLabel() {
+    if (!pendingType) return 'Show pets!'
+    const pt = petTypes.find(p => p.value === pendingType)
+    return pt ? `Show ${getPetTypeLabel(pt.name).toLowerCase()}!` : 'Show pets!'
+  }
+
   function applyFilters() {
     if (pendingType !== filterProps.petTypeValue) {
       filterProps.onPetTypeChange(pendingType)
-      filterProps.onBreedChange(0)
-    } else {
-      filterProps.onBreedChange(pendingBreed)
     }
+    filterProps.onBreedChange(pendingBreed)
     onClose()
   }
 
@@ -183,7 +187,7 @@ export function MobileFilterSheet({ filterProps, onClose }: MobileFilterSheetPro
             onClick={applyFilters}
             className="w-full h-12 rounded-xl border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer"
           >
-            Show results
+            {getButtonLabel()}
           </button>
         </div>
       </div>

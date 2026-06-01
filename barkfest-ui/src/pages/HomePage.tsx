@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
@@ -64,9 +65,11 @@ function Footer() {
 }
 
 export function HomePage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+
   const [page, setPage]                 = useState(1)
-  const [petTypeValue, setPetTypeValue] = useState(0)
-  const [breedValue, setBreedValue]     = useState(0)
+  const [petTypeValue, setPetTypeValue] = useState(() => Number(searchParams.get('petTypeValue') || 0))
+  const [breedValue, setBreedValue]     = useState(() => Number(searchParams.get('breedValue') || 0))
 
   const { data, isLoading } = useQuery<PagedResult<BrowseImageDto>>({
     queryKey: ['browse', 'images', page, petTypeValue, breedValue],
@@ -87,11 +90,20 @@ export function HomePage() {
     setPetTypeValue(val)
     setBreedValue(0)
     setPage(1)
+    const next = new URLSearchParams()
+    if (val) next.set('petTypeValue', String(val))
+    setSearchParams(next, { replace: true })
   }
 
   const handleBreedChange = (val: number) => {
     setBreedValue(val)
     setPage(1)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (val) next.set('breedValue', String(val))
+      else next.delete('breedValue')
+      return next
+    }, { replace: true })
   }
 
   return (
