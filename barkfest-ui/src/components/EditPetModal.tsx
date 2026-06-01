@@ -193,7 +193,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
             {step === 1 ? `Edit ${pet.name}` : 'Update photos'}
           </h2>
           <p className="text-[13.5px] text-muted-foreground">
-            {step === 1 ? 'Update the details below.' : `Manage photos for ${name}.`}
+            {step === 1 ? 'Update the details below.' : <>Manage photos for <strong className="text-primary">{name}</strong>.</>}
           </p>
         </div>
 
@@ -316,7 +316,6 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
                 onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
-                onClick={() => fileInputRef.current?.click()}
                 className={cn(
                   'flex items-center justify-center h-[60px] rounded-xl cursor-pointer border-2 border-dashed text-[13px] transition-colors',
                   isDragging
@@ -353,7 +352,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
               <PrimaryBtn onClick={handleSave} disabled={totalImages === 0 || isSubmitting}>
                 {isSubmitting
                   ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
-                  : 'Save changes'}
+                  : 'Save pet!'}
               </PrimaryBtn>
             </div>
           </div>

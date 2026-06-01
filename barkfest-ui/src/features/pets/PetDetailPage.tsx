@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Loader2, MoreHorizontal, Pencil, Trash2, UserCircle, X } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Loader2, MoreVertical, Pencil, Trash2, UserCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
@@ -38,7 +38,7 @@ export function PetDetailPage() {
   const { data: owner } = useQuery({
     queryKey: ['owner', pet?.ownerId],
     queryFn: () => getOwnerById(pet!.ownerId),
-    enabled: !!pet?.ownerId,
+    enabled: !!pet?.ownerId && isAuthenticated,
   })
 
   const isOwner    = isAuthenticated && accountType === 'owner' && accountId === pet?.ownerId
@@ -173,7 +173,7 @@ export function PetDetailPage() {
                 aria-label="Pet options"
                 className="w-[38px] h-[38px] rounded-full border-0 cursor-pointer bg-black/35 backdrop-blur-[6px] text-white flex items-center justify-center hover:bg-black/50 transition-colors"
               >
-                <MoreHorizontal className="w-5 h-5" />
+                <MoreVertical className="w-5 h-5" />
               </button>
 
               {kebabOpen && (
