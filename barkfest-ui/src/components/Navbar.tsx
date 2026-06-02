@@ -23,6 +23,7 @@ interface FilterProps {
 
 interface NavbarProps {
   filterProps?: FilterProps
+  maxWidth?: string
 }
 
 function FilterIcon() {
@@ -47,7 +48,7 @@ function PawIcon() {
   )
 }
 
-export function Navbar({ filterProps }: NavbarProps) {
+export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps) {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { isAuthenticated, accountType, profileImageBlobName, accountId, signOut } = useAuth()
@@ -137,7 +138,7 @@ export function Navbar({ filterProps }: NavbarProps) {
     <>
       <nav className="sticky top-0 z-50 border-b border-border backdrop-blur-md"
         style={{ background: 'rgba(250,247,244,0.85)' }}>
-        <div className="max-w-[72rem] mx-auto px-5 h-16 flex items-center relative">
+        <div className={`${maxWidth} mx-auto px-5 h-16 flex items-center relative`}>
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 no-underline shrink-0">

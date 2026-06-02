@@ -164,7 +164,7 @@ export function ManagePetsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <Navbar maxWidth="max-w-[900px]" />
 
       <div className="max-w-[900px] mx-auto px-6 pt-6 pb-16">
 

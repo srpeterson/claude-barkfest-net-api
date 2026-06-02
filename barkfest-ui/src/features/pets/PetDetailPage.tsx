@@ -99,7 +99,7 @@ export function PetDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
+        <Navbar maxWidth="max-w-[860px]" />
         <div className="flex items-center justify-center pt-32">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -110,7 +110,7 @@ export function PetDetailPage() {
   if (isError || !pet) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
+        <Navbar maxWidth="max-w-[860px]" />
         <div className="flex flex-col items-center justify-center pt-32 gap-4">
           <p className="text-muted-foreground">Pet not found.</p>
           <Link to="/" className="text-sm font-medium text-primary hover:underline">← Back to Barkfest</Link>
