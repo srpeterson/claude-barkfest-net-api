@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { getOwnerById, login, setAuthToken } from '@/lib/api'
@@ -24,6 +24,8 @@ const inputCls = [
 export function LoginPage() {
   const navigate = useNavigate()
   const { signIn } = useAuth()
+  const [searchParams] = useSearchParams()
+  const signedOut = searchParams.get('signed-out') === 'true'
 
   const [username, setUsername]   = useState('')
   const [password, setPassword]   = useState('')
@@ -74,10 +76,12 @@ export function LoginPage() {
         {/* Headline */}
         <div className="mt-[52px]">
           <h1 className="font-heading font-bold text-white leading-[1.25] mb-3.5 text-[clamp(26px,2.8vw,38px)]">
-            Good to have<br />you back.
+            {signedOut ? 'Gone but not fur-gotten.' : <>Your pets deserve<br />the spotlight.</>}
           </h1>
           <p className="text-[15px] text-white/70 leading-relaxed max-w-[280px] m-0">
-            Your pet's stories are waiting. Sign in to see what the community has been sharing.
+            {signedOut
+              ? 'Your pets are still adorable. Sign back in to see for yourself!'
+              : 'Sign in and give your pets their moment to shine!'}
           </p>
         </div>
 
@@ -122,13 +126,19 @@ export function LoginPage() {
           {/* Heading */}
           <div className="mb-9">
             <h2 className="font-heading font-bold mb-1.5 text-[clamp(22px,2.5vw,30px)]">
-              Welcome back!
+              {signedOut ? 'Pawsing for a break?' : 'Barkfest awaits!'}
             </h2>
             <p className="text-sm text-muted-foreground m-0">
-              New here?{' '}
-              <Link to="/register" className="text-primary font-semibold no-underline">
-                Create an account
-              </Link>
+              {signedOut ? (
+                'Miss your pets already? Sign back in anytime.'
+              ) : (
+                <>
+                  New to Barkfest?{' '}
+                  <Link to="/register" className="text-primary font-semibold no-underline">
+                    Create an account
+                  </Link>
+                </>
+              )}
             </p>
           </div>
 

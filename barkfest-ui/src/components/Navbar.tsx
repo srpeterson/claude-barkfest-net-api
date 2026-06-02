@@ -120,7 +120,7 @@ export function Navbar({ filterProps }: NavbarProps) {
     setDropdownOpen(false)
     await logout()
     signOut()
-    navigate('/')
+    navigate('/login?signed-out=true')
   }
 
   useEffect(() => {

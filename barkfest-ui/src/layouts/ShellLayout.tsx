@@ -10,7 +10,7 @@ export function ShellLayout() {
   async function handleSignOut() {
     await logout()
     signOut()
-    navigate('/')
+    navigate('/login?signed-out=true')
   }
 
   return (

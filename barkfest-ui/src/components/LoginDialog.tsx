@@ -67,8 +67,8 @@ function LoginDialogInner() {
             <BarkfestMark size={22} />
             <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
           </div>
-          <h2 className="font-heading text-2xl font-bold">Welcome back!</h2>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to share your pet's story.</p>
+          <h2 className="font-heading text-2xl font-bold">Time to sign back in.</h2>
+          <p className="text-sm text-muted-foreground mt-1">You've been away a while — sign in to pick up where you left off.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
