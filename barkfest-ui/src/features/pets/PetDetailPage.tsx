@@ -79,6 +79,7 @@ export function PetDetailPage() {
       await deletePet(pet.petId)
       queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
       queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
       navigate('/')
     } catch {
       setIsDeleting(false)

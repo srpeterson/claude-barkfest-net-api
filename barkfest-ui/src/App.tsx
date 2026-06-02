@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import { OwnersPage }        from '@/features/owners/OwnersPage'
 import { PetsPage }          from '@/features/pets/PetsPage'
 import { PetDetailPage }     from '@/features/pets/PetDetailPage'
 import { ManagePetsPage }    from '@/features/pets/ManagePetsPage'
@@ -42,8 +41,7 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="manage" element={<ManagePetsPage />} />
           <Route element={<ShellLayout />}>
-            <Route path="owners" element={<OwnersPage />} />
-            <Route path="pets"   element={<PetsPage />} />
+            <Route path="pets" element={<PetsPage />} />
           </Route>
         </Route>
       </Routes>

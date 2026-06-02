@@ -1,7 +1,7 @@
 import { forwardRef, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getOwnerPets, setOwnerVisibility } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
@@ -85,11 +85,13 @@ export function ManagePetsPage() {
 
   const hidden = optimisticHidden ?? (ownerData ? !ownerData.isVisible : false)
 
-  const { data: pets = [], isLoading } = useQuery({
+  const { data: rawPets = [], isLoading } = useQuery({
     queryKey: ['owner', 'pets', accountId],
     queryFn: () => getOwnerPets(accountId!),
     enabled: !!accountId,
   })
+
+  const pets = rawPets.slice().sort((a, b) => a.name.localeCompare(b.name))
 
   if (selectAllRef.current) {
     selectAllRef.current.indeterminate = selected.size > 0 && selected.size < pets.length
@@ -163,7 +165,16 @@ export function ManagePetsPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="max-w-[900px] mx-auto px-6 pt-8 pb-16">
+      <div className="max-w-[900px] mx-auto px-6 pt-6 pb-16">
+
+        {/* Back nav */}
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground bg-transparent border-0 cursor-pointer p-0 mb-6 transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Barkfest
+        </button>
 
         {/* Page header */}
         <div className="flex items-end justify-between mb-6 flex-wrap gap-4">

@@ -5,9 +5,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { logout, getBrowseBreeds, getBrowsePetTypes, getOwnerById } from '@/lib/api'
+import { logout, getBrowseBreeds, getBrowsePetTypes, getOwnerById, getOwnerPets } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
-import { getPetTypeLabel } from '@/config/petTypes'
+import { getPetTypeLabel, MAX_PETS_PER_OWNER } from '@/config/petTypes'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { AddPetDialog } from '@/components/AddPetDialog'
 import { UpdateOwnerProfileDialog } from '@/components/UpdateOwnerProfileDialog'
@@ -72,6 +72,16 @@ export function Navbar({ filterProps }: NavbarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
 
+  const { data: ownerPets, isLoading: isLoadingPets } = useQuery({
+    queryKey: ['owner', 'pets', accountId],
+    queryFn: () => getOwnerPets(accountId!),
+    enabled: isAuthenticated && accountType === 'owner' && !!accountId,
+    staleTime: 30 * 1000,
+  })
+
+  const atPetLimit = (ownerPets?.length ?? 0) >= MAX_PETS_PER_OWNER
+  const addPetDisabled = isLoadingPets || atPetLimit
+
   const [sheetOpen, setSheetOpen] = useState(false)
   const hasActiveFilters = !!filterProps && (filterProps.petTypeValue !== 0 || filterProps.breedValue !== 0)
 
@@ -103,7 +113,7 @@ export function Navbar({ filterProps }: NavbarProps) {
   function handlePetAdded() {
     queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
     queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
-    queryClient.invalidateQueries({ queryKey: ['owner', 'pets'] })
+    queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
   }
 
   async function handleSignOut() {
@@ -201,14 +211,18 @@ export function Navbar({ filterProps }: NavbarProps) {
                   <button
                     onClick={() => setAddPetOpen(true)}
                     aria-label="Add Pet"
-                    className="w-9 h-9 rounded-[10px] border-0 bg-primary text-white cursor-pointer flex items-center justify-center hover:opacity-90 transition-opacity"
+                    disabled={addPetDisabled}
+                    title={atPetLimit ? `You've reached the ${MAX_PETS_PER_OWNER} pet limit` : undefined}
+                    className="w-9 h-9 rounded-[10px] border-0 bg-primary text-white cursor-pointer flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
                     onClick={() => setAddPetOpen(true)}
-                    className="h-8 px-3.5 rounded-lg border-0 bg-primary text-white text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 whitespace-nowrap hover:opacity-90 transition-opacity"
+                    disabled={addPetDisabled}
+                    title={atPetLimit ? `You've reached the ${MAX_PETS_PER_OWNER} pet limit` : undefined}
+                    className="h-8 px-3.5 rounded-lg border-0 bg-primary text-white text-[13px] font-semibold cursor-pointer flex items-center gap-1.5 whitespace-nowrap hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Pet
