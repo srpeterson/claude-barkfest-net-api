@@ -827,6 +827,62 @@ Once real user content is publicly browsable, the platform needs a moderation pa
 
 ---
 
+## 28. Administrator Panel
+
+**Priority:** High — required before the app goes public
+**Status:** Not started — admin login endpoint exists; admin UI not started
+
+### What
+A dedicated admin area where authenticated administrators can manage owners and their
+content. Administrators are a separate account type from owners (different table, different
+JWT claims, different login endpoint).
+
+**Owner management:**
+- View all owners (name, username, email, registration date, active/visible status)
+- Toggle `IsActive` on an owner — setting `false` locks them out of the platform
+  (their pets are excluded from the public gallery via `BrowseRepository`)
+- Edit an owner's profile details
+- Reset an owner's password (for lost-password support requests)
+- Delete an owner and all their pets
+
+**Pet/image management:**
+- View all pets for a given owner with their gallery images
+- Delete individual pet images
+- Delete a pet entirely
+
+**Administrator account management:**
+- Create new administrator accounts
+- Change another administrator's password
+- Delete an administrator (cannot delete own account — enforced by API)
+
+### Why
+Once real users are on the platform, administrators need a way to manage accounts,
+handle support requests (e.g. lost password), and remove harmful content. Without this,
+the only option is direct database access.
+
+### Backend status
+- `POST /v1/auth/admin/login` — exists and tested
+- `GET /v1/owners` — exists (admin JWT required)
+- `GET /v1/admin/admins` — exists (admin JWT required)
+- `PATCH /v1/owners/{id}/visibility` — exists
+- Owner `IsActive` toggle endpoint — needs to be built
+- Admin pet/image management endpoints — need to be built
+
+### Frontend approach (high level)
+- Protected route: `/admin` — redirects to login if not authenticated as admin
+- The existing `LoginDialog` and `LoginPage` support admin login (checkbox is currently
+  disabled in `LoginDialog` — wire it up when this phase starts)
+- Admin layout separate from the owner shell: no public navbar, minimal chrome
+- Owner list with search/filter, status badges, action menus
+- Owner detail view: profile info + pet grid with image management
+
+### Note on BrowseRepository
+`BrowseRepository` intentionally filters by `IsActive && IsVisible` for the public gallery.
+Admin endpoints will use separate queries/repositories with no such filter applied —
+admins must be able to see all owners and pets regardless of visibility or active state.
+
+---
+
 ## 27. Migrate JWT Storage from sessionStorage to HttpOnly Cookies
 
 **Priority:** Medium — address before the app handles sensitive user data or scales beyond a hobby audience

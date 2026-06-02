@@ -33,7 +33,17 @@ export function PetDetailPage() {
     queryKey: ['pet', petId],
     queryFn: () => getPetDetail(petId!),
     enabled: !!petId,
+    retry: false,
   })
+
+  // When a pet can't be loaded (owner hid their pets or pet was deleted by another session),
+  // invalidate the browse cache so the landing page shows fresh results if the user navigates back.
+  useEffect(() => {
+    if (isError) {
+      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+    }
+  }, [isError, queryClient])
 
   const { data: owner } = useQuery({
     queryKey: ['owner', pet?.ownerId],

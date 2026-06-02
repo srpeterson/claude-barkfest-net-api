@@ -37,23 +37,23 @@ function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boo
   )
 }
 
-// ── HidePetsToggle ────────────────────────────────────────────────────
-function HidePetsToggle({ hidden, onChange, error }: { hidden: boolean; onChange: (v: boolean) => void; error?: string | null }) {
+// ── ShowInGalleryToggle ───────────────────────────────────────────────
+function HidePetsToggle({ isVisible, onChange, error }: { isVisible: boolean; onChange: (v: boolean) => void; error?: string | null }) {
   return (
     <div>
       <div className={cn(
         'flex items-center gap-3.5 bg-card rounded-xl px-4 py-2.5 border transition-colors',
-        hidden ? 'border-primary' : 'border-border'
+        isVisible ? 'border-primary' : 'border-border'
       )}>
         <div>
-          <label htmlFor="hide-pets" className="block text-sm font-semibold cursor-pointer">
-            Hide my pets
+          <label htmlFor="show-in-gallery" className="block text-sm font-semibold cursor-pointer">
+            Show in gallery
           </label>
-          <p className={cn('m-0 text-xs font-medium', hidden ? 'text-primary' : 'text-muted-foreground font-normal')}>
-            {hidden ? 'Hidden from the public gallery' : 'Visible in the public gallery'}
+          <p className={cn('m-0 text-xs font-medium', isVisible ? 'text-primary' : 'text-muted-foreground font-normal')}>
+            {isVisible ? 'Visible to everyone' : 'Hidden for everyone'}
           </p>
         </div>
-        <Switch id="hide-pets" checked={hidden} onChange={onChange} />
+        <Switch id="show-in-gallery" checked={isVisible} onChange={onChange} />
       </div>
       {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </div>
@@ -73,7 +73,7 @@ export function ManagePetsPage() {
   const [isDeleting, setIsDeleting]           = useState(false)
   const [addPetOpen, setAddPetOpen]           = useState(false)
   const [editPet, setEditPet]                 = useState<PetDto | null>(null)
-  const [optimisticHidden, setOptimisticHidden] = useState<boolean | null>(null)
+  const [optimisticIsVisible, setOptimisticIsVisible] = useState<boolean | null>(null)
   const [visibilityError, setVisibilityError] = useState<string | null>(null)
   const selectAllRef = useRef<HTMLInputElement>(null)
 
@@ -83,7 +83,7 @@ export function ManagePetsPage() {
     enabled: !!accountId,
   })
 
-  const hidden = optimisticHidden ?? (ownerData ? !ownerData.isVisible : false)
+  const isVisible = optimisticIsVisible ?? (ownerData?.isVisible ?? true)
 
   const { data: rawPets = [], isLoading } = useQuery({
     queryKey: ['owner', 'pets', accountId],
@@ -145,14 +145,15 @@ export function ManagePetsPage() {
     queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
   }
 
-  async function handleToggleHidden(newHidden: boolean) {
-    const previous = hidden
-    setOptimisticHidden(newHidden)
+  async function handleVisibilityChange(newIsVisible: boolean) {
+    const previous = isVisible
+    setOptimisticIsVisible(newIsVisible)
     setVisibilityError(null)
     try {
-      await setOwnerVisibility(accountId!, newHidden)
+      await setOwnerVisibility(accountId!, newIsVisible)
+      queryClient.invalidateQueries({ queryKey: ['owner', accountId] })
     } catch {
-      setOptimisticHidden(previous)
+      setOptimisticIsVisible(previous)
       setVisibilityError('Failed to update visibility. Please try again.')
     }
   }
@@ -184,7 +185,7 @@ export function ManagePetsPage() {
               {pets.length} {pets.length === 1 ? 'pet' : 'pets'} in your profile
             </p>
           </div>
-          <HidePetsToggle hidden={hidden} onChange={handleToggleHidden} error={visibilityError} />
+          <HidePetsToggle isVisible={isVisible} onChange={handleVisibilityChange} error={visibilityError} />
         </div>
 
         {/* Bulk delete bar */}
@@ -212,7 +213,7 @@ export function ManagePetsPage() {
         )}
 
         {/* Table */}
-        <div className={cn('transition-opacity', hidden ? 'opacity-50 pointer-events-none' : 'opacity-100')}>
+        <div>
           {isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />

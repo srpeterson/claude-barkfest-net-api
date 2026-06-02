@@ -343,12 +343,13 @@ export function changePassword(ownerId: string, currentPassword: string, newPass
   })
 }
 
-// TODO: Confirm endpoint contract with backend team before activating.
-// Expected: PUT /v1/owners/{id}/visibility  body: { hidden: boolean }  →  204 No Content
-// When hidden=true the owner's pets are excluded from the public browse gallery (server-side).
-export function setOwnerVisibility(_ownerId: string, _hidden: boolean): Promise<void> {
-  // Stub — resolves immediately so optimistic UI works. Wire to real endpoint when available.
-  return Promise.resolve()
+// PATCH /v1/owners/{id}/visibility  body: { isVisible: boolean }  →  204 No Content
+// When isVisible=false the owner's pets are excluded from the public browse gallery (server-side).
+export function setOwnerVisibility(ownerId: string, isVisible: boolean): Promise<void> {
+  return request<void>(`/v1/owners/${ownerId}/visibility`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isVisible }),
+  })
 }
 
 // DELETE /v1/pets/{petId}/images/{imageId}

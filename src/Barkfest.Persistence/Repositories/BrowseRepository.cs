@@ -16,6 +16,11 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             .Include(pi => pi.Pet)
                 .ThenInclude(p => p.Owner)
             .Where(pi => pi.IsFeaturedImage)
+            // Public gallery only: exclude pets from deactivated or hidden owners.
+            // IsActive = false means the owner account has been suspended by an administrator.
+            // IsVisible = false means the owner has chosen to hide their pets from the gallery.
+            // Admin views use separate endpoints and never go through this repository,
+            // so they are unaffected by these filters.
             .Where(pi => pi.Pet.Owner.IsActive && pi.Pet.Owner.IsVisible)
             .AsQueryable();
 
