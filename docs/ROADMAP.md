@@ -827,6 +827,50 @@ Once real user content is publicly browsable, the platform needs a moderation pa
 
 ---
 
+## 29. Per-Pet Visibility
+
+**Priority:** Medium
+**Status:** Not started — visibility is currently all-or-nothing at the owner level
+
+### What
+Allow owners to show or hide individual pets from the public gallery, rather than
+toggling all pets at once. The owner-level "Show in gallery" toggle would remain as
+a master switch, but each pet would also have its own visibility control.
+
+### Why
+An owner may want to share some pets publicly while keeping others private — for
+example, a recently adopted pet not yet ready to be featured, or a pet that has
+passed away that the owner wants to keep in their profile but not in the public browse.
+
+### Impact to assess before starting
+
+**Domain / Database:**
+- Add `IsVisible` (`bool`, default `true`) to the `Pet` entity
+- New migration: `AddPetIsVisible`
+- Setter method: `pet.SetIsVisible(bool isVisible)`
+
+**Backend:**
+- New endpoint: `PATCH /v1/pets/{id}/visibility` — body `{ isVisible: bool }` → 204
+- `BrowseRepository` filter needs updating: currently filters on `Owner.IsActive && Owner.IsVisible`;
+  must also add `Pet.IsVisible`
+- `GetPetByIdQuery` may need updating depending on whether hidden pets should be
+  accessible via direct URL (e.g. owner can still view, but not public)
+- Consider interaction with owner-level visibility: if the owner is hidden, all pets
+  are hidden regardless of individual pet visibility
+
+**Frontend:**
+- Per-pet visibility toggle in `ManagePetsPage` table row (or `EditPetModal`)
+- Visual indicator on pet rows showing hidden/visible state
+- Decide UX: inline toggle in the table vs. inside the edit modal
+
+### Open questions
+- Should a hidden pet still be accessible via its direct URL (`/pets/{id}`) to the owner?
+  Likely yes — owner should always be able to view their own pets.
+- Should the public get a 404 or a 403 when accessing a hidden pet's URL directly?
+  404 is safer — reveals less information about what exists.
+
+---
+
 ## 28. Administrator Panel
 
 **Priority:** High — required before the app goes public
