@@ -824,3 +824,52 @@ Once real user content is publicly browsable, the platform needs a moderation pa
 
 **Rate limiting / abuse prevention:**
 - Consider limiting reports to N per IP per hour to prevent report-bombing
+
+---
+
+## 27. Migrate JWT Storage from sessionStorage to HttpOnly Cookies
+
+**Priority:** Medium — address before the app handles sensitive user data or scales beyond a hobby audience
+**Status:** Not started — JWT currently stored in `sessionStorage`
+
+### What
+Replace `sessionStorage`-based JWT storage with a server-set HttpOnly cookie so the
+access token is never accessible to JavaScript. This is the OWASP-recommended approach
+for token storage in browser-based applications.
+
+### Why
+`sessionStorage` (and `localStorage`) are readable by any JavaScript running on the page.
+A successful XSS attack — even a minor one via a third-party dependency — can exfiltrate
+the token and fully impersonate the user. An HttpOnly cookie cannot be read by JavaScript
+at all; the browser sends it automatically with every same-origin request and XSS has no
+path to the token value.
+
+### Approach (high level)
+
+**Backend:**
+- On successful login, set the JWT as an HttpOnly, Secure, SameSite=Strict cookie
+  (`Set-Cookie: barkfest_auth=<jwt>; HttpOnly; Secure; SameSite=Strict; Path=/`)
+- The response body can still return `accountId` and `expiresAt` for the UI to initialise
+  `AuthContext` (account type, avatar, etc.) — just not the token itself
+- `POST /v1/auth/logout` clears the cookie by setting it with `Max-Age=0`
+- All authenticated endpoints continue to accept Bearer tokens for API clients (Scalar,
+  integration tests) — the cookie takes precedence for browser sessions
+
+**Frontend:**
+- Remove `barkfest_token` from `sessionStorage` and from `AuthContext` state
+- Remove `setAuthToken` / `Authorization` header injection from `api.ts` — the browser
+  sends the cookie automatically; fetch calls need `credentials: 'include'`
+- `AuthContext` retains `accountId`, `accountType`, and `profileImageBlobName` in
+  `sessionStorage` (these are not sensitive — they drive UI only, not access)
+- On reload, non-sensitive fields restore from `sessionStorage` as today; authenticated
+  API calls work immediately because the cookie is present
+
+**CSRF mitigation:**
+- `SameSite=Strict` is the primary CSRF defence for same-origin SPAs
+- If cross-origin requests are ever needed, add a CSRF token header check
+
+### Note on Roadmap item 15
+Item 15 (Rolling JWT Expiry) also proposes HttpOnly cookies for the refresh token. These
+two items should be implemented together in a single phase — migrating the access token
+to a cookie and introducing a refresh token cookie at the same time avoids doing the
+backend auth plumbing twice.

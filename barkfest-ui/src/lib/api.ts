@@ -4,7 +4,11 @@ import type { OwnerDto, UpdateOwnerRequest } from '@/types/owner'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
-let authToken: string | null = null
+// Initialise from sessionStorage at module load so the token is available
+// before React mounts and fires its first useEffect. Without this, queries
+// that run on the first render go out unauthenticated, receive a 401, and
+// trigger the unauthorised handler — logging the user out on every page reload.
+let authToken: string | null = sessionStorage.getItem('barkfest_token')
 let unauthorizedHandler: (() => void) | null = null
 
 export function setAuthToken(token: string | null) {

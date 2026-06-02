@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
@@ -12,20 +12,26 @@ export function LoginDialog() {
 
 function LoginDialogInner() {
   const { closeDialog, signIn } = useAuth()
-  const [form, setForm] = useState({ username: '', password: '', showPassword: false, error: null as string | null })
-  const [isLoading, setIsLoading] = useState(false)
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError]               = useState<string | null>(null)
+  const [isLoading, setIsLoading]       = useState(false)
   const isAdmin = false
 
-  const allFieldsFilled = form.username.trim() !== '' && form.password !== ''
-
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setForm(f => ({ ...f, error: null }))
+    // Read directly from the DOM — captures autofilled values that bypass onChange
+    const username = usernameRef.current?.value.trim() ?? ''
+    const password = passwordRef.current?.value ?? ''
+    if (!username || !password) return
+
+    setError(null)
     setIsLoading(true)
     try {
       const result = isAdmin
-        ? await adminLogin(form.username, form.password)
-        : await login(form.username, form.password)
+        ? await adminLogin(username, password)
+        : await login(username, password)
 
       let profileImageBlobName: string | null = null
       if (!isAdmin) {
@@ -41,19 +47,15 @@ function LoginDialogInner() {
       signIn(result.accountId, isAdmin ? 'admin' : 'owner', result.accessToken, profileImageBlobName)
       closeDialog()
     } catch {
-      setForm(f => ({ ...f, error: 'Invalid username or password.' }))
+      setError('Invalid username or password.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-    >
-      <div
-        className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8"
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8">
         <button
           onClick={closeDialog}
           aria-label="Close"
@@ -77,14 +79,14 @@ function LoginDialogInner() {
               Username <span className="text-destructive">*</span>
             </label>
             <input
+              ref={usernameRef}
               id="login-username"
               type="text"
               autoComplete="username"
               placeholder="Your username"
               required
+              autoFocus
               maxLength={25}
-              value={form.username}
-              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
               className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 placeholder:text-muted-foreground"
             />
           </div>
@@ -95,22 +97,21 @@ function LoginDialogInner() {
             </label>
             <div className="relative">
               <input
+                ref={passwordRef}
                 id="login-password"
-                type={form.showPassword ? 'text' : 'password'}
+                type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
                 maxLength={50}
-                value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 className="w-full h-11 rounded-xl border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
               <button
                 type="button"
-                onClick={() => setForm(f => ({ ...f, showPassword: !f.showPassword }))}
-                aria-label={form.showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {form.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -125,11 +126,11 @@ function LoginDialogInner() {
             <span className="text-sm text-muted-foreground">I am an Administrator</span>
           </label>
 
-          {form.error && <p className="text-sm text-destructive">{form.error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <button
             type="submit"
-            disabled={isLoading || !allFieldsFilled}
+            disabled={isLoading}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
