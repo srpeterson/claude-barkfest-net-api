@@ -827,6 +827,55 @@ Once real user content is publicly browsable, the platform needs a moderation pa
 
 ---
 
+## 30. Enforce Unique Likes Per User
+
+**Priority:** Medium
+**Status:** Not started — likes are currently a simple counter with no uniqueness enforcement
+
+### What
+Prevent a user from liking the same pet more than once. Currently the `POST /v1/pets/{id}/likes`
+endpoint increments the counter unconditionally — a user (or bot) can call it repeatedly to
+artificially inflate the count.
+
+### Why
+Without uniqueness enforcement, like counts are meaningless. A single user can pump up any
+pet's count without limit, which undermines the social proof value of the feature entirely.
+
+### Approach (high level)
+
+**Domain / Database:**
+- New `PetLike` entity: `PetLikeId` (`Guid`), `PetId` (FK → `Pets`), `OwnerId` (FK → `Owners`,
+  nullable — guests tracked separately), `CreatedAt`
+- For guest users (unauthenticated): track by a browser fingerprint stored in `localStorage`
+  or a server-issued anonymous session cookie, depending on the chosen approach
+- Unique index on `(PetId, OwnerId)` for authenticated likes to enforce the constraint at the DB level
+- New migration: `CreatePetLikesTable`
+- The `Pets.Likes` counter column can either be removed (derive the count from `PetLikes` rows)
+  or kept as a denormalised cache updated transactionally on each like/unlike
+
+**Backend:**
+- `POST /v1/pets/{id}/likes` — check for an existing `PetLike` row before inserting;
+  return `409 Conflict` (or silently ignore) if one already exists
+- `DELETE /v1/pets/{id}/likes` — delete the `PetLike` row; no-op if it does not exist
+- For authenticated owners: use `OwnerId` from the JWT claim as the unique identifier
+- For guests: decision needed — options are anonymous session cookie, localStorage token
+  passed in the request body, or simply restrict liking to authenticated users only
+
+**Frontend:**
+- Replace the current `localStorage` liked-state tracking with server-authoritative state:
+  on page load, call a new `GET /v1/pets/{id}/liked` endpoint (or include `isLikedByCurrentUser`
+  in the `PetDto`) so the heart icon reflects real state rather than browser memory
+- Remove the `liked` local state optimism for guests if guest liking is removed
+
+### Open questions
+- Should guest (unauthenticated) users be allowed to like at all? Restricting to authenticated
+  owners only is simpler and more trustworthy; allowing guests requires fingerprinting which is
+  easily circumvented.
+- Keep the denormalised `Likes` counter or always derive the count from `PetLikes` rows?
+  The counter is faster to read but adds update complexity and drift risk.
+
+---
+
 ## 29. Per-Pet Visibility
 
 **Priority:** Medium

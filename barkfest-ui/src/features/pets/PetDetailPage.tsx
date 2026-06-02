@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Loader2, MoreVertical, Pencil, Trash2, UserCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib/api'
+import type { PetDto } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
@@ -21,13 +22,14 @@ export function PetDetailPage() {
   const queryClient = useQueryClient()
   const { accountId, isAuthenticated, accountType } = useAuth()
 
-  const [liked, setLiked]                   = useState(false)
-  const [likeCount, setLikeCount]           = useState<number | null>(null)
-  const [kebabOpen, setKebabOpen]           = useState(false)
-  const [deleteOpen, setDeleteOpen]         = useState(false)
-  const [editOpen, setEditOpen]             = useState(false)
-  const [lightboxIndex, setLightboxIndex]   = useState<number | null>(null)
-  const [isDeleting, setIsDeleting]         = useState(false)
+  const [active, setActive]               = useState(0)
+  const [liked, setLiked]                 = useState(false)
+  const [likeCount, setLikeCount]         = useState<number | null>(null)
+  const [kebabOpen, setKebabOpen]         = useState(false)
+  const [deleteOpen, setDeleteOpen]       = useState(false)
+  const [editOpen, setEditOpen]           = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting]       = useState(false)
 
   const { data: pet, isLoading, isError } = useQuery({
     queryKey: ['pet', petId],
@@ -36,8 +38,6 @@ export function PetDetailPage() {
     retry: false,
   })
 
-  // When a pet can't be loaded (owner hid their pets or pet was deleted by another session),
-  // invalidate the browse cache so the landing page shows fresh results if the user navigates back.
   useEffect(() => {
     if (isError) {
       queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
@@ -51,9 +51,10 @@ export function PetDetailPage() {
     enabled: !!pet?.ownerId && isAuthenticated,
   })
 
-  const isOwner    = isAuthenticated && accountType === 'owner' && accountId === pet?.ownerId
+  const isOwner      = isAuthenticated && accountType === 'owner' && accountId === pet?.ownerId
+  const multi        = (pet?.images.length ?? 0) > 1
   const displayLikes = likeCount !== null ? likeCount : (pet?.likes ?? 0)
-  const fromManage = searchParams.get('from') === 'manage'
+  const fromManage   = searchParams.get('from') === 'manage'
 
   // Keyboard nav for lightbox
   useEffect(() => {
@@ -67,15 +68,32 @@ export function PetDetailPage() {
     return () => window.removeEventListener('keydown', fn)
   }, [lightboxIndex, pet])
 
+  // Arrow key carousel navigation — only when lightbox is closed
+  useEffect(() => {
+    if (!pet || !multi) return
+    const fn = (e: KeyboardEvent) => {
+      if (lightboxIndex !== null) return
+      if (e.key === 'ArrowLeft') setActive(i => (i - 1 + pet.images.length) % pet.images.length)
+      if (e.key === 'ArrowRight') setActive(i => (i + 1) % pet.images.length)
+    }
+    window.addEventListener('keydown', fn)
+    return () => window.removeEventListener('keydown', fn)
+  }, [pet, multi, lightboxIndex])
+
   async function handleLike() {
     if (!pet || isOwner) return
     const next = !liked
     const prev = likeCount !== null ? likeCount : pet.likes
+    const newCount = next ? prev + 1 : Math.max(0, prev - 1)
     setLiked(next)
-    setLikeCount(next ? prev + 1 : Math.max(0, prev - 1))
+    setLikeCount(newCount)
     try {
       if (next) await likePet(pet.petId)
       else await unlikePet(pet.petId)
+      // Keep the cache in sync so the count is correct when navigating back
+      queryClient.setQueryData<PetDto>(['pet', petId], old =>
+        old ? { ...old, likes: newCount } : old
+      )
     } catch {
       setLiked(!next)
       setLikeCount(prev)
@@ -119,15 +137,22 @@ export function PetDetailPage() {
     )
   }
 
-  const heroImage = pet.images.find(i => i.isFeaturedImage) ?? pet.images[0]
-  const age = formatAge(pet.dateOfBirth, 'long')
+  const age          = formatAge(pet.dateOfBirth, 'long')
+  // Featured image sorted to front so it always appears first in the rail
+  const sortedImages = (() => {
+    const idx = pet.images.findIndex(i => i.isFeaturedImage)
+    return idx > 0
+      ? [pet.images[idx], ...pet.images.filter((_, i) => i !== idx)]
+      : pet.images
+  })()
+  const safeActive   = Math.min(active, sortedImages.length - 1)
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Back nav */}
-      <div className="max-w-[860px] mx-auto px-6 pt-6 pb-2">
+      <div className="max-w-[860px] mx-auto px-6 pt-6 pb-4">
         <button
           onClick={() => fromManage ? navigate('/manage') : navigate(-1)}
           className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground bg-transparent border-0 cursor-pointer p-0 transition-colors hover:text-foreground"
@@ -137,169 +162,237 @@ export function PetDetailPage() {
         </button>
       </div>
 
-      {/* ── Hero ── */}
-      <div className="relative" style={{ height: 'clamp(320px, 45vw, 520px)' }}>
-
-        {/* Image + gradient */}
-        <div className="absolute inset-0 overflow-hidden">
-          {heroImage ? (
+      {/* ── Stage ── */}
+      <div className="max-w-[860px] mx-auto px-6">
+        <div
+          className="relative overflow-hidden rounded-[18px] cursor-zoom-in"
+          style={{ height: 'clamp(380px, 56vw, 600px)', background: 'var(--primary)' }}
+          onClick={() => setLightboxIndex(safeActive)}
+        >
+          {/* Inner frame — clips blurred fill so orange border stays clean */}
+          <div
+            className="absolute overflow-hidden rounded-xl"
+            style={{ top: 10, left: 10, right: 10, bottom: 10 }}
+          >
+            {/* Blurred ambient fill — Ken Burns drift */}
             <img
-              src={getBlobImageUrl(heroImage.blobName)}
-              alt={pet.name}
-              className="w-full h-full object-cover block"
+              src={getBlobImageUrl(sortedImages[safeActive].blobName)}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover kenburns"
+              style={{ filter: 'blur(30px) saturate(1.15) brightness(0.62)', transform: 'scale(1.18)' }}
             />
-          ) : (
-            <div className="w-full h-full bg-secondary flex items-center justify-center">
-              <span className="text-[64px]">🐾</span>
+
+            {/* Dark overlay */}
+            <div className="absolute inset-0" style={{ background: 'rgba(8,6,5,0.5)' }} />
+
+            {/* Framed photo */}
+            <img
+              key={safeActive}
+              src={getBlobImageUrl(sortedImages[safeActive].blobName)}
+              alt={pet.name}
+              className="absolute inset-0 w-full h-full object-contain"
+              style={{ zIndex: 1, animation: 'fade-in 0.45s ease' }}
+            />
+
+            {/* Pet name — bottom-left overlay */}
+            <div className="absolute bottom-3 left-3" style={{ zIndex: 2 }}>
+              <h1
+                className="font-heading font-bold text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
+                style={{ fontSize: 'clamp(22px, 3vw, 32px)' }}
+              >
+                {pet.name}
+              </h1>
+            </div>
+
+            {/* Age + breed chips — bottom-right overlay */}
+            {(age || pet.breed) && (
+              <div className="absolute bottom-3 right-3 flex gap-1.5 flex-wrap justify-end" style={{ zIndex: 2 }}>
+                {age && (
+                  <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                    {age}
+                  </span>
+                )}
+                {pet.breed && (
+                  <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                    {pet.breed}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Owner kebab — above carousel chrome */}
+          {isOwner && (
+            <div
+              className="absolute top-4 right-4 z-10"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="relative">
+                {kebabOpen && (
+                  <div onClick={() => setKebabOpen(false)} className="fixed inset-0 z-[90]" />
+                )}
+                <button
+                  onClick={() => setKebabOpen(o => !o)}
+                  aria-label="Pet options"
+                  className="w-[38px] h-[38px] rounded-full border-0 cursor-pointer bg-black/35 backdrop-blur-[6px] text-white flex items-center justify-center hover:bg-black/50 transition-colors"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+
+                {kebabOpen && (
+                  <div className="absolute top-[calc(100%+8px)] right-0 w-40 bg-card border border-border rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden z-[100]">
+                    <KebabItem
+                      icon={<Pencil className="w-3.5 h-3.5" />}
+                      label="Edit pet"
+                      className="text-foreground"
+                      onClick={() => { setKebabOpen(false); setEditOpen(true) }}
+                    />
+                    <KebabItem
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
+                      label="Delete pet"
+                      className="text-destructive"
+                      onClick={() => { setKebabOpen(false); setDeleteOpen(true) }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-        </div>
 
-        {/* Name + badges */}
-        <div className="absolute bottom-0 left-0 right-0 px-8 pb-16 flex items-end justify-between">
-          <div>
-            <h1
-              className="font-heading font-bold text-white leading-[1.1] mb-3 drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
-              style={{ fontSize: 'clamp(32px, 4vw, 56px)' }}
-            >
-              {pet.name}
-            </h1>
-            <div className="flex gap-1.5 flex-wrap">
-              {age && <DarkChip>{age}</DarkChip>}
-              {pet.breed && <DarkChip>{pet.breed}</DarkChip>}
-            </div>
-          </div>
-        </div>
-
-        {/* Owner kebab */}
-        {isOwner && (
-          <div className="absolute top-4 right-4 z-10">
-            <div className="relative">
-              {kebabOpen && (
-                <div onClick={() => setKebabOpen(false)} className="fixed inset-0 z-[90]" />
-              )}
+          {/* Carousel chrome — only when multi */}
+          {multi && (
+            <>
               <button
-                onClick={() => setKebabOpen(o => !o)}
-                aria-label="Pet options"
-                className="w-[38px] h-[38px] rounded-full border-0 cursor-pointer bg-black/35 backdrop-blur-[6px] text-white flex items-center justify-center hover:bg-black/50 transition-colors"
+                onClick={e => { e.stopPropagation(); setActive(i => (i - 1 + pet.images.length) % pet.images.length) }}
+                aria-label="Previous photo"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border-0 cursor-pointer text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                style={{ zIndex: 2 }}
               >
-                <MoreVertical className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
 
-              {kebabOpen && (
-                <div className="absolute top-[calc(100%+8px)] right-0 w-40 bg-card border border-border rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden z-[100]">
-                  <KebabItem
-                    icon={<Pencil className="w-3.5 h-3.5" />}
-                    label="Edit pet"
-                    className="text-foreground"
-                    onClick={() => { setKebabOpen(false); setEditOpen(true) }}
+              <button
+                onClick={e => { e.stopPropagation(); setActive(i => (i + 1) % pet.images.length) }}
+                aria-label="Next photo"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm border-0 cursor-pointer text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                style={{ zIndex: 2 }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              <div
+                className="absolute top-5 left-1/2 -translate-x-1/2 flex gap-1.5"
+                style={{ zIndex: 2 }}
+                onClick={e => e.stopPropagation()}
+              >
+                {sortedImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActive(i)}
+                    aria-label={`Photo ${i + 1}`}
+                    className="h-[7px] rounded-full border-0 cursor-pointer p-0 transition-all"
+                    style={{
+                      width: i === safeActive ? 20 : 7,
+                      background: i === safeActive ? '#fff' : 'rgba(255,255,255,0.55)',
+                    }}
                   />
-                  <KebabItem
-                    icon={<Trash2 className="w-3.5 h-3.5" />}
-                    label="Delete pet"
-                    className="text-destructive"
-                    onClick={() => { setKebabOpen(false); setDeleteOpen(true) }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* ── Floating info card ── */}
-      <div className="max-w-[860px] mx-auto px-6">
-        <div className="bg-card border border-border rounded-[20px] px-8 py-7 -mt-10 relative shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
+      {/* ── Thumbnail rail + owner/like ── */}
+      <div className="max-w-[860px] mx-auto px-6 mt-2.5">
+        <div className="flex items-center gap-4">
 
-          {pet.description && (
-            <p className="text-[15px] text-muted-foreground leading-[1.75] mb-5">{pet.description}</p>
+          {/* Thumbnail strip — only when multi */}
+          {multi && (
+            <div className="flex gap-2 overflow-x-auto pb-0.5 min-w-0">
+              {sortedImages.map((img, i) => (
+                <button
+                  key={img.petImageId}
+                  onClick={() => setActive(i)}
+                  aria-label={`View photo ${i + 1}`}
+                  className="shrink-0 w-[60px] h-[60px] rounded-[10px] overflow-hidden border-0 cursor-pointer p-0"
+                  style={{
+                    outline: i === safeActive ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    outlineOffset: 1,
+                  }}
+                >
+                  <img
+                    src={getBlobImageUrl(img.blobName)}
+                    alt=""
+                    className="w-full h-full object-cover block transition-opacity"
+                    style={{ opacity: i === safeActive ? 1 : 0.6 }}
+                  />
+                </button>
+              ))}
+            </div>
           )}
 
-          <div className="h-px bg-border mb-5" />
-
-          {/* Owner row + like button */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-
-            {/* Owner */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              {owner?.profileImage?.blobName ? (
-                <img
-                  src={getBlobImageUrl(owner.profileImage.blobName, 'owner-profile-images')}
-                  alt={owner.displayName ?? owner.username}
-                  className="w-[34px] h-[34px] rounded-full object-cover border-2 border-border shrink-0"
-                />
-              ) : (
-                <div className="w-[34px] h-[34px] rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <UserCircle className="w-5 h-5 text-muted-foreground" />
-                </div>
+          {/* Like button — immediately after the thumbnail strip */}
+          <div className="shrink-0">
+            <button
+              onClick={handleLike}
+              disabled={isOwner}
+              title={isOwner ? "You can't like your own pet" : undefined}
+              className={cn(
+                'inline-flex items-center gap-1.5 h-[38px] px-4 rounded-full border-[1.5px] text-sm cursor-pointer transition-all',
+                liked
+                  ? 'border-[#e5484d] bg-[#e5484d]/[0.08] text-[#e5484d] font-semibold'
+                  : 'border-primary bg-primary/10 text-primary font-normal',
+                isOwner && 'cursor-not-allowed opacity-75'
               )}
-              <div className="min-w-0">
+            >
+              <Heart
+                className="w-4 h-4"
+                fill={liked ? '#e5484d' : 'none'}
+                stroke={liked ? '#e5484d' : 'var(--primary)'}
+              />
+              {displayLikes}
+            </button>
+          </div>
+
+          {/* Owner info — flush to the right edge */}
+          <div className="flex items-center gap-2.5 ml-auto shrink-0">
+            {owner?.profileImage?.blobName ? (
+              <img
+                src={getBlobImageUrl(owner.profileImage.blobName, 'owner-profile-images')}
+                alt={owner.displayName ?? owner.username}
+                className="w-[34px] h-[34px] rounded-full object-cover border-2 border-border shrink-0"
+              />
+            ) : (
+              <div className="w-[34px] h-[34px] rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <UserCircle className="w-5 h-5 text-muted-foreground" />
+              </div>
+            )}
+            <div className="min-w-0 text-right">
+              <div className="flex items-baseline gap-2 justify-end">
                 {owner?.displayName && (
                   <p className="m-0 text-[13px] font-semibold text-foreground leading-[1.2]">
                     {owner.displayName}
                   </p>
                 )}
-                <p className="m-0 text-[11px] text-muted-foreground">
-                  {owner ? `@${owner.username} · ` : ''}{formatDate(pet.createdAt)}
-                </p>
+                <p className="m-0 text-[11px] text-muted-foreground">{formatDate(pet.createdAt)}</p>
               </div>
-            </div>
-
-            {/* Like button */}
-            <div className="flex flex-col items-end gap-1">
-              <button
-                onClick={handleLike}
-                disabled={isOwner}
-                title={isOwner ? "You can't like your own pet" : undefined}
-                className={cn(
-                  'inline-flex items-center gap-1.5 h-[38px] px-4 rounded-full border-[1.5px] text-sm cursor-pointer transition-all',
-                  liked
-                    ? 'border-[#e5484d] bg-[#e5484d]/[0.08] text-[#e5484d] font-semibold'
-                    : 'border-border bg-transparent text-muted-foreground font-normal',
-                  isOwner && 'border-border text-border cursor-not-allowed opacity-45'
-                )}
-              >
-                <Heart
-                  className="w-4 h-4"
-                  fill={liked ? '#e5484d' : 'none'}
-                  stroke={liked ? '#e5484d' : 'currentColor'}
-                />
-                {displayLikes}
-              </button>
-              {isOwner && (
-                <p className="text-[11px] text-muted-foreground m-0">Can't like your own pet</p>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Photos ── */}
-      {pet.images.length > 0 && (
-        <div className="max-w-[860px] mx-auto mt-10 px-6 pb-14">
-          <div className="flex items-baseline gap-2 mb-3.5">
-            <h2 className="font-heading text-xl font-bold m-0">Photos</h2>
-            <span className="text-[13px] text-muted-foreground">{pet.images.length}</span>
+      {/* ── Description ── */}
+      <div className="max-w-[860px] mx-auto px-6 mt-5 pb-14">
+        {pet.description && (
+          <div className="border-l-[3px] border-primary pl-4">
+            <p className="text-[15px] text-muted-foreground leading-[1.75] italic m-0">
+              {pet.description}
+            </p>
           </div>
-
-          <div className="grid grid-cols-3 gap-2.5">
-            {pet.images.map((img, idx) => (
-              <button
-                key={img.petImageId}
-                onClick={() => setLightboxIndex(idx)}
-                className="aspect-square rounded-[10px] overflow-hidden cursor-pointer border-0 p-0 relative block group"
-              >
-                <img
-                  src={getBlobImageUrl(img.blobName)}
-                  alt={`${pet.name} photo ${idx + 1}`}
-                  className="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-[1.06]"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── Lightbox ── */}
       {lightboxIndex !== null && (
@@ -321,26 +414,26 @@ export function PetDetailPage() {
             className="relative max-w-[900px] max-h-[85vh] w-full"
           >
             <img
-              src={getBlobImageUrl(pet.images[lightboxIndex].blobName)}
+              src={getBlobImageUrl(sortedImages[lightboxIndex].blobName)}
               alt={`${pet.name} photo ${lightboxIndex + 1}`}
               className="w-full max-h-[80vh] object-contain rounded-xl block"
             />
             <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 text-[13px] text-white/60 whitespace-nowrap">
-              {lightboxIndex + 1} / {pet.images.length}
+              {lightboxIndex + 1} / {sortedImages.length}
             </div>
           </div>
 
-          {pet.images.length > 1 && (
+          {sortedImages.length > 1 && (
             <>
               <button
-                onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i - 1 + pet.images.length) % pet.images.length) }}
+                onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i - 1 + sortedImages.length) % sortedImages.length) }}
                 aria-label="Previous photo"
                 className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/[0.12] border-0 cursor-pointer text-white flex items-center justify-center hover:bg-white/20 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i + 1) % pet.images.length) }}
+                onClick={e => { e.stopPropagation(); setLightboxIndex(i => i === null ? 0 : (i + 1) % sortedImages.length) }}
                 aria-label="Next photo"
                 className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/[0.12] border-0 cursor-pointer text-white flex items-center justify-center hover:bg-white/20 transition-colors"
               >
@@ -392,18 +485,22 @@ export function PetDetailPage() {
         </div>
       )}
 
-      <style>{`@keyframes fade-in { from { opacity:0 } to { opacity:1 } }`}</style>
+      <style>{`
+        @keyframes kenburns {
+          0%   { transform: scale(1.16) translate(0, 0); }
+          100% { transform: scale(1.34) translate(-2.5%, -2%); }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .kenburns { animation: kenburns 14s ease-in-out infinite alternate; }
+        }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
     </div>
   )
 }
 
-function DarkChip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
-      {children}
-    </span>
-  )
-}
+// ── Small components ──────────────────────────────────────────────────────────
+
 
 function KebabItem({
   icon, label, className, onClick,
