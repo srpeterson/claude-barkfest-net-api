@@ -9,7 +9,7 @@ import { BarkfestMark } from '@/components/BarkfestMark'
 import { getBrowseImages } from '@/lib/api'
 import type { BrowseImageDto, PagedResult } from '@/types/browse'
 
-const PAGE_SIZE = 6
+const PAGE_SIZE = 9
 
 function Footer() {
   const year = new Date().getFullYear()
