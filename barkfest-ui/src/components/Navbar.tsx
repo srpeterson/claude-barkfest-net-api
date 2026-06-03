@@ -70,7 +70,6 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   })
 
   const displayBlobName = ownerMeta?.blobName ?? profileImageBlobName
-  const displayName     = ownerMeta?.displayName ?? null
   const username        = ownerMeta?.username ?? null
   const [addPetOpen, setAddPetOpen]     = useState(false)
   const [profileOpen, setProfileOpen]   = useState(false)
