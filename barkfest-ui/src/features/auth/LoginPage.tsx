@@ -96,7 +96,7 @@ export function LoginPage() {
 
         {/* Copyright */}
         <p className="mt-auto pt-16 text-xs text-white/50">
-          © {new Date().getFullYear()} Barkfest · Privacy · Terms
+          © {new Date().getFullYear()} Barkfest. All rights reserved.
         </p>
       </div>
 
@@ -201,14 +201,24 @@ export function LoginPage() {
               <p className="text-[13px] text-destructive text-center mb-3">{error}</p>
             )}
 
-            <button
-              type="submit"
-              disabled={!allFilled || loading}
-              className="w-full h-[52px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                disabled={loading}
+                className="flex-1 h-[52px] rounded-[14px] border-[1.5px] border-border bg-transparent text-foreground text-[15px] font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!allFilled || loading}
+                className="flex-1 h-[52px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading ? 'Signing in…' : 'Sign in'}
+              </button>
+            </div>
           </form>
 
           {/* TODO (Roadmap #25): "or continue with" divider + Google/Apple buttons hidden until

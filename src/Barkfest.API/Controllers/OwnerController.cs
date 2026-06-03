@@ -1,3 +1,4 @@
+using Barkfest.Application.Features.Owners.Commands.ChangeOwnerPassword;
 using Barkfest.Application.Features.Owners.Commands.DeleteOwner;
 using Barkfest.Application.Features.Owners.Commands.RemoveOwnerProfileImage;
 using Barkfest.Application.Features.Owners.Commands.SetOwnerVisibility;
@@ -74,6 +75,13 @@ public class OwnerController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id:guid}/password")]
+    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangeOwnerPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new ChangeOwnerPasswordCommand(id, request.CurrentPassword, request.NewPassword), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPatch("{id:guid}/visibility")]
     public async Task<IActionResult> SetVisibility(Guid id, [FromBody] SetOwnerVisibilityRequest request, CancellationToken cancellationToken)
     {
@@ -83,4 +91,5 @@ public class OwnerController(IMediator mediator) : ControllerBase
 }
 
 public record UpdateOwnerRequest(string FirstName, string LastName, string Email, string? PhoneNumber, string? DisplayName = null);
+public record ChangeOwnerPasswordRequest(string CurrentPassword, string NewPassword);
 public record SetOwnerVisibilityRequest(bool IsVisible);

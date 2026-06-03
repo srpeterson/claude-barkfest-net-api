@@ -427,7 +427,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
                   {isDragActive
                     ? <Upload className="w-7 h-7 text-primary" />
-                    : <UserCircle className="w-10 h-10 text-muted-foreground" />
+                    : <UserCircle className="w-10 h-10 text-primary" />
                   }
                 </div>
                 <div>

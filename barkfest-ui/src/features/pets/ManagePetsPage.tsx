@@ -10,27 +10,29 @@ import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
 import { AddPetDialog } from '@/components/AddPetDialog'
 import { EditPetModal } from '@/components/EditPetModal'
 import type { PetDto } from '@/lib/api'
 
 // ── Switch ────────────────────────────────────────────────────────────
-function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id: string }) {
+function Switch({ checked, onChange, id, disabled }: { checked: boolean; onChange: (v: boolean) => void; id: string; disabled?: boolean }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
       id={id}
-      onClick={() => onChange(!checked)}
+      onClick={() => !disabled && onChange(!checked)}
+      disabled={disabled}
       className={cn(
-        'relative w-[46px] h-[27px] rounded-full border-0 cursor-pointer p-0 shrink-0 transition-colors',
-        checked ? 'bg-primary' : 'bg-[#d8cfc6]'
+        'relative w-[46px] h-[27px] rounded-full border-0 p-0 shrink-0 transition-colors',
+        disabled ? 'cursor-not-allowed opacity-40 bg-[#d8cfc6]' : checked ? 'bg-primary cursor-pointer' : 'bg-[#d8cfc6] cursor-pointer'
       )}
     >
       <span
         className={cn(
           'absolute top-[3px] w-[21px] h-[21px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-[left]',
-          checked ? 'left-[22px]' : 'left-[3px]'
+          checked && !disabled ? 'left-[22px]' : 'left-[3px]'
         )}
       />
     </button>
@@ -38,22 +40,22 @@ function Switch({ checked, onChange, id }: { checked: boolean; onChange: (v: boo
 }
 
 // ── ShowInGalleryToggle ───────────────────────────────────────────────
-function HidePetsToggle({ isVisible, onChange, error }: { isVisible: boolean; onChange: (v: boolean) => void; error?: string | null }) {
+function HidePetsToggle({ isVisible, onChange, error, disabled }: { isVisible: boolean; onChange: (v: boolean) => void; error?: string | null; disabled?: boolean }) {
   return (
     <div>
       <div className={cn(
         'flex items-center gap-3.5 bg-card rounded-xl px-4 py-2.5 border transition-colors',
-        isVisible ? 'border-primary' : 'border-border'
+        disabled ? 'border-border opacity-50' : isVisible ? 'border-primary' : 'border-border'
       )}>
         <div>
-          <label htmlFor="show-in-gallery" className="block text-sm font-semibold cursor-pointer">
-            Show in gallery
+          <label htmlFor="show-in-gallery" className={cn('block text-sm font-semibold', disabled ? 'cursor-not-allowed' : 'cursor-pointer')}>
+            Show pets in gallery
           </label>
-          <p className={cn('m-0 text-xs font-medium', isVisible ? 'text-primary' : 'text-muted-foreground font-normal')}>
-            {isVisible ? 'Visible to everyone' : 'Hidden for everyone'}
+          <p className={cn('m-0 text-xs font-medium', disabled ? 'text-muted-foreground font-normal' : isVisible ? 'text-primary' : 'text-muted-foreground font-normal')}>
+            {disabled ? 'Add a pet to enable' : isVisible ? 'Visible to everyone' : 'Hidden for everyone'}
           </p>
         </div>
-        <Switch id="show-in-gallery" checked={isVisible} onChange={onChange} />
+        <Switch id="show-in-gallery" checked={isVisible} onChange={onChange} disabled={disabled} />
       </div>
       {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </div>
@@ -152,6 +154,8 @@ export function ManagePetsPage() {
     try {
       await setOwnerVisibility(accountId!, newIsVisible)
       queryClient.invalidateQueries({ queryKey: ['owner', accountId] })
+      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
     } catch {
       setOptimisticIsVisible(previous)
       setVisibilityError('Failed to update visibility. Please try again.')
@@ -163,10 +167,10 @@ export function ManagePetsPage() {
   const cols = isMobile ? mobileCols : desktopCols
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar maxWidth="max-w-[900px]" />
 
-      <div className="max-w-[900px] mx-auto px-6 pt-6 pb-16">
+      <div className="flex-1 max-w-[900px] mx-auto px-6 pt-6 pb-16 w-full">
 
         {/* Back nav */}
         <button
@@ -185,7 +189,7 @@ export function ManagePetsPage() {
               {pets.length} {pets.length === 1 ? 'pet' : 'pets'} in your profile
             </p>
           </div>
-          <HidePetsToggle isVisible={isVisible} onChange={handleVisibilityChange} error={visibilityError} />
+          <HidePetsToggle isVisible={isVisible} onChange={handleVisibilityChange} error={visibilityError} disabled={pets.length === 0} />
         </div>
 
         {/* Bulk delete bar */}
@@ -390,6 +394,8 @@ export function ManagePetsPage() {
           onConfirm={handleBulkDelete}
         />
       )}
+
+      <Footer maxWidth="max-w-[900px]" />
     </div>
   )
 }

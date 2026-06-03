@@ -5,64 +5,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { HeroSection } from '@/components/HeroSection'
 import { PetGrid } from '@/components/PetGrid'
-import { BarkfestMark } from '@/components/BarkfestMark'
+import { Footer } from '@/components/Footer'
 import { getBrowseImages } from '@/lib/api'
 import type { BrowseImageDto, PagedResult } from '@/types/browse'
 
 const PAGE_SIZE = 9
-
-function Footer() {
-  const year = new Date().getFullYear()
-  return (
-    <footer className="border-t border-border bg-card px-6 pt-10 pb-0">
-      <div className="max-w-[72rem] mx-auto flex flex-wrap gap-14 items-start">
-
-        {/* Brand column */}
-        <div className="flex flex-col gap-3.5 max-w-[220px]">
-          <div className="flex items-center gap-2">
-            <BarkfestMark size={24} />
-            <span className="font-heading text-[17px] font-bold tracking-[-0.02em] text-foreground">
-              Barkfest
-            </span>
-          </div>
-          <p className="m-0 text-[13px] text-muted-foreground leading-relaxed">
-            A community where pet lovers share photos and stories of their furry friends.
-          </p>
-        </div>
-
-        {/* Link columns */}
-        <div className="flex gap-12 flex-wrap">
-          <div>
-            <p className="m-0 mb-3 text-[11px] font-bold tracking-[0.08em] uppercase text-muted-foreground">
-              Company
-            </p>
-            {['About', 'Blog', 'Careers'].map(l => (
-              <p key={l} className="text-[13px] text-foreground/60 block mb-2.5 cursor-default">{l}</p>
-            ))}
-          </div>
-          <div>
-            <p className="m-0 mb-3 text-[11px] font-bold tracking-[0.08em] uppercase text-muted-foreground">
-              Legal
-            </p>
-            {['Privacy Policy', 'Terms of Use', 'Contact'].map(l => (
-              <p key={l} className="text-[13px] text-foreground/60 block mb-2.5 cursor-default">{l}</p>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom bar */}
-      <div className="max-w-[72rem] mx-auto mt-8 py-6 border-t border-border flex justify-between items-center flex-wrap gap-2">
-        <p className="m-0 text-xs text-muted-foreground">
-          © {year} Barkfest. All rights reserved.
-        </p>
-        <p className="m-0 text-xs text-muted-foreground">
-          Made with love for pet lovers.
-        </p>
-      </div>
-    </footer>
-  )
-}
 
 export function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -127,7 +74,7 @@ export function HomePage() {
       />
       <HeroSection petTypeValue={petTypeValue} breedValue={breedValue} />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-20 space-y-8 -mt-6">
+      <main className="flex-1 w-full max-w-[72rem] mx-auto px-5 pb-20 space-y-8 -mt-6">
         <PetGrid pets={pets} isLoading={isLoading} hasActiveFilters={hasActiveFilters} />
 
         {/* Pagination */}

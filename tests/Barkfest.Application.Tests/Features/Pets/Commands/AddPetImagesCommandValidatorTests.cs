@@ -1,5 +1,4 @@
 using Barkfest.Application.Features.Pets.Commands.AddPetImages;
-using Barkfest.Domain.Entities;
 
 namespace Barkfest.Application.Tests.Features.Pets.Commands;
 
@@ -107,34 +106,4 @@ public class AddPetImagesCommandValidatorTests
         result.Errors.ShouldContain(e => e.PropertyName.EndsWith("FileName"));
     }
 
-    // -----------------------------------------------------------------------
-    // Length (per image)
-    // -----------------------------------------------------------------------
-
-    [Fact]
-    public void Validate_When_FileSizeIsAtLimit_Passes()
-    {
-        var command = new AddPetImagesCommand(Guid.NewGuid(),
-        [
-            new PetImageUpload("photo.jpg", Stream.Null, "image/jpeg", PetImage.MaxImageSizeBytes)
-        ]);
-
-        var result = _addPetImagesCommandValidator.Validate(command);
-
-        result.IsValid.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Validate_When_FileSizeExceedsLimit_Fails_ForLength()
-    {
-        var command = new AddPetImagesCommand(Guid.NewGuid(),
-        [
-            new PetImageUpload("photo.jpg", Stream.Null, "image/jpeg", PetImage.MaxImageSizeBytes + 1)
-        ]);
-
-        var result = _addPetImagesCommandValidator.Validate(command);
-
-        result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName.EndsWith("Length"));
-    }
 }

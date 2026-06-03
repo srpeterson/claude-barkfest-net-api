@@ -53,20 +53,25 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   const isMobile = useIsMobile()
   const { isAuthenticated, accountType, profileImageBlobName, accountId, signOut } = useAuth()
 
-  // Keep the profile image in sync with the server so changes on another
-  // device (or another tab) are picked up when the user returns to this one.
-  const { data: freshBlobName } = useQuery({
-    queryKey: ['owner', accountId, 'profile-image'],
+  // Keep the profile image and display name in sync with the server so changes
+  // on another device (or another tab) are picked up when the user returns.
+  const { data: ownerMeta } = useQuery({
+    queryKey: ['owner', accountId, 'meta'],
     queryFn: async () => {
       const owner = await getOwnerById(accountId!)
-      return owner.profileImage?.blobName ?? null
+      return {
+        blobName:    owner.profileImage?.blobName ?? null,
+        displayName: owner.displayName ?? null,
+        username:    owner.username,
+      }
     },
     enabled: isAuthenticated && accountType === 'owner' && !!accountId,
     staleTime: 30 * 1000,
-    initialData: profileImageBlobName,
   })
 
-  const displayBlobName = freshBlobName ?? profileImageBlobName
+  const displayBlobName = ownerMeta?.blobName ?? profileImageBlobName
+  const displayName     = ownerMeta?.displayName ?? null
+  const username        = ownerMeta?.username ?? null
   const [addPetOpen, setAddPetOpen]     = useState(false)
   const [profileOpen, setProfileOpen]   = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -136,8 +141,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-border backdrop-blur-md"
-        style={{ background: 'rgba(250,247,244,0.85)' }}>
+      <nav className="sticky top-0 z-50 border-b border-border bg-card">
         <div className={`${maxWidth} mx-auto px-5 h-16 flex items-center relative`}>
 
           {/* Logo */}
@@ -258,7 +262,24 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
                   </button>
 
                   {dropdownOpen && (
-                    <div className="absolute top-[calc(100%+8px)] right-0 w-[172px] bg-card border border-border rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.13)] overflow-hidden z-[300]">
+                    <div className="absolute top-[calc(100%+8px)] right-0 w-[192px] bg-card border border-border rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.13)] overflow-hidden z-[300]">
+                      {/* Signed in as */}
+                      <div className="px-3 py-2.5 border-b border-border bg-muted flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
+                          {displayBlobName ? (
+                            <img
+                              src={getBlobImageUrl(displayBlobName, 'owner-profile-images')}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <UserCircle className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="m-0 text-[12px] font-semibold text-foreground leading-tight truncate">{username ?? '…'}</p>
+                        </div>
+                      </div>
                       {[
                         {
                           label: 'My Pets',
@@ -356,11 +377,11 @@ function DropdownItem({
       onClick={onClick}
       className={cn(
         'w-full h-10 px-3.5 flex items-center gap-[9px] bg-transparent border-0 cursor-pointer text-[13px] font-medium text-left hover:bg-muted transition-colors',
-        label === 'Sign Out' ? 'text-muted-foreground' : 'text-foreground',
+        'text-foreground',
         dividerAbove ? 'border-t border-border' : ''
       )}
     >
-      <span className={cn('flex', label === 'Sign Out' ? 'text-muted-foreground' : 'text-primary')}>
+      <span className="flex text-primary">
         {icon}
       </span>
       {label}

@@ -174,7 +174,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <PetTypeBreedFormFields
                 petTypeValue={petTypeValue}
                 onPetTypeChange={handlePetTypeChange}
@@ -187,7 +187,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <label className="text-sm font-semibold block">
                 How old is {name.trim() || 'your pet'}? <span className="text-destructive">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
                 {/* ── Date of birth column ── */}
                 <div className="space-y-1.5">
@@ -340,7 +340,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                 getRootProps={getRootProps}
                 getInputProps={getInputProps}
                 isDragActive={isDragActive}
-                hint={`JPG or PNG · up to ${MAX_IMAGES - images.length} more`}
+                hint={`JPG or PNG · max 10 MB · up to ${MAX_IMAGES - images.length} more`}
               />
             )}
 

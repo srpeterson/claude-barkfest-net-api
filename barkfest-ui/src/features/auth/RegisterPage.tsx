@@ -163,7 +163,7 @@ export function RegisterPage() {
             Every pet has a<br />story to tell.
           </h1>
           <p className="text-[15px] text-white/75 leading-relaxed max-w-[300px] m-0">
-            Join a community of pet lovers sharing photos, stories, and the everyday magic of life with animals.
+            Join a community of pet lovers sharing photos, stories, and the everyday magic of life with pets.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export function RegisterPage() {
             ))}
           </div>
           <p className="ml-3.5 text-[13px] text-white/75 self-center">
-            Join <strong className="text-white">hundreds</strong> of pet lovers
+            Join a community of pet lovers already making their pets famous
           </p>
         </div>
       </div>
@@ -241,7 +241,7 @@ export function RegisterPage() {
           <form onSubmit={handleSubmit} noValidate>
 
             {/* First / Last name */}
-            <div className="grid grid-cols-2 gap-3 mb-[18px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-[18px]">
               <div>
                 <label htmlFor="r-fn" className="block text-[13px] font-semibold mb-1.5 text-foreground">
                   First name <Required />
@@ -418,14 +418,24 @@ export function RegisterPage() {
               <p className="text-[13px] text-destructive text-center mb-2.5">{error}</p>
             )}
 
-            <button
-              type="submit"
-              disabled={!canSubmit || isLoading}
-              className="w-full h-[50px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 mt-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
-            >
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isLoading ? 'Creating your account…' : 'Create account'}
-            </button>
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                disabled={isLoading}
+                className="flex-1 h-[50px] rounded-[14px] border-[1.5px] border-border bg-transparent text-foreground text-[15px] font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!canSubmit || isLoading}
+                className="flex-1 h-[50px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
+              >
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLoading ? 'Creating your account…' : 'Create account'}
+              </button>
+            </div>
 
             <p className="text-center text-[13px] text-muted-foreground mt-4">
               By creating an account you agree to our Terms and Privacy Policy.

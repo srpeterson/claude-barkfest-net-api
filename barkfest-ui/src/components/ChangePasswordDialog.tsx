@@ -4,7 +4,7 @@ import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
-import { changePassword, logout } from '@/lib/api'
+import { ApiError, changePassword, logout } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
@@ -31,28 +31,35 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
   const [confirm, setConfirm]         = useState('')
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew]         = useState(false)
-  const [error, setError]             = useState<string | null>(null)
-  const [isLoading, setIsLoading]     = useState(false)
+  const [currentError, setCurrentError] = useState<string | null>(null)
+  const [error, setError]               = useState<string | null>(null)
+  const [isLoading, setIsLoading]       = useState(false)
+  const [forgotOpen, setForgotOpen]     = useState(false)
 
-  const strength   = zxcvbn(next)
-  const pwWeak     = next.length > 0 && strength.score < 2
-  const pwMismatch = confirm !== '' && next !== confirm
-  const allFilled  = current !== '' && next !== '' && confirm !== ''
-  const canSubmit  = allFilled && !pwWeak && !pwMismatch && !isLoading
+  const strength    = zxcvbn(next)
+  const pwWeak      = next.length > 0 && strength.score < 2
+  const pwSameAsOld = current !== '' && next !== '' && next === current
+  const pwMismatch  = confirm !== '' && next !== confirm
+  const allFilled   = current !== '' && next !== '' && confirm !== ''
+  const canSubmit   = allFilled && !pwWeak && !pwSameAsOld && !pwMismatch && !isLoading
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit || !accountId) return
     setError(null)
+    setCurrentError(null)
     setIsLoading(true)
     try {
-      // TODO: Backend endpoint not yet implemented. Wire when available.
       await changePassword(accountId, current, next)
       await logout()
       signOut()
       navigate('/login')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to change password.')
+      if (err instanceof ApiError && err.status === 403) {
+        setCurrentError('Incorrect password.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to change password.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -96,11 +103,14 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
                 type={showCurrent ? 'text' : 'password'}
                 autoComplete="current-password"
                 value={current}
-                onChange={e => setCurrent(e.target.value)}
+                onChange={e => { setCurrent(e.target.value); setCurrentError(null) }}
                 className={inputCls}
               />
               <EyeBtn show={showCurrent} onToggle={() => setShowCurrent(v => !v)} />
             </div>
+            {currentError && (
+              <p className="text-xs text-destructive mt-1">{currentError}</p>
+            )}
           </div>
 
           {/* New password */}
@@ -137,7 +147,10 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
                 </p>
               </div>
             )}
-            {pwWeak && strength.feedback.suggestions[0] && (
+            {pwSameAsOld && (
+              <p className="text-xs text-destructive mt-1">New password must be different from your current password.</p>
+            )}
+            {!pwSameAsOld && pwWeak && strength.feedback.suggestions[0] && (
               <p className="text-xs text-destructive mt-1">
                 {strength.feedback.suggestions[0]}
               </p>
@@ -191,6 +204,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
           <p className="text-center mt-3 text-[13px]">
             <button
               type="button"
+              onClick={() => setForgotOpen(true)}
               className="bg-transparent border-0 p-0 cursor-pointer text-primary font-semibold text-[13px]"
             >
               Forgot password?
@@ -198,6 +212,39 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
           </p>
         </form>
       </div>
+
+      {forgotOpen && (
+        <div
+          className="animate-backdrop-in fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => setForgotOpen(false)}
+        >
+          <div
+            className="animate-dialog-appear w-full max-w-[360px] bg-card rounded-[20px] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.18)] relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <BarkfestMark size={22} />
+              <span className="font-heading text-[17px] font-bold">Barkfest</span>
+            </div>
+            <h3 className="font-heading text-xl font-bold mb-2">Forgot your password?</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-1.5">
+              Woof! Automated reset is on its way. Until then, shoot us an email and we'll get your paws back on the keys. Don't forget to include your username:
+            </p>
+            <a
+              href="mailto:srpeterson@outlook.com"
+              className="text-sm font-semibold text-primary no-underline inline-block mb-[22px]"
+            >
+              srpeterson@outlook.com
+            </a>
+            <button
+              onClick={() => setForgotOpen(false)}
+              className="block w-full h-[42px] rounded-[10px] border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

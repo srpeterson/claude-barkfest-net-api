@@ -128,14 +128,24 @@ function LoginDialogInner() {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Sign In
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeDialog}
+              disabled={isLoading}
+              className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-foreground text-sm font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Sign In
+            </button>
+          </div>
         </form>
 
       </div>

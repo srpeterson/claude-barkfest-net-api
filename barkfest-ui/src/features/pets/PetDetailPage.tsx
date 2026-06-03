@@ -9,6 +9,7 @@ import { getBlobImageUrl } from '@/lib/imageUrl'
 import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
 import { EditPetModal } from '@/components/EditPetModal'
 
 function formatDate(iso: string): string {
@@ -90,10 +91,11 @@ export function PetDetailPage() {
     try {
       if (next) await likePet(pet.petId)
       else await unlikePet(pet.petId)
-      // Keep the cache in sync so the count is correct when navigating back
       queryClient.setQueryData<PetDto>(['pet', petId], old =>
         old ? { ...old, likes: newCount } : old
       )
+      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
+      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
     } catch {
       setLiked(!next)
       setLikeCount(prev)
@@ -148,11 +150,11 @@ export function PetDetailPage() {
   const safeActive   = Math.min(active, sortedImages.length - 1)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
       {/* Back nav */}
-      <div className="max-w-[860px] mx-auto px-6 pt-6 pb-4">
+      <div className="max-w-[860px] mx-auto px-6 pt-6 pb-4 w-full">
         <button
           onClick={() => fromManage ? navigate('/manage') : navigate(-1)}
           className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground bg-transparent border-0 cursor-pointer p-0 transition-colors hover:text-foreground"
@@ -163,7 +165,7 @@ export function PetDetailPage() {
       </div>
 
       {/* ── Stage ── */}
-      <div className="max-w-[860px] mx-auto px-6">
+      <div className="max-w-[860px] mx-auto px-6 w-full">
         <div
           className="relative overflow-hidden rounded-[18px] cursor-zoom-in"
           style={{ height: 'clamp(380px, 56vw, 600px)', background: 'var(--primary)' }}
@@ -205,27 +207,43 @@ export function PetDetailPage() {
               </h1>
             </div>
 
-            {/* Age + breed chips — bottom-right overlay */}
-            {(age || pet.breed) && (
-              <div className="absolute bottom-3 right-3 flex gap-1.5 flex-wrap justify-end" style={{ zIndex: 2 }}>
-                {age && (
-                  <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
-                    {age}
-                  </span>
-                )}
-                {pet.breed && (
-                  <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
-                    {pet.breed}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Age + breed chips + like — bottom-right overlay */}
+            <div className="absolute bottom-3 right-3 flex gap-1.5 flex-wrap justify-end items-center" style={{ zIndex: 2 }}>
+              {age && (
+                <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                  {age}
+                </span>
+              )}
+              {pet.breed && (
+                <span className="inline-flex items-center h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                  {pet.breed}
+                </span>
+              )}
+              {isOwner ? (
+                <span className="inline-flex items-center gap-1.5 h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                  <Heart className="w-[11px] h-[11px]" fill="#e5484d" stroke="#e5484d" />
+                  {displayLikes}
+                </span>
+              ) : (
+                <button
+                  onClick={e => { e.stopPropagation(); handleLike() }}
+                  className="inline-flex items-center gap-1.5 h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-colors"
+                >
+                  <Heart
+                    className="w-[11px] h-[11px] transition-transform active:scale-125"
+                    fill={liked ? '#e5484d' : 'none'}
+                    stroke={liked ? '#e5484d' : 'white'}
+                  />
+                  {displayLikes}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Owner kebab — above carousel chrome */}
           {isOwner && (
             <div
-              className="absolute top-4 right-4 z-10"
+              className="absolute top-6 right-6 z-10"
               onClick={e => e.stopPropagation()}
             >
               <div className="relative">
@@ -304,95 +322,65 @@ export function PetDetailPage() {
         </div>
       </div>
 
-      {/* ── Thumbnail rail + owner/like ── */}
-      <div className="max-w-[860px] mx-auto px-6 mt-2.5">
-        <div className="flex items-center gap-4">
-
-          {/* Thumbnail strip — only when multi */}
-          {multi && (
-            <div className="flex gap-2 overflow-x-auto pb-0.5 min-w-0">
-              {sortedImages.map((img, i) => (
-                <button
-                  key={img.petImageId}
-                  onClick={() => setActive(i)}
-                  aria-label={`View photo ${i + 1}`}
-                  className="shrink-0 w-[60px] h-[60px] rounded-[10px] overflow-hidden border-0 cursor-pointer p-0"
-                  style={{
-                    outline: i === safeActive ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-                    outlineOffset: 1,
-                  }}
-                >
+      {/* ── Thumbnail rail ── */}
+      {multi && (
+        <div className="max-w-[860px] mx-auto px-6 mt-5 w-full">
+          <div className="flex gap-2 overflow-x-auto p-1">
+            {sortedImages.map((img, i) => (
+              <button
+                key={img.petImageId}
+                onClick={() => setActive(i)}
+                aria-label={`View photo ${i + 1}`}
+                className="shrink-0 w-[60px] h-[60px] rounded-[10px] border-0 cursor-pointer p-0"
+                style={{
+                  outline: i === safeActive ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                  outlineOffset: 1,
+                }}
+              >
+                <div className="w-full h-full rounded-[10px] overflow-hidden">
                   <img
                     src={getBlobImageUrl(img.blobName)}
                     alt=""
                     className="w-full h-full object-cover block transition-opacity"
                     style={{ opacity: i === safeActive ? 1 : 0.6 }}
                   />
-                </button>
-              ))}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Description + owner ── */}
+      <div className="max-w-[860px] mx-auto px-6 mt-3 pb-14 w-full flex flex-col gap-2">
+        {pet.description && (
+          <p className="m-0 text-[15px] text-muted-foreground italic leading-relaxed">
+            {pet.description}
+          </p>
+        )}
+        <div className="flex items-center gap-2">
+          {owner?.profileImage?.blobName ? (
+            <img
+              src={getBlobImageUrl(owner.profileImage.blobName, 'owner-profile-images')}
+              alt={owner.displayName ?? owner.username}
+              className="w-[22px] h-[22px] rounded-full object-cover border border-border shrink-0"
+            />
+          ) : (
+            <div className="w-[22px] h-[22px] rounded-full bg-secondary flex items-center justify-center shrink-0">
+              <UserCircle className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
           )}
-
-          {/* Like button — immediately after the thumbnail strip */}
-          <div className="shrink-0">
-            <button
-              onClick={handleLike}
-              disabled={isOwner}
-              title={isOwner ? "You can't like your own pet" : undefined}
-              className={cn(
-                'inline-flex items-center gap-1.5 h-[38px] px-4 rounded-full border-[1.5px] text-sm cursor-pointer transition-all',
-                liked
-                  ? 'border-[#e5484d] bg-[#e5484d]/[0.08] text-[#e5484d] font-semibold'
-                  : 'border-primary bg-primary/10 text-primary font-normal',
-                isOwner && 'cursor-not-allowed opacity-75'
-              )}
-            >
-              <Heart
-                className="w-4 h-4"
-                fill={liked ? '#e5484d' : 'none'}
-                stroke={liked ? '#e5484d' : 'var(--primary)'}
-              />
-              {displayLikes}
-            </button>
-          </div>
-
-          {/* Owner info — flush to the right edge */}
-          <div className="flex items-center gap-2.5 ml-auto shrink-0">
-            {owner?.profileImage?.blobName ? (
-              <img
-                src={getBlobImageUrl(owner.profileImage.blobName, 'owner-profile-images')}
-                alt={owner.displayName ?? owner.username}
-                className="w-[34px] h-[34px] rounded-full object-cover border-2 border-border shrink-0"
-              />
-            ) : (
-              <div className="w-[34px] h-[34px] rounded-full bg-secondary flex items-center justify-center shrink-0">
-                <UserCircle className="w-5 h-5 text-muted-foreground" />
-              </div>
+          <p className="m-0 text-[12px] text-muted-foreground">
+            {owner?.displayName && (
+              <span className="font-medium text-foreground">{owner.displayName}</span>
             )}
-            <div className="min-w-0 text-right">
-              <div className="flex items-baseline gap-2 justify-end">
-                {owner?.displayName && (
-                  <p className="m-0 text-[13px] font-semibold text-foreground leading-[1.2]">
-                    {owner.displayName}
-                  </p>
-                )}
-                <p className="m-0 text-[11px] text-muted-foreground">{formatDate(pet.createdAt)}</p>
-              </div>
-            </div>
-          </div>
+            <span className="mx-1 opacity-40">·</span>
+            {formatDate(pet.createdAt)}
+          </p>
         </div>
       </div>
 
-      {/* ── Description ── */}
-      <div className="max-w-[860px] mx-auto px-6 mt-5 pb-14">
-        {pet.description && (
-          <div className="border-l-[3px] border-primary pl-4">
-            <p className="text-[15px] text-muted-foreground leading-[1.75] italic m-0">
-              {pet.description}
-            </p>
-          </div>
-        )}
-      </div>
+      <Footer />
 
       {/* ── Lightbox ── */}
       {lightboxIndex !== null && (

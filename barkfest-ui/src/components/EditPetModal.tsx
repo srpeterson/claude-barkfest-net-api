@@ -192,12 +192,12 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
 
         {/* Title */}
         <div className="mb-4">
-          <h2 className="font-heading font-bold text-[22px] mb-1">
-            {step === 1 ? `Edit ${pet.name}` : 'Update photos'}
+          <h2 className="font-heading font-bold text-[22px] mb-1 [font-variant-numeric:lining-nums]">
+            {step === 1 ? `Edit ${pet.name}` : <>Manage photos for <strong className="text-primary">{name}</strong>.</>}
           </h2>
-          <p className="text-[13.5px] text-muted-foreground">
-            {step === 1 ? 'Update the details below.' : <>Manage photos for <strong className="text-primary">{name}</strong>.</>}
-          </p>
+          {step === 1 && (
+            <p className="text-[13.5px] text-muted-foreground">Update the details below.</p>
+          )}
         </div>
 
         {/* Progress bar */}
@@ -268,11 +268,25 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
         {/* ── Step 2: Photos ── */}
         {step === 2 && (
           <div className="space-y-3">
+
+            {/* Add more drop target */}
             <p className="text-[13px] text-muted-foreground">
-              Tap a photo to set it as the cover. Add or remove photos (max {MAX_IMAGES}).
+              Add up to {MAX_IMAGES} photos of {name.trim() || pet.name}.
             </p>
+            <DropZone
+              getRootProps={getRootProps}
+              getInputProps={getInputProps}
+              isDragActive={isDragActive}
+              disabled={slotsLeft === 0}
+              hint={slotsLeft > 0 ? `JPG or PNG · max 10 MB · up to ${slotsLeft} more` : undefined}
+            />
 
             {/* Photo grid */}
+            {totalImages > 0 && (
+              <p className="text-[13px] text-muted-foreground">
+                Tap a photo to set it as the cover. Click on 'X' to remove.
+              </p>
+            )}
             {totalImages > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {existingVisible.map((img) => {
@@ -311,16 +325,6 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
                   )
                 })}
               </div>
-            )}
-
-            {/* Add more drop target */}
-            {slotsLeft > 0 && (
-              <DropZone
-                getRootProps={getRootProps}
-                getInputProps={getInputProps}
-                isDragActive={isDragActive}
-                hint={`JPG or PNG · up to ${slotsLeft} more`}
-              />
             )}
 
             {totalImages === 0 && (
