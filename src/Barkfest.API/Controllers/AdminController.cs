@@ -51,10 +51,10 @@ public class AdminController(IMediator mediator) : ControllerBase
         [FromBody] SetOwnerActiveRequest request,
         CancellationToken cancellationToken)
     {
-        await mediator.Send(new SetOwnerActiveCommand(id, request.Active), cancellationToken);
+        await mediator.Send(new SetOwnerActiveCommand(id, request.IsActive), cancellationToken);
         return NoContent();
     }
 }
 
 public record UpdateAdministratorPasswordRequest(string NewPassword);
-public record SetOwnerActiveRequest(bool Active);
+public record SetOwnerActiveRequest(bool IsActive);

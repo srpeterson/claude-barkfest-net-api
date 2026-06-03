@@ -12,6 +12,7 @@ export interface BrowseImageDto {
   age?: number
   petType: string
   breed?: string
+  likes: number
 }
 
 export interface PagedResult<T> {

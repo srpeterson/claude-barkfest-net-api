@@ -663,3 +663,362 @@ design that reflects the owner's logged-in experience.
 ### Approach (high level)
 - Design to be agreed during the feature session
 - Consider: dropdown menu from the avatar, navigation links, notification indicators
+
+---
+
+## 22. Add Links to Footer
+
+**Priority:** Low
+**Status:** Not started
+
+### What
+Wire up the footer link columns (Company: About, Blog, Careers; Legal: Privacy Policy, Terms of Use, Contact) to real pages or external URLs. Currently these are plain text placeholders.
+
+### Why
+The footer looks complete visually but the links do nothing. Once the relevant content pages or policies exist, they should be linked.
+
+### Approach (high level)
+- Decide which items get internal routes vs external URLs (e.g. Privacy Policy and Terms of Use may be separate static pages)
+- Replace the plain `<p>` elements in the `Footer` component in `barkfest-ui/src/pages/HomePage.tsx` with `<Link>` or `<a href>` as appropriate
+- Add any new routes to `App.tsx`
+
+---
+
+## 26. Forgot Password — Full Self-Service Reset Flow
+
+**Priority:** High
+**Status:** Interim solution in place — "Forgot password?" link opens a modal directing
+users to email srpeterson@outlook.com. Replace with this automated flow when ready.
+
+### What
+A self-service password reset flow: the owner enters their registered email, receives a
+time-limited reset link, clicks it to land on a page where they set a new password.
+
+### Current interim behaviour
+Clicking "Forgot password?" on the Sign In page opens a modal that says:
+*"Woof! Automated reset is on its way. Until then, shoot us an email and we'll get your
+paws back on the keys. Don't forget to include your username: srpeterson@outlook.com"* When this feature ships, replace the modal with the real flow and
+update the support email to the official address.
+
+### Domain scaffolding already done (from Roadmap item 5)
+- `Owner.PasswordResetToken` (`string?`) — add via `SetPasswordResetToken()` method
+- `Owner.PasswordResetTokenExpiry` (`DateTime?`)
+- Migration: `AddOwnerPasswordResetToken`
+
+### Still to implement
+
+**Backend:**
+- `POST /v1/auth/forgot-password` — accepts `{ email }`, generates a short-lived
+  single-use token (30 min), persists it, sends reset email via `IEmailService`.
+  Always returns `200 OK` regardless of whether the email exists (prevents enumeration)
+- `POST /v1/auth/reset-password` — accepts `{ token, newPassword }`, validates token,
+  updates `PasswordHash`, calls `ClearPasswordResetToken()`
+- Requires `IEmailService` (Roadmap item 5) to be implemented first
+
+**Frontend:**
+- Replace the interim modal in `LoginPage.tsx` with a link to `/forgot-password`
+- `/forgot-password` — email entry form → "Check your email" confirmation screen
+- `/reset-password?token=...` — new password + confirm fields; on success navigate
+  to `/login` with a success message
+
+---
+
+## 25. Third-Party Authentication Providers (Google, Apple)
+
+**Priority:** Medium
+**Status:** Not started — UI placeholder hidden pending implementation
+
+### What
+Allow owners to register and sign in using their Google or Apple account instead of a
+username and password.
+
+### Current state
+The "or continue with" divider and the Google and Apple buttons exist in `LoginPage.tsx`
+but are commented out (search for `TODO (Roadmap #25)`). They will be restored once the
+backend OAuth flow is implemented.
+
+### Why
+Social sign-in reduces friction at registration — no password to create or remember.
+Google and Apple are the two providers expected on desktop and iOS respectively.
+
+### Approach (high level)
+
+**Backend:**
+- Add OAuth 2.0 / OpenID Connect support to the API (e.g. via a library such as
+  `Microsoft.AspNetCore.Authentication.Google` / `.Apple`)
+- New endpoints: `GET /v1/auth/google` (redirect), `GET /v1/auth/google/callback`,
+  same pattern for Apple
+- On callback: look up or create an `Owner` by the verified email; issue the same
+  `barkfest_auth` JWT as the password flow; set the HttpOnly cookie
+- `Owner.PasswordHash` remains nullable — social-only accounts have no password
+
+**Frontend:**
+- Restore the hidden block in `LoginPage.tsx` (search `TODO (Roadmap #25)`)
+- Wire each button to `window.location.href = '/v1/auth/google'` (full redirect, not fetch)
+- On return the cookie is set server-side; the `AuthContext` reads the `accountId` from
+  the login response body as usual
+
+**Infrastructure:**
+- Register OAuth app credentials in Google Cloud Console and Apple Developer portal
+- Store client ID + secret in GitHub Secrets; inject as environment variables
+
+---
+
+## 24. Dynamic Sign-In Brand Panel Mosaic
+
+**Priority:** Low
+**Status:** Not started — currently using static local images
+
+### What
+Replace the hardcoded pet photos in the Sign In page brand panel mosaic with real images
+pulled dynamically from the live browse API, so the mosaic always shows actual pets from
+the community rather than static placeholders.
+
+### Why
+Static images feel disconnected from the live platform. Showing real community pets makes
+the sign-in page feel alive and gives new visitors an immediate sense of what Barkfest
+contains.
+
+### Approach (high level)
+- Call `GET /v1/browse/images?page=1&pageSize=4` on page load (no auth required)
+- Use the first 4 results' `blobName` values to build image URLs via the existing
+  `/v1/images/...` proxy route
+- Fall back to the current static images if the fetch fails or returns fewer than 4 results
+- `staleTime` can be short (60s) — the mosaic is decorative, not data-critical
+- The 2×2 grid layout and `tall` height variants stay the same; just swap the `src`
+
+---
+
+## 23. Report Abuse
+
+**Priority:** High
+**Status:** Not started
+
+### What
+Allow any user (authenticated or public) to flag a pet image or a pet profile as abusive — inappropriate content, pornographic images, or anything that violates community standards. A report should be reviewed by an administrator before any action is taken.
+
+### Why
+Once real user content is publicly browsable, the platform needs a moderation pathway. Without a reporting mechanism, there is no way for the community to surface harmful content to administrators for review.
+
+### Approach (high level)
+
+**UI:**
+- "Report" option on the pet card (accessible via a small flag icon or a kebab menu item on the Pet Detail page, visible to all users including guests)
+- A lightweight modal: reason dropdown (Inappropriate image, Pornography, Spam, Other) + optional free-text box + Submit
+- On submit: confirmation message ("Thanks — we'll review this shortly."); no further UI action
+
+**API (new endpoints):**
+- `POST /v1/pets/{id}/report` — body `{ reason, details? }`; open to all (no auth required); returns 204
+- `GET /v1/admin/reports` — admin-only; lists all reports with pet ID, reason, reporter IP/account, timestamp
+- `DELETE /v1/admin/reports/{id}` — admin dismisses a report
+- `DELETE /v1/admin/reports/{id}/pet` — admin dismisses the report and removes the pet
+
+**Domain/Persistence:**
+- New `Report` entity: `ReportId`, `PetId` (FK), `Reason` (enum or string), `Details` (nullable), `ReportedAt`, `ReporterAccountId` (nullable — guests can also report)
+- New `IReportRepository` + `ReportRepository`
+- Migration: `CreateReportsTable`
+
+**Admin UI:**
+- Reports list in the admin area showing flagged pets with thumbnail, reason, and date
+- One-click dismiss or remove-pet actions
+
+**Rate limiting / abuse prevention:**
+- Consider limiting reports to N per IP per hour to prevent report-bombing
+
+---
+
+## 30. Enforce Unique Likes Per User
+
+**Priority:** Medium
+**Status:** Not started — likes are currently a simple counter with no uniqueness enforcement
+
+### What
+Prevent a user from liking the same pet more than once. Currently the `POST /v1/pets/{id}/likes`
+endpoint increments the counter unconditionally — a user (or bot) can call it repeatedly to
+artificially inflate the count.
+
+### Why
+Without uniqueness enforcement, like counts are meaningless. A single user can pump up any
+pet's count without limit, which undermines the social proof value of the feature entirely.
+
+### Approach (high level)
+
+**Domain / Database:**
+- New `PetLike` entity: `PetLikeId` (`Guid`), `PetId` (FK → `Pets`), `OwnerId` (FK → `Owners`,
+  nullable — guests tracked separately), `CreatedAt`
+- For guest users (unauthenticated): track by a browser fingerprint stored in `localStorage`
+  or a server-issued anonymous session cookie, depending on the chosen approach
+- Unique index on `(PetId, OwnerId)` for authenticated likes to enforce the constraint at the DB level
+- New migration: `CreatePetLikesTable`
+- The `Pets.Likes` counter column can either be removed (derive the count from `PetLikes` rows)
+  or kept as a denormalised cache updated transactionally on each like/unlike
+
+**Backend:**
+- `POST /v1/pets/{id}/likes` — check for an existing `PetLike` row before inserting;
+  return `409 Conflict` (or silently ignore) if one already exists
+- `DELETE /v1/pets/{id}/likes` — delete the `PetLike` row; no-op if it does not exist
+- For authenticated owners: use `OwnerId` from the JWT claim as the unique identifier
+- For guests: decision needed — options are anonymous session cookie, localStorage token
+  passed in the request body, or simply restrict liking to authenticated users only
+
+**Frontend:**
+- Replace the current `localStorage` liked-state tracking with server-authoritative state:
+  on page load, call a new `GET /v1/pets/{id}/liked` endpoint (or include `isLikedByCurrentUser`
+  in the `PetDto`) so the heart icon reflects real state rather than browser memory
+- Remove the `liked` local state optimism for guests if guest liking is removed
+
+### Open questions
+- Should guest (unauthenticated) users be allowed to like at all? Restricting to authenticated
+  owners only is simpler and more trustworthy; allowing guests requires fingerprinting which is
+  easily circumvented.
+- Keep the denormalised `Likes` counter or always derive the count from `PetLikes` rows?
+  The counter is faster to read but adds update complexity and drift risk.
+
+---
+
+## 29. Per-Pet Visibility
+
+**Priority:** Medium
+**Status:** Not started — visibility is currently all-or-nothing at the owner level
+
+### What
+Allow owners to show or hide individual pets from the public gallery, rather than
+toggling all pets at once. The owner-level "Show in gallery" toggle would remain as
+a master switch, but each pet would also have its own visibility control.
+
+### Why
+An owner may want to share some pets publicly while keeping others private — for
+example, a recently adopted pet not yet ready to be featured, or a pet that has
+passed away that the owner wants to keep in their profile but not in the public browse.
+
+### Impact to assess before starting
+
+**Domain / Database:**
+- Add `IsVisible` (`bool`, default `true`) to the `Pet` entity
+- New migration: `AddPetIsVisible`
+- Setter method: `pet.SetIsVisible(bool isVisible)`
+
+**Backend:**
+- New endpoint: `PATCH /v1/pets/{id}/visibility` — body `{ isVisible: bool }` → 204
+- `BrowseRepository` filter needs updating: currently filters on `Owner.IsActive && Owner.IsVisible`;
+  must also add `Pet.IsVisible`
+- `GetPetByIdQuery` may need updating depending on whether hidden pets should be
+  accessible via direct URL (e.g. owner can still view, but not public)
+- Consider interaction with owner-level visibility: if the owner is hidden, all pets
+  are hidden regardless of individual pet visibility
+
+**Frontend:**
+- Per-pet visibility toggle in `ManagePetsPage` table row (or `EditPetModal`)
+- Visual indicator on pet rows showing hidden/visible state
+- Decide UX: inline toggle in the table vs. inside the edit modal
+
+### Open questions
+- Should a hidden pet still be accessible via its direct URL (`/pets/{id}`) to the owner?
+  Likely yes — owner should always be able to view their own pets.
+- Should the public get a 404 or a 403 when accessing a hidden pet's URL directly?
+  404 is safer — reveals less information about what exists.
+
+---
+
+## 28. Administrator Panel
+
+**Priority:** High — required before the app goes public
+**Status:** Not started — admin login endpoint exists; admin UI not started
+
+### What
+A dedicated admin area where authenticated administrators can manage owners and their
+content. Administrators are a separate account type from owners (different table, different
+JWT claims, different login endpoint).
+
+**Owner management:**
+- View all owners (name, username, email, registration date, active/visible status)
+- Toggle `IsActive` on an owner — setting `false` locks them out of the platform
+  (their pets are excluded from the public gallery via `BrowseRepository`)
+- Edit an owner's profile details
+- Reset an owner's password (for lost-password support requests)
+- Delete an owner and all their pets
+
+**Pet/image management:**
+- View all pets for a given owner with their gallery images
+- Delete individual pet images
+- Delete a pet entirely
+
+**Administrator account management:**
+- Create new administrator accounts
+- Change another administrator's password
+- Delete an administrator (cannot delete own account — enforced by API)
+
+### Why
+Once real users are on the platform, administrators need a way to manage accounts,
+handle support requests (e.g. lost password), and remove harmful content. Without this,
+the only option is direct database access.
+
+### Backend status
+- `POST /v1/auth/admin/login` — exists and tested
+- `GET /v1/owners` — exists (admin JWT required)
+- `GET /v1/admin/admins` — exists (admin JWT required)
+- `PATCH /v1/owners/{id}/visibility` — exists
+- Owner `IsActive` toggle endpoint — needs to be built
+- Admin pet/image management endpoints — need to be built
+
+### Frontend approach (high level)
+- Protected route: `/admin` — redirects to login if not authenticated as admin
+- The existing `LoginDialog` and `LoginPage` support admin login (checkbox is currently
+  disabled in `LoginDialog` — wire it up when this phase starts)
+- Admin layout separate from the owner shell: no public navbar, minimal chrome
+- Owner list with search/filter, status badges, action menus
+- Owner detail view: profile info + pet grid with image management
+
+### Note on BrowseRepository
+`BrowseRepository` intentionally filters by `IsActive && IsVisible` for the public gallery.
+Admin endpoints will use separate queries/repositories with no such filter applied —
+admins must be able to see all owners and pets regardless of visibility or active state.
+
+---
+
+## 27. Migrate JWT Storage from sessionStorage to HttpOnly Cookies
+
+**Priority:** Medium — address before the app handles sensitive user data or scales beyond a hobby audience
+**Status:** Not started — JWT currently stored in `sessionStorage`
+
+### What
+Replace `sessionStorage`-based JWT storage with a server-set HttpOnly cookie so the
+access token is never accessible to JavaScript. This is the OWASP-recommended approach
+for token storage in browser-based applications.
+
+### Why
+`sessionStorage` (and `localStorage`) are readable by any JavaScript running on the page.
+A successful XSS attack — even a minor one via a third-party dependency — can exfiltrate
+the token and fully impersonate the user. An HttpOnly cookie cannot be read by JavaScript
+at all; the browser sends it automatically with every same-origin request and XSS has no
+path to the token value.
+
+### Approach (high level)
+
+**Backend:**
+- On successful login, set the JWT as an HttpOnly, Secure, SameSite=Strict cookie
+  (`Set-Cookie: barkfest_auth=<jwt>; HttpOnly; Secure; SameSite=Strict; Path=/`)
+- The response body can still return `accountId` and `expiresAt` for the UI to initialise
+  `AuthContext` (account type, avatar, etc.) — just not the token itself
+- `POST /v1/auth/logout` clears the cookie by setting it with `Max-Age=0`
+- All authenticated endpoints continue to accept Bearer tokens for API clients (Scalar,
+  integration tests) — the cookie takes precedence for browser sessions
+
+**Frontend:**
+- Remove `barkfest_token` from `sessionStorage` and from `AuthContext` state
+- Remove `setAuthToken` / `Authorization` header injection from `api.ts` — the browser
+  sends the cookie automatically; fetch calls need `credentials: 'include'`
+- `AuthContext` retains `accountId`, `accountType`, and `profileImageBlobName` in
+  `sessionStorage` (these are not sensitive — they drive UI only, not access)
+- On reload, non-sensitive fields restore from `sessionStorage` as today; authenticated
+  API calls work immediately because the cookie is present
+
+**CSRF mitigation:**
+- `SameSite=Strict` is the primary CSRF defence for same-origin SPAs
+- If cross-origin requests are ever needed, add a CSRF token header check
+
+### Note on Roadmap item 15
+Item 15 (Rolling JWT Expiry) also proposes HttpOnly cookies for the refresh token. These
+two items should be implemented together in a single phase — migrating the access token
+to a cookie and introducing a refresh token cookie at the same time avoids doing the
+backend auth plumbing twice.

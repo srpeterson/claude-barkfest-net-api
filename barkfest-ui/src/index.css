@@ -133,6 +133,13 @@
     --sidebar-ring:        oklch(0.65 0.165 32);
 }
 
+/* ── Opacity helpers not covered by Tailwind utilities in inline styles ── */
+:root {
+    --primary-10: color-mix(in srgb, var(--primary) 10%, transparent);
+    --primary-20: color-mix(in srgb, var(--primary) 20%, transparent);
+    --primary-30: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
@@ -159,4 +166,46 @@
 
 .animate-fade-in-up {
     animation: fade-in-up 0.4s ease-out both;
+}
+
+@keyframes dialog-appear {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-dialog-appear {
+    animation: dialog-appear 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+@keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+.animate-sheet-in {
+    animation: sheet-in 0.35s cubic-bezier(0.34, 1, 0.64, 1) both;
+}
+
+@keyframes drawer-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+
+.animate-drawer-in {
+    animation: drawer-in 0.32s cubic-bezier(0.34, 1, 0.64, 1) both;
+}
+
+@keyframes backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.animate-backdrop-in {
+    animation: backdrop-in 0.25s ease both;
 }

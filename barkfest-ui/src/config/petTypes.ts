@@ -8,3 +8,5 @@ export const PET_TYPE_LABELS: Record<string, string> = {
 export function getPetTypeLabel(apiValue: string): string {
   return PET_TYPE_LABELS[apiValue] ?? apiValue
 }
+
+export const MAX_PETS_PER_OWNER = 10

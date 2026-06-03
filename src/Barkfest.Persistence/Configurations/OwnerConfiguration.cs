@@ -48,7 +48,7 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
         builder.Property(o => o.VerificationToken)
             .IsRequired(false);
 
-        builder.Property(o => o.Active)
+        builder.Property(o => o.IsActive)
             .IsRequired()
             .HasDefaultValue(true);
 

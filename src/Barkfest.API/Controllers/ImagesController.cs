@@ -20,6 +20,7 @@ public class ImagesController(IBlobStorageService blobStorageService) : Controll
             return NotFound();
 
         var stream = await blobStorageService.DownloadAsync(containerName, blobName, cancellationToken);
+        Response.Headers.CacheControl = "no-store";
         return File(stream, GetContentType(blobName));
     }
 

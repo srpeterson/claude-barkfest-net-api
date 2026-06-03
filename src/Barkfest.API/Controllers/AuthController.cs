@@ -2,6 +2,7 @@ using Barkfest.Application.Features.Auth.Commands.AdminLogin;
 using Barkfest.Application.Features.Auth.Commands.Login;
 using Barkfest.Application.Features.Auth.Commands.Register;
 using Barkfest.Application.Features.Auth.Queries.CheckDisplayName;
+using Barkfest.Application.Features.Auth.Queries.CheckUsername;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,13 @@ public class AuthController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> CheckDisplayName([FromQuery] string value, CancellationToken cancellationToken)
     {
         var available = await mediator.Send(new CheckDisplayNameQuery(value), cancellationToken);
+        return Ok(new { available });
+    }
+
+    [HttpGet("check-username")]
+    public async Task<IActionResult> CheckUsername([FromQuery] string value, CancellationToken cancellationToken)
+    {
+        var available = await mediator.Send(new CheckUsernameQuery(value), cancellationToken);
         return Ok(new { available });
     }
 

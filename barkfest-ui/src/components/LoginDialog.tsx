@@ -1,32 +1,31 @@
-import { useEffect, useState } from 'react'
-import { Eye, EyeOff, Loader2, PawPrint, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
+import { BarkfestMark } from '@/components/BarkfestMark'
 
 export function LoginDialog() {
-  const { dialog, closeDialog, openRegisterDialog, signIn } = useAuth()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const allFieldsFilled = username.trim() !== '' && password !== ''
-
-  useEffect(() => {
-    if (dialog !== 'login') {
-      setUsername('')
-      setPassword('')
-      setShowPassword(false)
-      setError(null)
-    }
-  }, [dialog])
-
+  const { dialog } = useAuth()
   if (dialog !== 'login') return null
+  return <LoginDialogInner />
+}
 
-  async function handleSubmit(e: React.FormEvent) {
+function LoginDialogInner() {
+  const { closeDialog, signIn } = useAuth()
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError]               = useState<string | null>(null)
+  const [isLoading, setIsLoading]       = useState(false)
+  const isAdmin = false
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    // Read directly from the DOM — captures autofilled values that bypass onChange
+    const username = usernameRef.current?.value.trim() ?? ''
+    const password = passwordRef.current?.value ?? ''
+    if (!username || !password) return
+
     setError(null)
     setIsLoading(true)
     try {
@@ -55,14 +54,11 @@ export function LoginDialog() {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-    >
-      <div
-        className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8"
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8">
         <button
           onClick={closeDialog}
+          aria-label="Close"
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-5 h-5" />
@@ -70,11 +66,11 @@ export function LoginDialog() {
 
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <PawPrint className="w-6 h-6 text-primary" />
-            <span className="font-heading text-lg font-semibold tracking-tight">Barkfest</span>
+            <BarkfestMark size={22} />
+            <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
           </div>
-          <h2 className="font-heading text-2xl font-bold">Welcome back!</h2>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to share your pet's story.</p>
+          <h2 className="font-heading text-2xl font-bold">Time to sign back in.</h2>
+          <p className="text-sm text-muted-foreground mt-1">You've been away a while — sign in to pick up where you left off.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,14 +79,14 @@ export function LoginDialog() {
               Username <span className="text-destructive">*</span>
             </label>
             <input
+              ref={usernameRef}
               id="login-username"
               type="text"
               autoComplete="username"
               placeholder="Your username"
               required
+              autoFocus
               maxLength={25}
-              value={username}
-              onChange={e => setUsername(e.target.value)}
               className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 placeholder:text-muted-foreground"
             />
           </div>
@@ -101,18 +97,18 @@ export function LoginDialog() {
             </label>
             <div className="relative">
               <input
+                ref={passwordRef}
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
                 maxLength={50}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
                 className="w-full h-11 rounded-xl border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -120,40 +116,38 @@ export function LoginDialog() {
             </div>
           </div>
 
-          {/* Hidden until admin UI is part of the MVP — remove `hidden` to restore */}
-          <label className="hidden flex items-center gap-2 cursor-pointer select-none">
+          {/* Admin checkbox — visible but disabled per design spec (admin login via Scalar) */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, opacity: 0.4, cursor: 'not-allowed', userSelect: 'none' }}>
             <input
               type="checkbox"
-              checked={isAdmin}
-              onChange={e => setIsAdmin(e.target.checked)}
-              className="w-4 h-4 rounded border-input accent-primary cursor-pointer"
+              disabled
+              style={{ width: 16, height: 16, borderRadius: 4, accentColor: 'var(--primary)', cursor: 'not-allowed' }}
             />
             <span className="text-sm text-muted-foreground">I am an Administrator</span>
           </label>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={isLoading || !allFieldsFilled}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Sign In
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeDialog}
+              disabled={isLoading}
+              className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-foreground text-sm font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Sign In
+            </button>
+          </div>
         </form>
 
-        {!isAdmin && (
-          <p className="text-center text-sm text-muted-foreground mt-5">
-            Don't have an account?{' '}
-            <button
-              onClick={openRegisterDialog}
-              className="text-primary font-medium hover:underline"
-            >
-              Join the barkfest!
-            </button>
-          </p>
-        )}
       </div>
     </div>
   )

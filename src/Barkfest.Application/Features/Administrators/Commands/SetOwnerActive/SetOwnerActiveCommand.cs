@@ -7,7 +7,7 @@ using MediatR;
 
 namespace Barkfest.Application.Features.Administrators.Commands.SetOwnerActive;
 
-public record SetOwnerActiveCommand(Guid OwnerId, bool Active) : IRequest;
+public record SetOwnerActiveCommand(Guid OwnerId, bool IsActive) : IRequest;
 
 public class SetOwnerActiveCommandHandler(
     IOwnerRepository ownerRepository,
@@ -25,7 +25,7 @@ public class SetOwnerActiveCommandHandler(
         if (owner is null)
             throw new NotFoundException(nameof(Owner), request.OwnerId);
 
-        owner.SetActive(request.Active);
+        owner.SetIsActive(request.IsActive);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }

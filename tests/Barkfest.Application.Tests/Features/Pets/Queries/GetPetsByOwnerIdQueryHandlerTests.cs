@@ -57,7 +57,7 @@ public class GetPetsByOwnerIdQueryHandlerTests
     public async Task Handle_When_OwnerIsInactive_Throws_NotFoundException()
     {
         var owner = new OwnerBuilder().Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         // IsAdmin returns false by default (NSubstitute default for bool)
 
@@ -70,7 +70,7 @@ public class GetPetsByOwnerIdQueryHandlerTests
     public async Task Handle_When_OwnerIsInactive_And_CallerIsAdmin_Returns_Pets()
     {
         var owner = new OwnerBuilder().Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         var pets = new[] { new PetBuilder().WithOwnerId(owner.Id).Build() };
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         _petRepository.GetByOwnerIdAsync(owner.Id, CancellationToken.None).Returns(pets);

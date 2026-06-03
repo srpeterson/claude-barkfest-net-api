@@ -63,7 +63,7 @@ public class LoginCommandHandlerTests
     public async Task Handle_When_OwnerIsInactive_Throws_ForbiddenException()
     {
         var owner = new OwnerBuilder().WithUsername("inactive").Build();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
         _ownerRepository.GetByUsernameAsync("inactive", CancellationToken.None).Returns(owner);
         _passwordHasher.Verify("pass123", owner.PasswordHash).Returns(true);
 

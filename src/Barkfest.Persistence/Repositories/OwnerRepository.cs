@@ -24,6 +24,9 @@ public class OwnerRepository(AppDbContext context) : IOwnerRepository
         return !isTaken;
     }
 
+    public async Task<bool> IsUsernameAvailableAsync(string username, CancellationToken cancellationToken = default) =>
+        !await context.Owners.AnyAsync(o => o.Username == username.Trim(), cancellationToken);
+
     public async Task<IEnumerable<Owner>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await context.Owners.ToListAsync(cancellationToken);
 

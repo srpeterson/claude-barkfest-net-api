@@ -435,36 +435,36 @@ public class OwnerTests
     }
 
     // -----------------------------------------------------------------------
-    // SetActive
+    // SetIsActive
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SetActive_When_SetToFalse_Sets_ActiveFalse()
+    public void SetIsActive_When_SetToFalse_Sets_IsActiveFalse()
     {
         var owner = new Owner();
 
-        owner.SetActive(false);
+        owner.SetIsActive(false);
 
-        owner.Active.ShouldBeFalse();
+        owner.IsActive.ShouldBeFalse();
     }
 
     [Fact]
-    public void SetActive_When_SetToTrue_Sets_ActiveTrue()
+    public void SetIsActive_When_SetToTrue_Sets_IsActiveTrue()
     {
         var owner = new Owner();
-        owner.SetActive(false);
+        owner.SetIsActive(false);
 
-        owner.SetActive(true);
+        owner.SetIsActive(true);
 
-        owner.Active.ShouldBeTrue();
+        owner.IsActive.ShouldBeTrue();
     }
 
     [Fact]
-    public void NewOwner_When_Instantiated_Returns_ActiveTrue()
+    public void NewOwner_When_Instantiated_Returns_IsActiveTrue()
     {
         var owner = new Owner();
 
-        owner.Active.ShouldBeTrue();
+        owner.IsActive.ShouldBeTrue();
     }
 
     // -----------------------------------------------------------------------

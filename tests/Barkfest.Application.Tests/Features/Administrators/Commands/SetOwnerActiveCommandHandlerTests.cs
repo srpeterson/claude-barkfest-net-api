@@ -34,7 +34,7 @@ public class SetOwnerActiveCommandHandlerTests
         await _setOwnerActiveCommandHandler.Handle(
             new SetOwnerActiveCommand(ownerId, active), CancellationToken.None);
 
-        owner.Active.ShouldBe(active);
+        owner.IsActive.ShouldBe(active);
         await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
     }
 

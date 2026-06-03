@@ -4,7 +4,11 @@ import type { OwnerDto, UpdateOwnerRequest } from '@/types/owner'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
-let authToken: string | null = null
+// Initialise from sessionStorage at module load so the token is available
+// before React mounts and fires its first useEffect. Without this, queries
+// that run on the first render go out unauthenticated, receive a 401, and
+// trigger the unauthorised handler — logging the user out on every page reload.
+let authToken: string | null = sessionStorage.getItem('barkfest_token')
 let unauthorizedHandler: (() => void) | null = null
 
 export function setAuthToken(token: string | null) {
@@ -37,6 +41,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
+    cache: 'no-store',
     headers,
   })
 
@@ -114,6 +119,13 @@ export async function checkDisplayName(value: string): Promise<boolean> {
   return result.available
 }
 
+export async function checkUsername(value: string): Promise<boolean> {
+  const result = await request<{ available: boolean }>(
+    `/v1/auth/check-username?value=${encodeURIComponent(value)}`
+  )
+  return result.available
+}
+
 export function logout(): Promise<void> {
   return request<void>('/v1/auth/logout', { method: 'POST' })
 }
@@ -175,7 +187,7 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.()
-      throw new Error('Unauthorized')
+      throw new ApiError('Unauthorized', 401)
     }
     const text = await response.text()
     let message = `HTTP ${response.status}`
@@ -183,7 +195,7 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
       const problem = JSON.parse(text)
       message = problem.detail || problem.title || message
     } catch { /* use status code fallback */ }
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
 
   const text = await response.text()
@@ -210,7 +222,7 @@ export async function createPet(data: CreatePetRequest): Promise<string> {
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.()
-      throw new Error('Unauthorized')
+      throw new ApiError('Unauthorized', 401)
     }
     const text = await response.text()
     let message = `HTTP ${response.status}`
@@ -218,7 +230,7 @@ export async function createPet(data: CreatePetRequest): Promise<string> {
       const problem = JSON.parse(text)
       message = problem.detail || problem.title || message
     } catch { /* use status code fallback */ }
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
 
   const location = response.headers.get('Location')
@@ -259,4 +271,88 @@ export function uploadOwnerProfileImage(id: string, file: File): Promise<void> {
 
 export function removeOwnerProfileImage(id: string): Promise<void> {
   return request<void>(`/v1/owners/${id}/profile-image`, { method: 'DELETE' })
+}
+
+// ── Pet Detail API ────────────────────────────────────────────────────────
+
+// Mirrors Barkfest.Application.Features.Pets.DTOs.PetImageDto
+export interface PetImageDto {
+  petImageId: string
+  blobName: string
+  contentType: string
+  isFeaturedImage: boolean
+  displayOrder: number
+  createdAt: string
+}
+
+// Mirrors Barkfest.Application.Features.Pets.DTOs.PetDto
+// Returned by GET /v1/pets/{id} and GET /v1/owners/{id}/pets
+export interface PetDto {
+  petId: string
+  name: string
+  description?: string
+  dateOfBirth?: string
+  age?: number
+  petType: string
+  breed?: string
+  images: PetImageDto[]
+  ownerId: string
+  createdAt: string
+  likes: number
+}
+
+export function getPetDetail(petId: string): Promise<PetDto> {
+  return request<PetDto>(`/v1/pets/${petId}`)
+}
+
+export interface UpdatePetRequest {
+  name: string
+  petTypeValue: number
+  breedValue: number
+  dateOfBirth?: string
+  description?: string
+}
+
+export function updatePet(petId: string, data: UpdatePetRequest): Promise<void> {
+  return request<void>(`/v1/pets/${petId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deletePet(petId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}`, { method: 'DELETE' })
+}
+
+export function likePet(petId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}/likes`, { method: 'POST' })
+}
+
+export function unlikePet(petId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}/likes`, { method: 'DELETE' })
+}
+
+export function getOwnerPets(ownerId: string): Promise<PetDto[]> {
+  return request<PetDto[]>(`/v1/owners/${ownerId}/pets`)
+}
+
+export function changePassword(ownerId: string, currentPassword: string, newPassword: string): Promise<void> {
+  return request<void>(`/v1/owners/${ownerId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}
+
+// PATCH /v1/owners/{id}/visibility  body: { isVisible: boolean }  →  204 No Content
+// When isVisible=false the owner's pets are excluded from the public browse gallery (server-side).
+export function setOwnerVisibility(ownerId: string, isVisible: boolean): Promise<void> {
+  return request<void>(`/v1/owners/${ownerId}/visibility`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isVisible }),
+  })
+}
+
+// DELETE /v1/pets/{petId}/images/{imageId}
+export function removePetImage(petId: string, imageId: string): Promise<void> {
+  return request<void>(`/v1/pets/${petId}/images/${imageId}`, { method: 'DELETE' })
 }

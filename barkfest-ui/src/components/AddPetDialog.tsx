@@ -5,11 +5,11 @@ import {
   ChevronRight,
   Loader2,
   Minus,
-  PawPrint,
   Plus,
   Star,
   X,
 } from 'lucide-react'
+import { BarkfestMark } from '@/components/BarkfestMark'
 import { cn } from '@/lib/utils'
 import { DropZone } from '@/components/ui/DropZone'
 import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
@@ -129,13 +129,14 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
 
         {/* Header */}
         <div className="flex items-center gap-2 px-6 pt-6 pb-0">
-          <PawPrint className="w-5 h-5 text-primary" />
-          <span className="font-heading text-lg font-semibold tracking-tight">
+          <BarkfestMark size={22} />
+          <span className="font-heading font-bold" style={{ fontSize: '17px' }}>
             {step === 1 ? 'Add your furry friend' : `Time to shine, ${name}!`}
           </span>
           <button
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close"
             className="absolute top-5 right-5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
           >
             <X className="w-5 h-5" />
@@ -173,7 +174,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <PetTypeBreedFormFields
                 petTypeValue={petTypeValue}
                 onPetTypeChange={handlePetTypeChange}
@@ -186,7 +187,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <label className="text-sm font-semibold block">
                 How old is {name.trim() || 'your pet'}? <span className="text-destructive">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
                 {/* ── Date of birth column ── */}
                 <div className="space-y-1.5">
@@ -303,7 +304,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline"
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
@@ -339,7 +340,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                 getRootProps={getRootProps}
                 getInputProps={getInputProps}
                 isDragActive={isDragActive}
-                hint={`JPG or PNG · up to ${MAX_IMAGES - images.length} more`}
+                hint={`JPG or PNG · max 10 MB · up to ${MAX_IMAGES - images.length} more`}
               />
             )}
 
@@ -373,6 +374,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                       type="button"
                       onClick={e => { e.stopPropagation(); removeImage(i) }}
                       disabled={isSubmitting}
+                      aria-label="Remove photo"
                       className="absolute top-1.5 right-1.5 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80 transition-colors disabled:opacity-40"
                     >
                       <X className="w-3 h-3" />
@@ -401,7 +403,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                 type="button"
                 onClick={() => { setStep(1); setError(null); setUploadError(null) }}
                 disabled={isSubmitting}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline disabled:opacity-50"
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50"
               >
                 Back
               </button>

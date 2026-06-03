@@ -12,9 +12,8 @@ interface AuthContextValue extends AuthState {
   signIn: (accountId: string, accountType: 'owner' | 'admin', token: string, profileImageBlobName?: string | null) => void
   signOut: () => void
   setProfileImage: (blobName: string | null) => void
-  dialog: 'login' | 'register' | null
+  dialog: 'login' | null
   openLoginDialog: () => void
-  openRegisterDialog: () => void
   closeDialog: () => void
 }
 
@@ -28,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: sessionStorage.getItem('barkfest_token'),
     profileImageBlobName: sessionStorage.getItem('barkfest_profile_image'),
   })
-  const [dialog, setDialog] = useState<'login' | 'register' | null>(null)
+  const [dialog, setDialog] = useState<'login' | null>(null)
 
   function signIn(accountId: string, accountType: 'owner' | 'admin', token: string, profileImageBlobName: string | null = null) {
     sessionStorage.setItem('barkfest_authenticated', 'true')
@@ -65,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfileImage,
       dialog,
       openLoginDialog: () => setDialog('login'),
-      openRegisterDialog: () => setDialog('register'),
       closeDialog: () => setDialog(null),
     }}>
       {children}

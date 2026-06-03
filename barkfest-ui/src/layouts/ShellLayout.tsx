@@ -10,7 +10,7 @@ export function ShellLayout() {
   async function handleSignOut() {
     await logout()
     signOut()
-    navigate('/')
+    navigate('/login?signed-out=true')
   }
 
   return (
@@ -22,7 +22,6 @@ export function ShellLayout() {
             <span className="font-heading text-lg font-semibold tracking-tight">Barkfest</span>
           </Link>
           <nav className="flex gap-4 text-sm font-medium text-muted-foreground">
-            <Link to="/owners" className="hover:text-foreground transition-colors">Owners</Link>
             <Link to="/pets" className="hover:text-foreground transition-colors">Pets</Link>
           </nav>
         </div>

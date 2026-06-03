@@ -285,6 +285,43 @@ public class AuthControllerTests(BarkfestApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
+    // GET /v1/auth/check-username
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task CheckUsername_When_UsernameIsAvailable_Returns_Ok_WithAvailableTrue()
+    {
+        var response = await _client.GetAsync($"/v1/auth/check-username?value=unique{Guid.NewGuid():N}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("available").GetBoolean().ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task CheckUsername_When_UsernameIsTaken_Returns_Ok_WithAvailableFalse()
+    {
+        var username = $"user{Guid.NewGuid():N}";
+        await _client.PostAsJsonAsync("/v1/auth/register", new
+        {
+            username,
+            firstName = "Test",
+            lastName = "User",
+            email = $"taken-un-{Guid.NewGuid():N}@example.com",
+            phoneNumber = (string?)null,
+            password = "SecurePass1!"
+        });
+
+        var response = await _client.GetAsync($"/v1/auth/check-username?value={Uri.EscapeDataString(username)}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("available").GetBoolean().ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
     // POST /v1/auth/logout
     // -----------------------------------------------------------------------
 

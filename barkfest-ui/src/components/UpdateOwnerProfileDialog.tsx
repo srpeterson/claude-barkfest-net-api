@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { flushSync } from 'react-dom'
 import isEmail from 'validator/lib/isEmail'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Loader2, PawPrint, Upload, UserCircle, X } from 'lucide-react'
+import { ChevronRight, Loader2, Upload, UserCircle, X } from 'lucide-react'
+import { BarkfestMark } from '@/components/BarkfestMark'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { useDropzone } from 'react-dropzone'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -47,6 +49,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   // Display name availability check
   const [displayNameAvailable, setDisplayNameAvailable] = useState<boolean | null>(null)
   const [displayNameChecking, setDisplayNameChecking] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Step 2 — profile image ────────────────────────────────────────────
   const [existingBlobName, setExistingBlobName] = useState<string | null>(null)
@@ -59,6 +62,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   // ── Submission ────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   // ── Derived state ─────────────────────────────────────────────────────
   const displayNameStripped = displayName.replace(/\s/g, '')
@@ -105,20 +109,19 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   }, [accountId])
 
   // ── Display name availability check ──────────────────────────────────
-  useEffect(() => {
-    // Skip if empty, too short, or matches the saved value
-    if (!displayName.trim() || displayNameTooShort || !displayNameChanged) {
+  const checkDN = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.replace(/\s/g, '').length < 4 || trimmed === savedDisplayName.trim()) {
       setDisplayNameAvailable(null)
       setDisplayNameChecking(false)
       return
     }
-
     setDisplayNameAvailable(null)
-
-    const timer = setTimeout(async () => {
+    debounceRef.current = setTimeout(async () => {
       setDisplayNameChecking(true)
       try {
-        const available = await checkDisplayName(displayName)
+        const available = await checkDisplayName(trimmed)
         setDisplayNameAvailable(available)
       } catch {
         setDisplayNameAvailable(null)
@@ -126,9 +129,11 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         setDisplayNameChecking(false)
       }
     }, 500)
+  }, [savedDisplayName])
 
-    return () => clearTimeout(timer)
-  }, [displayName])
+  useEffect(() => {
+    checkDN(displayName)
+  }, [displayName, checkDN])
 
   // ── Revoke object URL on unmount ──────────────────────────────────────
   useEffect(() => {
@@ -202,10 +207,13 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         await uploadOwnerProfileImage(accountId, newImageFile)
         // Re-fetch to get the server-assigned blob name
         const updated = await getOwnerById(accountId)
-        setProfileImage(updated.profileImage?.blobName ?? null)
+        const newBlobName = updated.profileImage?.blobName ?? null
+        setProfileImage(newBlobName)
+        queryClient.setQueryData(['owner', accountId, 'profile-image'], newBlobName)
       } else if (imageCleared && existingBlobName) {
         await removeOwnerProfileImage(accountId)
         setProfileImage(null)
+        queryClient.setQueryData(['owner', accountId, 'profile-image'], null)
       }
       // No image change — context unchanged
 
@@ -230,6 +238,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-sm bg-card rounded-3xl shadow-2xl p-8">
 
@@ -237,6 +246,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         <button
           onClick={onClose}
           disabled={isSubmitting}
+          aria-label="Close"
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
           <X className="w-5 h-5" />
@@ -245,8 +255,8 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <PawPrint className="w-6 h-6 text-primary" />
-            <span className="font-heading text-lg font-semibold tracking-tight">Barkfest</span>
+            <BarkfestMark size={22} />
+            <span className="font-heading font-bold" style={{ fontSize: '17px' }}>Barkfest</span>
           </div>
           <h2 className="text-2xl font-bold">
             {step === 1 ? 'Your Barkfest Profile' : 'Put a face to the name.'}
@@ -349,11 +359,21 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
               )}
             </div>
 
+            {/* Change password link */}
+            <button
+              type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              className="text-sm font-medium hover:underline transition-opacity hover:opacity-80"
+              style={{ color: 'var(--primary)' }}
+            >
+              Change password →
+            </button>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline"
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
@@ -385,6 +405,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                     type="button"
                     onClick={handleClearImage}
                     disabled={isSubmitting}
+                    aria-label="Remove photo"
                     className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors flex items-center justify-center shadow-sm disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -406,7 +427,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
                   {isDragActive
                     ? <Upload className="w-7 h-7 text-primary" />
-                    : <UserCircle className="w-10 h-10 text-muted-foreground" />
+                    : <UserCircle className="w-10 h-10 text-primary" />
                   }
                 </div>
                 <div>
@@ -431,7 +452,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 type="button"
                 onClick={() => { setStep(1); setSubmitError(null); setImageError(null) }}
                 disabled={isSubmitting}
-                className="flex-1 h-11 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline disabled:opacity-50"
+                className="flex-1 h-11 rounded-xl border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50"
               >
                 Back
               </button>
@@ -453,6 +474,11 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         )}
       </div>
     </div>
+
+    {changePasswordOpen && (
+      <ChangePasswordDialog onClose={() => setChangePasswordOpen(false)} />
+    )}
+  </>
   )
 }
 
@@ -481,7 +507,7 @@ function ProfileField({ label, id, type = 'text', required, maxLength, placehold
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
+        className="w-full h-11 rounded-xl border-[1.5px] border-border bg-background text-foreground px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground transition"
       />
     </div>
   )

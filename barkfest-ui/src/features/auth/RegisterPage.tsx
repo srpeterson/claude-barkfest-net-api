@@ -1,50 +1,129 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Loader2, PawPrint } from 'lucide-react'
+import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
-import { login, register } from '@/lib/api'
+import { checkDisplayName, checkUsername, login, register } from '@/lib/api'
+import { BarkfestMark } from '@/components/BarkfestMark'
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
-const STRENGTH_COLORS = [
-  'bg-destructive',
-  'bg-orange-400',
-  'bg-yellow-400',
-  'bg-accent',
-  'bg-green-500',
+const STRENGTH_BG     = ['bg-[#e5484d]', 'bg-[#f76b15]', 'bg-[#d4a017]', 'bg-accent', 'bg-accent']
+const STRENGTH_TEXT   = ['text-[#e5484d]', 'text-[#f76b15]', 'text-[#d4a017]', 'text-accent', 'text-accent']
+
+const PET_IMAGES = [
+  'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=120&h=120&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=120&h=120&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=120&h=120&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=120&h=120&fit=crop&auto=format',
+  'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=120&h=120&fit=crop&auto=format',
 ]
 
+const inputCls = [
+  'w-full h-[46px] rounded-xl border-[1.5px] border-border',
+  'bg-card text-foreground px-3.5 text-sm',
+  'outline-none box-border transition',
+  'focus:border-primary focus:ring-2 focus:ring-primary/30',
+].join(' ')
+
+type UnStatus = 'idle' | 'checking' | 'available' | 'taken'
+type DnStatus = 'idle' | 'checking' | 'available' | 'taken'
+
 interface FormState {
-  username: string
   firstName: string
   lastName: string
   email: string
-  phoneNumber: string
+  username: string
+  displayName: string
   password: string
+  confirmPassword: string
 }
 
 export function RegisterPage() {
   const navigate = useNavigate()
   const { signIn } = useAuth()
-  const [form, setForm] = useState<FormState>({
-    username: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-  })
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
 
-  const strength = zxcvbn(form.password)
+  const [form, setForm] = useState<FormState>({
+    firstName: '', lastName: '', email: '', username: '',
+    displayName: '', password: '', confirmPassword: '',
+  })
+  const [showPw, setShowPw]       = useState(false)
+  const [unStatus, setUnStatus]   = useState<UnStatus>('idle')
+  const [dnStatus, setDnStatus]   = useState<DnStatus>('idle')
+  const [error, setError]         = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const debounceUnRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const strength   = zxcvbn(form.password)
+  const emailBad   = form.email.trim() !== '' && !EMAIL_REGEX.test(form.email.trim())
+  const unTooShort = form.username.trim().length > 0 && form.username.trim().length < 5
+  const dnStripped = form.displayName.replace(/\s/g, '')
+  const dnTooShort = dnStripped.length > 0 && dnStripped.length < 4
+  const pwMismatch = form.confirmPassword !== '' && form.password !== form.confirmPassword
+  const pwWeak     = form.password.length > 0 && strength.score < 2
+
+  const canSubmit =
+    form.firstName.trim() &&
+    form.lastName.trim() &&
+    form.email.trim() &&
+    !emailBad &&
+    form.username.trim() &&
+    !unTooShort &&
+    unStatus === 'available' &&
+    form.displayName.trim() &&
+    !dnTooShort &&
+    dnStatus === 'available' &&
+    form.password &&
+    !pwWeak &&
+    form.confirmPassword &&
+    !pwMismatch &&
+    !isLoading
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setForm(f => ({ ...f, [name]: value }))
   }
 
-  async function handleSubmit(e: FormEvent) {
+  const checkUN = useCallback((value: string) => {
+    if (debounceUnRef.current) clearTimeout(debounceUnRef.current)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.length < 5) { setUnStatus('idle'); return }
+    setUnStatus('checking')
+    debounceUnRef.current = setTimeout(async () => {
+      try {
+        const available = await checkUsername(trimmed)
+        setUnStatus(available ? 'available' : 'taken')
+      } catch {
+        setUnStatus('idle')
+      }
+    }, 500)
+  }, [])
+
+  useEffect(() => { checkUN(form.username) }, [form.username, checkUN])
+
+  const checkDN = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.replace(/\s/g, '').length < 4) { setDnStatus('idle'); return }
+    setDnStatus('checking')
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const available = await checkDisplayName(trimmed)
+        setDnStatus(available ? 'available' : 'taken')
+      } catch {
+        setDnStatus('idle')
+      }
+    }, 500)
+  }, [])
+
+  useEffect(() => { checkDN(form.displayName) }, [form.displayName, checkDN])
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!canSubmit) return
     setError(null)
     setIsLoading(true)
     try {
@@ -53,127 +132,328 @@ export function RegisterPage() {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
-        phoneNumber: form.phoneNumber || undefined,
         password: form.password,
+        displayName: form.displayName.trim(),
       })
       const result = await login(form.username, form.password)
       signIn(result.accountId, 'owner', result.accessToken)
-      navigate('/owners')
+      navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed.')
+      setError(err instanceof Error ? err.message : 'Registration failed. Check your details and try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-20 right-10 w-56 h-56 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="flex min-h-screen">
 
-      <div className="relative w-full max-w-sm">
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <PawPrint className="w-8 h-8 text-primary" />
-            <span className="font-heading text-2xl font-semibold tracking-tight">Barkfest</span>
-          </Link>
-          <h1 className="font-heading text-3xl font-bold">Create account</h1>
-          <p className="text-sm text-muted-foreground">Join the Barkfest community</p>
+      {/* ── Brand panel — 42%, hidden ≤680px ── */}
+      <div className="brand-panel w-[42%] min-h-screen bg-primary flex flex-col p-[40px_48px] sticky top-0 self-start">
+
+        {/* Logo */}
+        <div className="flex items-center gap-2.5">
+          <BarkfestMark size={32} inverted />
+          <span className="font-heading text-xl font-bold text-white tracking-[-0.02em]">Barkfest</span>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl shadow-sm p-8 space-y-5">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="Username" id="username" name="username" autoComplete="username" required value={form.username} onChange={handleChange} />
+        {/* Headline */}
+        <div className="mt-14">
+          <h1 className="font-heading font-bold text-white leading-[1.2] mb-4 text-[clamp(28px,3vw,40px)]">
+            Every pet has a<br />story to tell.
+          </h1>
+          <p className="text-[15px] text-white/75 leading-relaxed max-w-[300px] m-0">
+            Join a community of pet lovers sharing photos, stories, and the everyday magic of life with pets.
+          </p>
+        </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="First name" id="firstName" name="firstName" autoComplete="given-name" required value={form.firstName} onChange={handleChange} />
-              <Field label="Last name" id="lastName" name="lastName" autoComplete="family-name" required value={form.lastName} onChange={handleChange} />
+        {/* Testimonial card */}
+        <div className="mt-10 p-5 bg-white/[0.12] rounded-2xl">
+          <p className="text-[13px] text-white/85 leading-relaxed italic mb-3.5">
+            "Finally a place to share my dog's daily shenanigans without it getting lost in a general social feed."
+          </p>
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/pets/pet-6.jpg"
+              alt=""
+              className="w-8 h-8 rounded-full object-cover border-2 border-white/40"
+            />
+            <div>
+              <p className="text-xs font-semibold text-white m-0">Stephen P.</p>
+              <p className="text-[11px] text-white/60 m-0">Tascha's dad · joined 2026</p>
             </div>
+          </div>
+        </div>
 
-            <Field label="Email" id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={handleChange} />
-
-            <Field label="Phone (optional)" id="phoneNumber" name="phoneNumber" type="tel" autoComplete="tel" value={form.phoneNumber} onChange={handleChange} placeholder="+15555550100" />
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="password">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={form.password}
-                onChange={handleChange}
-                className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40"
-              />
-              {form.password && (
-                <div className="space-y-1 pt-0.5">
-                  <div className="flex gap-1">
-                    {[0, 1, 2, 3].map(i => (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded-full transition-colors ${
-                          i < strength.score ? STRENGTH_COLORS[strength.score] : 'bg-border'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">{STRENGTH_LABELS[strength.score]}</p>
-                </div>
-              )}
-            </div>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create Account
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary font-medium hover:underline">
-              Sign in
-            </Link>
+        {/* Pet strip */}
+        <div className="flex mt-auto pt-8">
+          <div className="flex items-center">
+            {PET_IMAGES.map((src, i) => (
+              <div
+                key={i}
+                className="w-[52px] h-[52px] rounded-full overflow-hidden border-[2.5px] border-white/50 shrink-0"
+                style={{ marginLeft: i === 0 ? 0 : -14 }}
+              >
+                <img src={src} alt="" className="w-full h-full object-cover block" />
+              </div>
+            ))}
+          </div>
+          <p className="ml-3.5 text-[13px] text-white/75 self-center">
+            Join a community of pet lovers already making their pets famous
           </p>
         </div>
       </div>
+
+      {/* ── Form panel ── */}
+      <div className="flex-1 flex flex-col items-center px-10 pt-20 pb-16 overflow-y-auto">
+
+        {/* Back link */}
+        <div className="w-full max-w-[420px]">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground no-underline mb-8 transition-colors hover:text-foreground"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            Back to Barkfest
+          </Link>
+        </div>
+
+        <div className="w-full max-w-[420px]">
+          {/* Mobile logo */}
+          <div className="mobile-auth-header hidden items-center gap-2.5 mb-7">
+            <BarkfestMark size={28} />
+            <span className="font-heading text-[18px] font-bold">Barkfest</span>
+          </div>
+
+          {/* Heading */}
+          <div className="mb-8">
+            <h2 className="font-heading font-bold mb-1.5 text-[clamp(22px,2.5vw,30px)]">
+              Create your account
+            </h2>
+            <p className="text-sm text-muted-foreground m-0">
+              Already have one?{' '}
+              <Link to="/login" className="text-primary font-semibold no-underline">Sign in</Link>
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} noValidate>
+
+            {/* First / Last name */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-[18px]">
+              <div>
+                <label htmlFor="r-fn" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                  First name <Required />
+                </label>
+                <input
+                  id="r-fn" name="firstName" type="text"
+                  autoComplete="given-name" maxLength={50} autoFocus
+                  placeholder="Jane"
+                  value={form.firstName} onChange={handleChange}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label htmlFor="r-ln" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                  Last name <Required />
+                </label>
+                <input
+                  id="r-ln" name="lastName" type="text"
+                  autoComplete="family-name" maxLength={100}
+                  placeholder="Doe"
+                  value={form.lastName} onChange={handleChange}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="mb-[18px]">
+              <label htmlFor="r-em" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Email <Required />
+              </label>
+              <input
+                id="r-em" name="email" type="email"
+                autoComplete="email" maxLength={75}
+                placeholder="you@example.com"
+                value={form.email} onChange={handleChange}
+                className={inputCls}
+              />
+              {emailBad && <p className="text-xs text-destructive mt-1">Must be a valid email address.</p>}
+            </div>
+
+            {/* Username */}
+            <div className="mb-[18px]">
+              <label htmlFor="r-un" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Username <Required />
+              </label>
+              <input
+                id="r-un" name="username" type="text"
+                autoComplete="username" maxLength={25}
+                placeholder="Pick a username"
+                value={form.username} onChange={handleChange}
+                className={inputCls}
+              />
+              {form.username.trim() && (
+                unTooShort ? (
+                  <p className="text-xs text-destructive mt-1">At least 5 characters required</p>
+                ) : unStatus === 'checking' ? (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />Checking availability…
+                  </p>
+                ) : unStatus === 'available' ? (
+                  <p className="text-xs text-[#1a7f4b] mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />Available
+                  </p>
+                ) : unStatus === 'taken' ? (
+                  <p className="text-xs text-destructive mt-1">Username not available</p>
+                ) : null
+              )}
+            </div>
+
+            {/* Display name */}
+            <div className="mb-[18px]">
+              <label htmlFor="r-dn" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Display name <Required />
+              </label>
+              <p className="text-xs text-muted-foreground mb-1.5 mt-0">
+                Shown on your pet cards — e.g. "Cool Pet Dad"
+              </p>
+              <input
+                id="r-dn" name="displayName" type="text"
+                autoComplete="nickname" maxLength={25}
+                placeholder="e.g. Cool Pet Dad"
+                value={form.displayName} onChange={handleChange}
+                className={inputCls}
+              />
+              {form.displayName.trim() && (
+                dnTooShort ? (
+                  <p className="text-xs text-destructive mt-1">At least 4 characters required</p>
+                ) : dnStatus === 'checking' ? (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />Checking availability…
+                  </p>
+                ) : dnStatus === 'available' ? (
+                  <p className="text-xs text-[#1a7f4b] mt-1 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />Available
+                  </p>
+                ) : dnStatus === 'taken' ? (
+                  <p className="text-xs text-destructive mt-1">Display name not available</p>
+                ) : null
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="mb-[18px]">
+              <label htmlFor="r-pw" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Password <Required />
+              </label>
+              <div className="relative">
+                <input
+                  id="r-pw" name="password"
+                  type={showPw ? 'text' : 'password'}
+                  autoComplete="new-password" minLength={10} maxLength={72}
+                  value={form.password} onChange={handleChange}
+                  className={inputCls + ' pr-11'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-0 h-[46px] w-11 flex items-center justify-center bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {form.password && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-[3px]">
+                    {[0, 1, 2, 3].map(i => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'flex-1 h-[3px] rounded-sm transition-colors',
+                          i < strength.score ? STRENGTH_BG[strength.score] : 'bg-border'
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className={cn('text-[11px] font-semibold m-0', STRENGTH_TEXT[strength.score])}>
+                    {STRENGTH_LABELS[strength.score]}
+                  </p>
+                </div>
+              )}
+              {pwWeak && strength.feedback?.suggestions?.[0] && (
+                <p className="text-xs text-destructive mt-1">{strength.feedback.suggestions[0]}</p>
+              )}
+            </div>
+
+            {/* Confirm password */}
+            <div className="mb-[18px]">
+              <label htmlFor="r-cpw" className="block text-[13px] font-semibold mb-1.5 text-foreground">
+                Confirm password <Required />
+              </label>
+              <div className="relative">
+                <input
+                  id="r-cpw" name="confirmPassword"
+                  type={showPw ? 'text' : 'password'}
+                  autoComplete="new-password" maxLength={72}
+                  value={form.confirmPassword} onChange={handleChange}
+                  className={inputCls + ' pr-11'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-0 h-[46px] w-11 flex items-center justify-center bg-transparent border-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {pwMismatch && <p className="text-xs text-destructive mt-1">Passwords do not match.</p>}
+            </div>
+
+            {error && (
+              <p className="text-[13px] text-destructive text-center mb-2.5">{error}</p>
+            )}
+
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                disabled={isLoading}
+                className="flex-1 h-[50px] rounded-[14px] border-[1.5px] border-border bg-transparent text-foreground text-[15px] font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 transition-opacity"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!canSubmit || isLoading}
+                className="flex-1 h-[50px] rounded-[14px] border-0 bg-primary text-white text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-[0.45] transition-opacity"
+              >
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLoading ? 'Creating your account…' : 'Create account'}
+              </button>
+            </div>
+
+            <p className="text-center text-[13px] text-muted-foreground mt-4">
+              By creating an account you agree to our Terms and Privacy Policy.
+            </p>
+          </form>
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 680px) {
+          .brand-panel { display: none !important; }
+          .mobile-auth-header { display: flex !important; }
+        }
+      `}</style>
     </div>
   )
 }
 
-interface FieldProps {
-  label: string
-  id: string
-  name: string
-  type?: string
-  autoComplete?: string
-  required?: boolean
-  value: string
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void
-  placeholder?: string
-}
-
-function Field({ label, id, name, type = 'text', autoComplete, required, value, onChange, placeholder }: FieldProps) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium" htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        autoComplete={autoComplete}
-        required={required}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 placeholder:text-muted-foreground"
-      />
-    </div>
-  )
+function Required() {
+  return <span className="text-destructive ml-0.5">*</span>
 }
