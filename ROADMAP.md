@@ -364,7 +364,7 @@ convenience feature).
 ## 17. Consolidate Migrations into a Single InitialCreate
 
 **Priority:** High — must be done before the app goes public
-**Status:** Not started — to be done once all pre-launch features are complete
+**Status:** Complete — single `InitialCreate` migration in place; Azure database recreated; connection string naming aligned across Aspire, DI, and GitHub Actions workflow
 
 ### What
 Replace all accumulated EF Core migrations with a single clean `InitialCreate` migration
