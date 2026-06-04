@@ -5,8 +5,7 @@
 **/[Oo]bj
 **/*.user
 **/node_modules
-docs
-tests
+src/tests
 infra
 barkfest-ui
 *.md

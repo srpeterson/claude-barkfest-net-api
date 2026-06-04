@@ -33,7 +33,6 @@ module resources 'resources.bicep' = {
 
 // --- Outputs ---
 // Used after provisioning to configure GitHub Secrets.
-// See docs/features/azure-pipeline/PLAN.md — Step 2 for full instructions.
 
 @description('Container App name — used as the GitHub Secret CONTAINER_APP_NAME.')
 output containerAppName string = resources.outputs.containerAppName

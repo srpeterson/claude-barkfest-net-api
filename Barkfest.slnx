@@ -9,12 +9,12 @@
     <Project Path="src/Barkfest.ServiceDefaults/Barkfest.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Barkfest.API.Tests/Barkfest.API.Tests.csproj" />
-    <Project Path="tests/Barkfest.Application.Tests/Barkfest.Application.Tests.csproj" />
-    <Project Path="tests/Barkfest.Domain.Tests/Barkfest.Domain.Tests.csproj" />
-    <Project Path="tests/Barkfest.Infrastructure.Tests/Barkfest.Infrastructure.Tests.csproj" />
-    <Project Path="tests/Barkfest.Integration.Tests/Barkfest.Integration.Tests.csproj" />
-    <Project Path="tests/Barkfest.Persistence.Tests/Barkfest.Persistence.Tests.csproj" />
-    <Project Path="tests/Barkfest.Tests.Common/Barkfest.Tests.Common.csproj" />
+    <Project Path="src/tests/Barkfest.API.Tests/Barkfest.API.Tests.csproj" />
+    <Project Path="src/tests/Barkfest.Application.Tests/Barkfest.Application.Tests.csproj" />
+    <Project Path="src/tests/Barkfest.Domain.Tests/Barkfest.Domain.Tests.csproj" />
+    <Project Path="src/tests/Barkfest.Infrastructure.Tests/Barkfest.Infrastructure.Tests.csproj" />
+    <Project Path="src/tests/Barkfest.Integration.Tests/Barkfest.Integration.Tests.csproj" />
+    <Project Path="src/tests/Barkfest.Persistence.Tests/Barkfest.Persistence.Tests.csproj" />
+    <Project Path="src/tests/Barkfest.Tests.Common/Barkfest.Tests.Common.csproj" />
   </Folder>
 </Solution>

@@ -6,7 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Barkfest.Persistence\Barkfest.Persistence.csproj" />
+    <ProjectReference Include="..\..\Barkfest.Persistence\Barkfest.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
