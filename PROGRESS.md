@@ -682,3 +682,124 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable in Azure 
 - `ProtectedRoute.tsx` — owner-only gate; unauthenticated users redirected to home page with login modal triggered
 - `App.tsx` — 401 interception handler registered; expired token signs user out and re-prompts login
 - TypeScript check clean, UI smoke tested
+
+---
+
+## PR #11 — Breed Refactor ✅ Complete
+
+Replaced the separate `Breeds` table (TPH with `DogBreedInfo`/`CatBreedInfo` entity classes) with a single `Breed int NOT NULL` column directly on `Pets`. The `PetType` column already provides the species discriminator, making `BreedType` and `BreedId` redundant.
+
+### Changes
+- `Breed` abstract entity + `DogBreedInfo`/`CatBreedInfo` subclasses removed from Domain
+- `Pet.Breed` changed from a navigation property to an `int` column storing the SmartEnum value
+- `BreedConfiguration`, TPH discriminator, and `DbSet<Breed>` removed from Persistence
+- Migration copies existing breed values before dropping the `Breeds` table
+- All application handlers, validators, mappings, and tests updated
+- `PetDto.Breed` changed from a nested object to a plain `string` (resolved from SmartEnum name)
+
+**720 tests — all passing.**
+
+---
+
+## PR #12 — Owner Profile Dialog & Pet Dialog UX Polish ✅ Complete
+
+### Backend
+- `DeletePetCommand` and `BatchDeletePetImagesCommand` — blob cleanup added before removing DB records (orphaned blobs bug fixed)
+- Tests added for blob deletion in both command handler test classes
+
+### UI
+- `UpdateOwnerProfileDialog` — two-step dialog (step 1: personal info, step 2: profile photo) opened from Navbar avatar
+- Profile image round avatar displayed in Navbar; `profileImageBlobName` persisted to `sessionStorage`
+- Owner profile image fetched on login and register for instant Navbar avatar
+- Display name availability check skips unchanged value; browse cache invalidated only when display name changes
+- `isEmail` validation (validator pkg) added to Register and Profile dialogs
+- Admin checkbox hidden in `LoginDialog` pending admin UI milestone
+- Success screens removed from `AddPetDialog` and `UpdateOwnerProfileDialog` — dialogs close immediately on save with a "Saving…" spinner
+- `LoginModal`/`RegisterModal` renamed to `LoginDialog`/`RegisterDialog` throughout
+
+**Test count unchanged — all passing.**
+
+---
+
+## PR #13 — SmartEnum Integer Values for Pet Type/Breed ✅ Complete
+
+Replaced string-based pet type and breed representation with integer SmartEnum values throughout the full stack.
+
+### Changes
+- Browse endpoints return `{ name, value }` objects instead of plain strings — integer flows directly from option value attribute with no client-side lookup map
+- `FilterBar`, `HeroSection`, and `HomePage` carry integer state
+- `AddPetDialog` migrated to new `PetTypeBreedFormFields` component (form-specific, integer props)
+- `PetTypeBreedSelector` retained as a filter-only component
+- Cross-species breed validation uses `SmartEnum.TryFromValue` for correctness
+- API query parameters, command/query records, repository interfaces, and persistence layer all updated
+
+**Test count unchanged — all passing.**
+
+---
+
+## PR #14 — Pet Likes & Public Pet Detail ✅ Complete
+
+### Backend
+- `Pet.Likes` — `int NOT NULL DEFAULT 0` column; `IncrementLikes()` / `DecrementLikes()` domain methods (decrement floors at zero)
+- `POST /v1/pets/{id}/likes` — increments likes; `[AllowAnonymous]`
+- `DELETE /v1/pets/{id}/likes` — decrements likes, floors at zero; `[AllowAnonymous]`
+- `GET /v1/pets/{id}` — made `[AllowAnonymous]` for public Pet Details page
+- `OwnerId` added to `BrowseImageDto` — available at navigation time before full pet data loads
+- Migration `AddPetLikes` generated
+
+### Tests
+- `PetsControllerTests` extended with likes endpoint tests (increment, decrement, floor at zero, public access)
+
+**754 tests — all passing.**
+
+| Project | Tests |
+|---|---|
+| `Barkfest.Domain.Tests` | 193 |
+| `Barkfest.Application.Tests` | 346 |
+| `Barkfest.Infrastructure.Tests` | 8 |
+| `Barkfest.Persistence.Tests` | 97 |
+| `Barkfest.API.Tests` | 89 |
+| `Barkfest.Integration.Tests` | 21 |
+
+---
+
+## PR #15 — UI Redesign, Owner Password Change & Cache Fixes ✅ Complete
+
+### UI Redesign
+- `BarkfestMark` — stroke-based paw SVG used as brand header in all dialogs
+- `Navbar` — cream translucent sticky bar; filter controls (pet type + breed dropdowns) moved into Navbar (desktop: centred between logo and auth; mobile: compact pill opening a bottom sheet)
+- `LoginPage`/`RegisterPage` — split-panel layout with brand panel (local pet photos mosaic, testimonial), eye toggles, focus box-shadows
+- `PetDetailPage` — magazine-style hero layout, floating info card, lightbox, like/unlike button with optimistic updates; owner sees read-only like count + edit/delete kebab menu
+- `ManagePetsPage` — table layout with bulk delete bar, `HidePetsToggle` with optimistic update
+- `PetCard` — navigable (clicks through to Pet Details page)
+- All dialogs updated with `BarkfestMark` brand header
+- `EditPetModal` — two-step pre-filled edit dialog (pet info + image management)
+- `public/pets/` — 6 local pet photos for Sign In brand panel mosaic
+
+### New Features
+- `ChangePasswordDialog` — self-service password change (current password required)
+- Username availability check on registration — `GET /v1/auth/check-username`; debounced inline feedback
+- `useIsMobile` hook
+
+### API Changes
+- `PetDto.Id` → `PetDto.PetId`, `PetImageDto.Id` → `PetImageDto.PetImageId` — self-describing JSON keys
+- `Owner.Active` → `Owner.IsActive` — consistency with `IsVisible`, `IsEmailVerified`; migration `AlterOwnerActiveColumn`
+- `GET /v1/auth/check-username` — new public endpoint
+
+### Cache & Sync Fixes
+- `LoginPage` fetches owner after login to populate `profileImageBlobName` (was only done in `LoginDialog`)
+- Navbar profile image backed by React Query (staleTime 30s, refetchOnWindowFocus) — picks up changes made on another device
+- `UpdateOwnerProfileDialog` writes new blob name directly into query cache after upload — instant same-device update without logout
+- `api.ts` — `cache: 'no-store'` on all fetch calls to prevent browser caching of API responses
+
+### Developer Experience
+- Vite dev proxy (`/v1` → `https://localhost:7101`) — `pnpm dev --host` works for mobile testing without `.env` configuration
+- `RegisterDialog` removed — re-auth via `LoginDialog` only; registration goes through `RegisterPage`
+
+**754 tests — all passing. UI: 9 tests passing.**
+
+---
+
+## Fix — Navbar displayName TypeScript Error ✅ Complete
+
+- Removed unused `displayName` variable in `Navbar.tsx` that was causing a CI TypeScript error

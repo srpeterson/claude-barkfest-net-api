@@ -657,11 +657,11 @@ After `feature/initial-build` merged into `main`, all new work follows this mode
 |---|---|---|
 | `CLAUDE.md` | Always current | Updated whenever conventions change |
 | `README.md` | Always current | Updated when user-facing behaviour changes |
-| `docs/ROADMAP.md` | Always current | Updated as features are planned and shipped |
-| `docs/SPEC.md` | Always current | Updated as features ship and the spec evolves |
+| `ROADMAP.md` | Always current | Updated as features are planned and shipped |
+| `SPEC.md` | Always current | Updated as features ship and the spec evolves |
 | `PROGRESS.md` | Historical record | Initial build history — not updated for new features |
-| `docs/PLAN.md` | Historical record | Initial build plan — not updated for new features |
-| `docs/DECISIONS.md` | Historical record | Initial build decisions — not updated for new features |
+| `PLAN.md` | Historical record | Initial build plan — not updated for new features |
+| `DECISIONS.md` | Historical record | Initial build decisions — not updated for new features |
 
 ---
 
@@ -671,7 +671,7 @@ For active feature branches, update the feature's own `docs/features/<name>/PROG
 immediately when a milestone is complete. If context is running low, stop at a clean
 boundary, update `PROGRESS.md`, and the next session can resume by reading it first.
 
-When starting a new feature, read `docs/ROADMAP.md` to select the next item.
+When starting a new feature, read `ROADMAP.md` to select the next item.
 
 ### When to update each documentation file
 
@@ -682,8 +682,8 @@ At the end of every significant body of work, review the relevant files and upda
 | `docs/features/<name>/PROGRESS.md` | A milestone within the feature completes |
 | `docs/features/<name>/DECISIONS.md` | A decision is made that is specific to this feature |
 | `docs/features/<name>/PLAN.md` | The feature plan changes — a step added, removed, or redesigned |
-| `docs/ROADMAP.md` | A backlog item is started, completed, or reprioritised |
-| `docs/SPEC.md` | User-visible behaviour changes — new endpoints, new business rules |
+| `ROADMAP.md` | A backlog item is started, completed, or reprioritised |
+| `SPEC.md` | User-visible behaviour changes — new endpoints, new business rules |
 | `README.md` | Setup steps, environment config, or user-facing behaviour changes |
 | `CLAUDE.md` | Session conventions change — new rules, new patterns, corrected guidance |
 
@@ -695,10 +695,10 @@ At the end of every significant body of work, review the relevant files and upda
 |---|---|
 | `CLAUDE.md` | This file — Claude Code session rules and conventions |
 | `README.md` | Repo landing page — rendered by GitHub |
-| `docs/ROADMAP.md` | Feature backlog — read when choosing the next feature to build |
-| `docs/SPEC.md` | Functional specification — what the app does |
-| `docs/PLAN.md` | Initial build plan — historical record, phases 1–12 |
-| `docs/DECISIONS.md` | Initial build decisions — historical record |
+| `ROADMAP.md` | Feature backlog — read when choosing the next feature to build |
+| `SPEC.md` | Functional specification — what the app does |
+| `PLAN.md` | Initial build plan — historical record, phases 1–12 |
+| `DECISIONS.md` | Initial build decisions — historical record |
 | `PROGRESS.md` | Initial build progress — historical record |
 | `docs/features/<name>/PLAN.md` | Implementation plan for a specific feature |
 | `docs/features/<name>/PROGRESS.md` | Progress tracking for a specific feature |

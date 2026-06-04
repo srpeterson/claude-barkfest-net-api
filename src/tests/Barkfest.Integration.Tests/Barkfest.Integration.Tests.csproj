@@ -1,14 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <PackageReference Include="NSubstitute" />
     <PackageReference Include="Testcontainers.Azurite" />
     <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Barkfest.API\Barkfest.API.csproj" />
+    <ProjectReference Include="..\..\Barkfest.API\Barkfest.API.csproj" />
     <ProjectReference Include="..\Barkfest.Tests.Common\Barkfest.Tests.Common.csproj" />
   </ItemGroup>
 

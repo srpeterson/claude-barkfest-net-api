@@ -6,144 +6,6 @@ file alongside `PROGRESS.md` to decide what to tackle next.
 
 ---
 
-## 1. Add Pet Dialog
-
-**Priority:** High
-**Status:** Complete — merged via PR #9
-
-### What
-A modal dialog that allows an authenticated owner to add a new pet, covering both
-the pet details and image upload in a single guided flow:
-- Pet info form (name, pet type, breed, date of birth, description)
-- Breed dropdown updates dynamically based on selected pet type
-- Image upload step — minimum 1 image enforced by the UI
-- Designate a featured image before saving
-
-### Why
-The Owner Pet Management Page (item 3) depends on this dialog. Building it as a
-standalone component first keeps the work focused before it is embedded in the
-full management page.
-
-### Approach (high level)
-- Multi-step dialog: step 1 — pet details form; step 2 — image upload with preview
-- On submit: `POST /v1/pets` → `POST /v1/pets/{id}/images`
-- On success: close dialog and refresh the pet list
-
----
-
-## 2. Owner Profile Dialog
-
-**Priority:** High
-**Status:** Complete — smoke tested, pending PR
-
-### What
-A two-step modal dialog (`UpdateOwnerProfileDialog`) that lets an authenticated owner
-manage their own account without leaving the current page:
-- Step 1 — Update personal info: first name, last name, email, display name
-  (username is shown as a read-only info line — it cannot be changed)
-- Step 2 — Upload or remove their profile photo
-- Profile photo appears as a round avatar in the Navbar immediately after save or login
-
-### Why
-Owners currently have no self-service way to update their account after registration.
-This is a basic expectation of any account-based application.
-
-### Approach (as built)
-- Two-step dialog opened from the Navbar avatar button — no dedicated route
-- Step 1 pre-fills all fields from `GET /v1/owners/{id}` on open
-- Display name availability check fires only when the value has changed from the saved value
-- Step 2 pre-loads the existing profile photo if one is set
-- On save: `PUT /v1/owners/{id}` always; then upload/remove image if changed
-- Profile image blob name stored in `AuthContext` + `sessionStorage` for instant Navbar avatar
-- Dialog closes immediately on success — no intermediate success screen
-- Password change excluded — see item 18
-
----
-
-## 21. Pet Details Page
-
-**Priority:** High
-**Status:** Backend complete (branch `infrastructure/add-likes`, pending PR) — UI not started
-
-### What
-A public-facing page that opens when a user clicks a pet image on the landing page:
-- Displays all gallery images for the pet
-- Shows pet info: name, type, breed, age, description, like count
-- Shows an owner actions menu (Edit, Delete) if the logged-in owner's ID matches `OwnerId`
-- Like/Unlike button visible to all users; liked state tracked in localStorage by the UI
-
-### Why
-Clicking a pet card on the landing page currently has no destination. This page closes
-the loop between browsing and viewing full pet details.
-
-### Backend work completed
-- `Likes` column added to `Pets` (`int NOT NULL DEFAULT 0`) — migration `AddPetLikes`
-- `POST /v1/pets/{id}/likes` — increment likes (public, returns new count)
-- `DELETE /v1/pets/{id}/likes` — decrement likes, floors at zero (public, returns new count)
-- `GET /v1/pets/{id}` made `[AllowAnonymous]` — returns full `PetDto` including all images and `OwnerId`
-- `OwnerId` added to `BrowseImageDto` — available at navigation time before full pet data loads
-
-### UI approach (high level)
-- Route: `/pets/{id}` — public, no auth required
-- On load: `GET /v1/pets/{id}` for full pet data
-- Image gallery with all pet images; featured image shown first
-- Like button: compare localStorage for liked state; call POST/DELETE `/v1/pets/{id}/likes`
-- Owner menu: visible only when `jwtOwnerId === pet.ownerId`; contains Edit and Delete actions
-- Navigate from landing page: pass `OwnerId` (from `BrowseImageDto`) via router state for instant owner-menu decision before the full fetch completes
-
----
-
-## 3. Owner Pet Management Page
-
-**Priority:** High
-**Status:** Not started
-
-### What
-A dedicated page where an authenticated owner can manage their pets:
-- Add a new pet (name, type, breed, date of birth, description)
-- Upload and manage pet gallery images (up to `Pet.MaxImages`)
-- Designate a featured image
-- Edit existing pet info
-- Delete a pet
-
-### Why
-Owners register and log in but currently have no UI to actually add or manage their pets. This is the core value proposition of Barkfest.
-
-### Approach (high level)
-- New route: `/pets` — protected, owner only (stub exists)
-- List of owner's pets with featured image thumbnails
-- Add pet form → image upload step (minimum 1 image enforced by UI)
-- Edit pet form with gallery management (reorder, add, remove images)
-- Delete pet with confirmation prompt
-
----
-
-## 4. Landing Page — Full Wire-Up
-
-**Priority:** High
-**Status:** Complete — merged via PR #10
-
-### What
-Ensure the landing page works correctly end-to-end once real owners and pets exist in the database:
-- Latest pets shown on load (sorted by `CreatedAt` descending)
-- Pet type dropdown filters correctly
-- Breed dropdown updates based on selected pet type and filters correctly
-- Pagination works correctly as pet count grows
-- Pet cards show featured image, pet name, breed, age
-- Empty states handled gracefully (no pets, no results for filter combination)
-
-### Why
-The browse API and filter UI exist but have only been tested with seeded/test data. Once real owners are posting real pets this needs to be verified end-to-end and any rough edges smoothed out.
-
-### Approach (high level)
-- Smoke test with real owner accounts and real pet data
-- Verify featured image displays correctly on each card
-- Verify filter combinations return correct results
-- Verify pagination thresholds and "no results" empty state
-- Polish any UI rough edges discovered during testing
-
----
-
 ## 5. Email Verification & Password Reset
 
 **Priority:** High
@@ -213,6 +75,7 @@ delivery service.
 
 **Priority:** Medium
 **Status:** Not started — depends on item 5 (Email Verification & Password Reset) being complete
+**Depends on:** #5 Email Verification & Password Reset
 
 ### What
 Add an optional second factor to the owner login flow. After a valid username and
@@ -325,24 +188,6 @@ Provision an Azure Application Insights resource and connect it to the deployed 
 
 ### No code changes required
 The exporter self-activates on the connection string presence check in `ServiceDefaults/Extensions.cs`.
-
----
-
-## 10. Require Minimum One Image on Pet Creation (API-level enforcement)
-
-**Priority:** Low — only relevant if the API is opened to third-party clients
-**Status:** Deferred — UI enforces this rule; API intentionally does not
-
-### Decision
-The minimum 1 image rule is enforced at the UI layer only. The two-step flow
-(create pet → upload images) is better UX and keeping them separate avoids
-significant API and test complexity for no practical benefit while the only
-consumer is the controlled `barkfest-ui` client.
-
-### When to revisit
-If the API is ever opened to third-party clients (mobile apps, integrations),
-enforce this at the API layer by combining `POST /v1/pets` into a single
-multipart request that requires at least 1 image file.
 
 ---
 
@@ -460,34 +305,6 @@ or connect directly to the database. A password-protected Scalar avoids both.
 
 ---
 
-## 15. Rolling JWT Expiry
-
-**Priority:** Low
-**Status:** Not started — current token is fixed 8-hour (480-minute) expiry with 401 interception handling expiry gracefully in the UI
-
-### What
-Replace the fixed 8-hour JWT expiry with a sliding window using refresh tokens. A short-lived
-access token (e.g. 15 minutes) is paired with a longer-lived refresh token (e.g. 7 days). Each
-successful API call silently refreshes the access token, keeping active users logged in
-indefinitely without re-prompting.
-
-### Why deferred
-The current approach (fixed 8-hour token + 401 interception that signs out and opens the
-login modal) is sufficient for real-world Barkfest usage. Public browsing never triggers a 401.
-Only authenticated actions (posting pets, profile management) are affected by expiry, and those
-are infrequent enough that re-login after 8 hours is acceptable for the current user base.
-
-### When to revisit
-If user feedback indicates the 8-hour timeout is disruptive — particularly once owner pet
-management UI is fully built and users are doing longer authenticated sessions.
-
-### Approach (high level)
-- Issue a short-lived access token + long-lived refresh token (HttpOnly cookie) at login
-- New endpoint: `POST /v1/auth/refresh` — validates refresh token, issues new access token
-- `api.ts` intercepts `401`, attempts silent refresh, retries the original request
-- On refresh failure (expired or revoked refresh token), fall back to current 401 handler (sign out + login modal)
-- Refresh token rotation: each use issues a new refresh token and invalidates the old one
-
 ---
 
 ## 16. Aspire Container Host-Port Pinning
@@ -544,29 +361,6 @@ convenience feature).
 
 ---
 
-## 18. Change Owner Password
-
-**Priority:** Medium
-**Status:** Not started
-
-### What
-Allow an authenticated owner to change their own password from within the app:
-- Requires the current password to confirm identity
-- New password must meet the minimum strength requirements (`AccountConstraints.PasswordMinLength`)
-- Confirm new password field (client-side match check)
-
-### Why
-Owners currently have no self-service way to change their password after registration.
-This is a basic account security expectation.
-
-### Approach (high level)
-- New command: `ChangeOwnerPasswordCommand(Guid Id, string CurrentPassword, string NewPassword)`
-- New endpoint: `POST /v1/owners/{id}/change-password` → 204 NoContent
-- Handler verifies current password via `IPasswordHasher.Verify` before accepting the new one
-- UI: a small standalone "Change Password" dialog or section, separate from the main profile update flow
-
----
-
 ## 17. Consolidate Migrations into a Single InitialCreate
 
 **Priority:** High — must be done before the app goes public
@@ -618,54 +412,6 @@ migration history.
 
 ---
 
-## 19. Update Pet Dialog
-
-**Priority:** High
-**Status:** Not started
-
-### What
-A dialog that allows an authenticated owner to edit an existing pet's details and manage
-its gallery images:
-- Update pet info (name, breed, date of birth, description)
-- Add new images to the gallery (up to `Pet.MaxImages` total)
-- Remove existing images
-- Change the featured image
-
-### Why
-Owners can currently add pets but have no way to correct mistakes or update information
-after the fact. A clean edit flow is essential before the app goes public.
-
-### Approach (high level)
-- Pre-fill all fields with the pet's current data on open (same pattern as `UpdateOwnerProfileDialog`)
-- Re-use `PetTypeBreedFormFields` for breed selection
-- Image management: show existing images with remove buttons, allow adding new ones up to the limit
-- `PUT /v1/pets/{id}` — update pet info
-- `POST /v1/pets/{id}/images` — add new images
-- `DELETE /v1/pets/{id}/images/{imageId}` — remove individual images
-- `PUT /v1/pets/{id}/images/{imageId}/featured` — change featured image
-
----
-
-## 20. Styled Authenticated Navbar
-
-**Priority:** High
-**Status:** Not started
-
-### What
-Re-style the Navbar for authenticated owners to give it a polished, on-brand look that
-goes beyond the current minimal layout.
-
-### Why
-The authenticated state of the Navbar currently has the same basic layout as the public
-state. As owner features grow (profile, pets, etc.) the Navbar needs a more intentional
-design that reflects the owner's logged-in experience.
-
-### Approach (high level)
-- Design to be agreed during the feature session
-- Consider: dropdown menu from the avatar, navigation links, notification indicators
-
----
-
 ## 22. Add Links to Footer
 
 **Priority:** Low
@@ -687,6 +433,7 @@ The footer looks complete visually but the links do nothing. Once the relevant c
 ## 26. Forgot Password — Full Self-Service Reset Flow
 
 **Priority:** High
+**Depends on:** #5 Email Verification & Password Reset
 **Status:** Interim solution in place — "Forgot password?" link opens a modal directing
 users to email srpeterson@outlook.com. Replace with this automated flow when ready.
 
@@ -876,50 +623,6 @@ pet's count without limit, which undermines the social proof value of the featur
 
 ---
 
-## 29. Per-Pet Visibility
-
-**Priority:** Medium
-**Status:** Not started — visibility is currently all-or-nothing at the owner level
-
-### What
-Allow owners to show or hide individual pets from the public gallery, rather than
-toggling all pets at once. The owner-level "Show in gallery" toggle would remain as
-a master switch, but each pet would also have its own visibility control.
-
-### Why
-An owner may want to share some pets publicly while keeping others private — for
-example, a recently adopted pet not yet ready to be featured, or a pet that has
-passed away that the owner wants to keep in their profile but not in the public browse.
-
-### Impact to assess before starting
-
-**Domain / Database:**
-- Add `IsVisible` (`bool`, default `true`) to the `Pet` entity
-- New migration: `AddPetIsVisible`
-- Setter method: `pet.SetIsVisible(bool isVisible)`
-
-**Backend:**
-- New endpoint: `PATCH /v1/pets/{id}/visibility` — body `{ isVisible: bool }` → 204
-- `BrowseRepository` filter needs updating: currently filters on `Owner.IsActive && Owner.IsVisible`;
-  must also add `Pet.IsVisible`
-- `GetPetByIdQuery` may need updating depending on whether hidden pets should be
-  accessible via direct URL (e.g. owner can still view, but not public)
-- Consider interaction with owner-level visibility: if the owner is hidden, all pets
-  are hidden regardless of individual pet visibility
-
-**Frontend:**
-- Per-pet visibility toggle in `ManagePetsPage` table row (or `EditPetModal`)
-- Visual indicator on pet rows showing hidden/visible state
-- Decide UX: inline toggle in the table vs. inside the edit modal
-
-### Open questions
-- Should a hidden pet still be accessible via its direct URL (`/pets/{id}`) to the owner?
-  Likely yes — owner should always be able to view their own pets.
-- Should the public get a 404 or a 403 when accessing a hidden pet's URL directly?
-  404 is safer — reveals less information about what exists.
-
----
-
 ## 28. Administrator Panel
 
 **Priority:** High — required before the app goes public
@@ -976,49 +679,98 @@ admins must be able to see all owners and pets regardless of visibility or activ
 
 ---
 
-## 27. Migrate JWT Storage from sessionStorage to HttpOnly Cookies
+## 31. Allow Users to Comment on Pets
 
-**Priority:** Medium — address before the app handles sensitive user data or scales beyond a hobby audience
-**Status:** Not started — JWT currently stored in `sessionStorage`
+**Priority:** High
+**Status:** Not started
 
 ### What
-Replace `sessionStorage`-based JWT storage with a server-set HttpOnly cookie so the
-access token is never accessible to JavaScript. This is the OWASP-recommended approach
-for token storage in browser-based applications.
+Allow authenticated owners to post comments on any pet's detail page. Owners cannot
+comment on their own pets. All visitors can read comments; only authenticated owners
+can post them.
 
 ### Why
-`sessionStorage` (and `localStorage`) are readable by any JavaScript running on the page.
-A successful XSS attack — even a minor one via a third-party dependency — can exfiltrate
-the token and fully impersonate the user. An HttpOnly cookie cannot be read by JavaScript
-at all; the browser sends it automatically with every same-origin request and XSS has no
-path to the token value.
+Comments give the community a way to engage with pets beyond likes — adding personality,
+asking questions, and building connections between owners. It deepens the social aspect
+of the platform.
+
+### Approach (high level)
+
+**Domain / Database:**
+- New `Comment` entity: `CommentId` (`Guid`), `PetId` (FK → `Pets`), `OwnerId` (FK → `Owners`),
+  `Body` (string, max length TBD), `CreatedAt`
+- New migration: `CreateCommentsTable`
+- New `ICommentRepository` + `CommentRepository`
+
+**Backend:**
+- `POST /v1/pets/{id}/comments` — authenticated owner only; body `{ body }`; returns `201 Created`
+  with the new comment; handler enforces that the commenter is not the pet's owner
+- `GET /v1/pets/{id}/comments` — public (`[AllowAnonymous]`); returns paginated list of comments
+  with commenter display name, avatar blob name, and `CreatedAt`
+- `DELETE /v1/pets/{id}/comments/{commentId}` — authenticated; only the comment author or an
+  admin may delete
+
+**Frontend:**
+- Comments section below the pet gallery on `PetDetailPage`
+- Public visitors see the comment list; unauthenticated users see a "Sign in to comment" prompt
+  in place of the input box
+- Owners viewing their own pet see the comment list but no input box (same read-only treatment
+  as the like button)
+- Paginate or lazy-load if comment count grows large
+
+---
+
+## 27. Secure JWT Storage — HttpOnly Cookies and Rolling Expiry
+
+**Priority:** Medium — address before the app handles sensitive user data or scales beyond a hobby audience
+**Status:** Not started — JWT currently stored in `sessionStorage` with a fixed 8-hour expiry
+
+### What
+Two auth improvements implemented together because they touch the same backend and frontend
+plumbing. Doing them in a single phase avoids opening the login endpoint, logout endpoint,
+and `api.ts` request layer twice.
+
+**HttpOnly Cookie Storage** — move the access token out of `sessionStorage` and into an
+HttpOnly cookie so it is never accessible to JavaScript. This is the OWASP-recommended
+approach for token storage in browser-based applications.
+
+**Rolling Expiry (Refresh Tokens)** — replace the fixed 8-hour access token with a
+short-lived access token (e.g. 15 minutes) paired with a long-lived refresh token
+(e.g. 7 days) stored in a second HttpOnly cookie. Active users are kept logged in
+silently; inactive users are signed out after the refresh token expires.
+
+### Why
+`sessionStorage` is readable by any JavaScript on the page. A successful XSS attack can
+exfiltrate the token and fully impersonate the user. An HttpOnly cookie has no JavaScript
+path to its value. The current 8-hour fixed expiry is acceptable today but will feel
+disruptive as owners spend longer authenticated sessions managing pets.
+
+### When to revisit
+When user feedback indicates the 8-hour timeout is disruptive, or before the app handles
+sensitive user data at scale.
 
 ### Approach (high level)
 
 **Backend:**
-- On successful login, set the JWT as an HttpOnly, Secure, SameSite=Strict cookie
-  (`Set-Cookie: barkfest_auth=<jwt>; HttpOnly; Secure; SameSite=Strict; Path=/`)
-- The response body can still return `accountId` and `expiresAt` for the UI to initialise
-  `AuthContext` (account type, avatar, etc.) — just not the token itself
-- `POST /v1/auth/logout` clears the cookie by setting it with `Max-Age=0`
+- Login issues two cookies: a short-lived access token and a long-lived refresh token
+  (both `HttpOnly; Secure; SameSite=Strict`)
+- Response body still returns `accountId` and `expiresAt` for `AuthContext` initialisation —
+  just not the token itself
+- New endpoint: `POST /v1/auth/refresh` — validates refresh token cookie, issues new access
+  token cookie; refresh token rotation (each use issues a new refresh token, invalidates the old one)
+- `POST /v1/auth/logout` clears both cookies with `Max-Age=0`
 - All authenticated endpoints continue to accept Bearer tokens for API clients (Scalar,
-  integration tests) — the cookie takes precedence for browser sessions
+  integration tests) — cookies take precedence for browser sessions
 
 **Frontend:**
 - Remove `barkfest_token` from `sessionStorage` and from `AuthContext` state
-- Remove `setAuthToken` / `Authorization` header injection from `api.ts` — the browser
-  sends the cookie automatically; fetch calls need `credentials: 'include'`
+- Remove `Authorization` header injection from `api.ts` — the browser sends cookies
+  automatically; fetch calls need `credentials: 'include'`
 - `AuthContext` retains `accountId`, `accountType`, and `profileImageBlobName` in
-  `sessionStorage` (these are not sensitive — they drive UI only, not access)
-- On reload, non-sensitive fields restore from `sessionStorage` as today; authenticated
-  API calls work immediately because the cookie is present
+  `sessionStorage` (non-sensitive — UI only)
+- `api.ts` intercepts `401`, attempts a silent `POST /v1/auth/refresh`, retries the
+  original request; on refresh failure falls back to current sign-out + login modal
 
 **CSRF mitigation:**
 - `SameSite=Strict` is the primary CSRF defence for same-origin SPAs
 - If cross-origin requests are ever needed, add a CSRF token header check
-
-### Note on Roadmap item 15
-Item 15 (Rolling JWT Expiry) also proposes HttpOnly cookies for the refresh token. These
-two items should be implemented together in a single phase — migrating the access token
-to a cookie and introducing a refresh token cookie at the same time avoids doing the
-backend auth plumbing twice.

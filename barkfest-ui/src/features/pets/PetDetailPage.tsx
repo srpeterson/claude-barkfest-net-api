@@ -82,7 +82,7 @@ export function PetDetailPage() {
   }, [pet, multi, lightboxIndex])
 
   async function handleLike() {
-    if (!pet || isOwner) return
+    if (!pet || isOwner || !isAuthenticated) return
     const next = !liked
     const prev = likeCount !== null ? likeCount : pet.likes
     const newCount = next ? prev + 1 : Math.max(0, prev - 1)
@@ -219,7 +219,7 @@ export function PetDetailPage() {
                   {pet.breed}
                 </span>
               )}
-              {isOwner ? (
+              {isOwner || !isAuthenticated ? (
                 <span className="inline-flex items-center gap-1.5 h-[26px] px-3 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30 backdrop-blur-sm">
                   <Heart className="w-[11px] h-[11px]" fill="#e5484d" stroke="#e5484d" />
                   {displayLikes}
