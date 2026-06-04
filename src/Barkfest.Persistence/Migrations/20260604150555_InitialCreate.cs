@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -33,6 +34,7 @@ namespace Barkfest.Persistence.Migrations
                 {
                     OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "newsequentialid()"),
                     Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    DisplayName = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true),
                     FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(75)", maxLength: 75, nullable: false),
@@ -40,7 +42,7 @@ namespace Barkfest.Persistence.Migrations
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsEmailVerified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     VerificationToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Active = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     IsVisible = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
                     ProfileImageBlobName = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     ProfileImageContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
@@ -61,8 +63,8 @@ namespace Barkfest.Persistence.Migrations
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateOfBirth = table.Column<DateOnly>(type: "date", nullable: true),
                     PetType = table.Column<int>(type: "int", nullable: false),
-                    ProfileImageBlobName = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    ProfileImageContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Breed = table.Column<int>(type: "int", nullable: false),
+                    Likes = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -77,26 +79,6 @@ namespace Barkfest.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Breeds",
-                columns: table => new
-                {
-                    BreedId = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "newsequentialid()"),
-                    PetId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BreedType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    BreedValue = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Breeds", x => x.BreedId);
-                    table.ForeignKey(
-                        name: "FK_Breeds_Pets_PetId",
-                        column: x => x.PetId,
-                        principalTable: "Pets",
-                        principalColumn: "PetId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "PetImages",
                 columns: table => new
                 {
@@ -105,6 +87,7 @@ namespace Barkfest.Persistence.Migrations
                     BlobName = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     ContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false),
+                    IsFeaturedImage = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -128,12 +111,6 @@ namespace Barkfest.Persistence.Migrations
                 name: "IX_Administrators_Username",
                 table: "Administrators",
                 column: "Username",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Breeds_PetId",
-                table: "Breeds",
-                column: "PetId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -164,9 +141,6 @@ namespace Barkfest.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Administrators");
-
-            migrationBuilder.DropTable(
-                name: "Breeds");
 
             migrationBuilder.DropTable(
                 name: "PetImages");
