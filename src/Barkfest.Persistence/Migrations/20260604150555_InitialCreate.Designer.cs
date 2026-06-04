@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Barkfest.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260521213146_RemovePetProfileImageColumnsAndAddIsFeaturedImage")]
-    partial class RemovePetProfileImageColumnsAndAddIsFeaturedImage
+    [Migration("20260604150555_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -71,35 +71,6 @@ namespace Barkfest.Persistence.Migrations
                     b.ToTable("Administrators", (string)null);
                 });
 
-            modelBuilder.Entity("Barkfest.Domain.Entities.Breed", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("BreedId")
-                        .HasDefaultValueSql("newsequentialid()");
-
-                    b.Property<string>("BreedType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid>("PetId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("PetId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PetId")
-                        .IsUnique();
-
-                    b.ToTable("Breeds", (string)null);
-
-                    b.HasDiscriminator<string>("BreedType").HasValue("Breed");
-
-                    b.UseTphMappingStrategy();
-                });
-
             modelBuilder.Entity("Barkfest.Domain.Entities.Owner", b =>
                 {
                     b.Property<Guid>("Id")
@@ -108,13 +79,12 @@ namespace Barkfest.Persistence.Migrations
                         .HasColumnName("OwnerId")
                         .HasDefaultValueSql("newsequentialid()");
 
-                    b.Property<bool>("Active")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -125,6 +95,11 @@ namespace Barkfest.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsEmailVerified")
                         .ValueGeneratedOnAdd()
@@ -176,6 +151,10 @@ namespace Barkfest.Persistence.Migrations
                         .HasColumnName("PetId")
                         .HasDefaultValueSql("newsequentialid()");
 
+                    b.Property<int>("BreedValue")
+                        .HasColumnType("int")
+                        .HasColumnName("Breed");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -184,6 +163,11 @@ namespace Barkfest.Persistence.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Likes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -241,41 +225,6 @@ namespace Barkfest.Persistence.Migrations
                     b.HasIndex("PetId");
 
                     b.ToTable("PetImages", (string)null);
-                });
-
-            modelBuilder.Entity("Barkfest.Domain.Entities.CatBreedInfo", b =>
-                {
-                    b.HasBaseType("Barkfest.Domain.Entities.Breed");
-
-                    b.Property<int>("CatBreed")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("int")
-                        .HasColumnName("BreedValue");
-
-                    b.HasDiscriminator().HasValue("Cat");
-                });
-
-            modelBuilder.Entity("Barkfest.Domain.Entities.DogBreedInfo", b =>
-                {
-                    b.HasBaseType("Barkfest.Domain.Entities.Breed");
-
-                    b.Property<int>("DogBreed")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("int")
-                        .HasColumnName("BreedValue");
-
-                    b.HasDiscriminator().HasValue("Dog");
-                });
-
-            modelBuilder.Entity("Barkfest.Domain.Entities.Breed", b =>
-                {
-                    b.HasOne("Barkfest.Domain.Entities.Pet", "Pet")
-                        .WithOne("Breed")
-                        .HasForeignKey("Barkfest.Domain.Entities.Breed", "PetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Pet");
                 });
 
             modelBuilder.Entity("Barkfest.Domain.Entities.Owner", b =>
@@ -336,8 +285,6 @@ namespace Barkfest.Persistence.Migrations
 
             modelBuilder.Entity("Barkfest.Domain.Entities.Pet", b =>
                 {
-                    b.Navigation("Breed");
-
                     b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
