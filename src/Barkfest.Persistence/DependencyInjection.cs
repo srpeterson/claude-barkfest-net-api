@@ -12,7 +12,7 @@ public static class DependencyInjection
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("barkfest")));
+            options.UseSqlServer(configuration.GetConnectionString("barkfest-db")));
 
         services.AddScoped<IOwnerRepository, OwnerRepository>();
         services.AddScoped<IAdministratorRepository, AdministratorRepository>();

@@ -4,7 +4,7 @@ var sql = builder.AddSqlServer("barkfest-sql")
                  .WithLifetime(ContainerLifetime.Persistent)
                  .WithDataVolume("barkfest-sql-data");
 
-var db = sql.AddDatabase("barkfest");
+var db = sql.AddDatabase("barkfest-db", databaseName: "barkfest");
 
 var storage = builder.AddAzureStorage("barkfest-storage")
                      .RunAsEmulator(e => e

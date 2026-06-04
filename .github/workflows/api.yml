@@ -60,7 +60,7 @@ jobs:
             --resource-group rg-barkfest \
             --image ${{ secrets.REGISTRY_LOGIN_SERVER }}/barkfest-api:${{ github.sha }} \
             --set-env-vars \
-              "ConnectionStrings__barkfest-sql=${{ secrets.SQL_CONNECTION_STRING }}" \
+              "ConnectionStrings__barkfest-db=${{ secrets.SQL_CONNECTION_STRING }}" \
               "ConnectionStrings__barkfest-blobs=${{ secrets.BLOB_CONNECTION_STRING }}" \
               "APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.APPINSIGHTS_CONNECTION_STRING }}" \
               "Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}" \
