@@ -84,6 +84,19 @@ public class CreateAdministratorCommandValidatorTests
         result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.Email));
     }
 
+    [Theory]
+    [InlineData("notanemail")]
+    [InlineData("@nodomain.com")]
+    [InlineData("missing@")]
+    public void Fails_ForEmail_When_FormatIsInvalid(string email)
+    {
+        var result = _createAdministratorCommandValidator.Validate(
+            new CreateAdministratorCommand("newadmin", "New Admin", email, "+15555550100", "pass"));
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateAdministratorCommand.Email));
+    }
+
     // -----------------------------------------------------------------------
     // PhoneNumber
     // -----------------------------------------------------------------------
