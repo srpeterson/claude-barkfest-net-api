@@ -803,3 +803,54 @@ Replaced string-based pet type and breed representation with integer SmartEnum v
 ## Fix — Navbar displayName TypeScript Error ✅ Complete
 
 - Removed unused `displayName` variable in `Navbar.tsx` that was causing a CI TypeScript error
+
+---
+
+## PR #16 — Repo Housekeeping ✅ Complete
+
+### Structure
+- `tests/` moved to `src/tests/` — Barkfest.slnx, csproj paths, and `Directory.Build.props` chaining updated
+- Docs moved to repo root: `ROADMAP.md`, `SPEC.md`, `PLAN.md`, `DECISIONS.md` (previously under `docs/`)
+- Per-feature `docs/features/*` plan/progress/decisions folders deleted — content consolidated into root docs
+- `.dockerignore` and `infra/main.bicep` updated for new paths
+
+### NuGet upgrades
+- `Aspire.*` packages → 13.4.2
+- `Microsoft.NET.Test.Sdk` → 18.6.0
+- `System.IdentityModel.Tokens.Jwt` → 8.19.1
+
+### Other
+- Pet likes restricted to authenticated users only (UI-side)
+- `ROADMAP.md` pruned — completed items removed, item #31 (comments) added
+- Removed unused `using System;` from migration file
+
+**754 tests — all passing.**
+
+---
+
+## PR #17 — Consolidate Migrations ✅ Complete
+
+- Collapsed 6 incremental migrations into a single clean `InitialCreate` representing the full production schema
+- Local Aspire volume and Azure database both recreated fresh — no data loss
+- Migration timestamp updated: `20260604150555_InitialCreate`
+
+---
+
+## Fix — Connection String Naming ✅ Complete
+
+- Renamed Aspire database resource from `"barkfest"` → `"barkfest-db"` (with `databaseName: "barkfest"` to preserve the actual DB name)
+- Updated `GetConnectionString` in `Persistence/DependencyInjection.cs` and GitHub Actions `api.yml` to match
+- Fixes a silent deployment mismatch introduced in May
+
+---
+
+## PR #18 — BarkfestMark Favicon ✅ Complete
+
+- Replaced the default Vite favicon with the BarkfestMark stroke paw SVG (`barkfest-ui/public/favicon.svg`)
+
+---
+
+## Chore — MVP UI Test Plan
+
+- `docs/test-plans/MVP-TEST-PLAN.md` created — manual test plan covering the full owner and pet management flows
+- Consolidate-migrations feature docs removed after PR #17 merged

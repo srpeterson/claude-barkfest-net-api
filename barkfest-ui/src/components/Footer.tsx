@@ -22,24 +22,14 @@ export function Footer({ maxWidth = 'max-w-[72rem]' }: { maxWidth?: string }) {
           </p>
         </div>
 
-        {/* Link columns */}
-        <div className="flex gap-12 flex-wrap">
-          <div>
-            <p className="m-0 mb-3 text-[11px] font-bold tracking-[0.08em] uppercase text-muted-foreground">
-              Company
-            </p>
-            {['About', 'Blog', 'Careers'].map(l => (
-              <p key={l} className="text-[13px] text-foreground/60 block mb-2.5 cursor-default">{l}</p>
-            ))}
-          </div>
-          <div>
-            <p className="m-0 mb-3 text-[11px] font-bold tracking-[0.08em] uppercase text-muted-foreground">
-              Legal
-            </p>
-            {['Privacy Policy', 'Terms of Use', 'Contact'].map(l => (
-              <p key={l} className="text-[13px] text-foreground/60 block mb-2.5 cursor-default">{l}</p>
-            ))}
-          </div>
+        {/* Link row */}
+        <div className="flex items-center gap-1 flex-wrap">
+          {['About', 'Privacy Policy', 'Terms of Use', 'Contact'].map((l, i, arr) => (
+            <span key={l} className="flex items-center gap-1">
+              <span className="text-[13px] text-foreground/60 cursor-pointer hover:text-foreground transition-colors">{l}</span>
+              {i < arr.length - 1 && <span className="text-muted-foreground/40 text-[13px]">·</span>}
+            </span>
+          ))}
         </div>
       </div>
     </footer>

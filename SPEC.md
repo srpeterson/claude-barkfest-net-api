@@ -12,7 +12,7 @@ Barkfest is a pet management API allowing owners to register themselves and show
 ## Features
 
 ### Owner Management
-- Register an owner with username, first name, last name, email, and optional phone number
+- Register an owner with username, first name, last name, email, optional phone number, and optional display name
 - Update owner details
 - Delete an owner (cascades to all their pets)
 - Upload and remove an owner profile image (one image per owner)
@@ -49,29 +49,31 @@ RESTful HTTP API. All endpoints return JSON.
 
 ### Authentication
 
-The API issues a JWT on login returned in the response body as `accessToken`. The frontend
-stores the token in `sessionStorage` and attaches it to every authenticated request as an
-`Authorization: Bearer <token>` header.
+The API issues a JWT on successful login. The token is delivered as a `barkfest_auth` HttpOnly
+cookie (`Secure`, `SameSite=Strict`) and read server-side on every authenticated request via
+`OnMessageReceived` — it is never accessible to JavaScript.
 
 - Token expiry: 8 hours (`Jwt:ExpiryMinutes = 480`)
-- `sessionStorage` is tab-scoped and cleared on browser close — no persistent session risk
+- The Vite dev proxy forwards all `/v1/...` calls from the frontend to the API, keeping the cookie origin consistent in local development
+- The cookie is cleared on logout via `POST /v1/auth/logout`
 - On 401, the UI signs the user out and re-prompts login via the login modal
-- The HttpOnly cookie approach was trialled but abandoned — `SameSite=Strict` prevented
-  cookie delivery between the frontend (`http://localhost:5173`) and API (`https://localhost:7001`)
-  because Chrome treats different schemes as cross-site; the same mismatch applies on Azure
-  (different domains). Bearer tokens sidestep the SameSite problem entirely and are immune
-  to CSRF. See `docs/features/add-pet-dialog/DECISIONS.md` for full reasoning.
 
 ### Key endpoints
 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/v1/auth/register` | Register a new owner |
-| `POST` | `/v1/auth/login` | Owner login — returns JWT access token |
-| `POST` | `/v1/auth/admin/login` | Admin login — returns JWT access token |
-| `POST` | `/v1/auth/logout` | Logout (no auth required) |
+| `POST` | `/v1/auth/login` | Owner login — sets HttpOnly auth cookie |
+| `POST` | `/v1/auth/admin/login` | Admin login — sets HttpOnly auth cookie |
+| `POST` | `/v1/auth/logout` | Logout — clears auth cookie (no auth required) |
+| `GET` | `/v1/auth/check-username` | Check username availability (public) |
+| `GET` | `/v1/auth/check-display-name` | Check display name availability (public) |
+| `GET` | `/v1/owners` | List all owners (admin JWT required) |
 | `GET` | `/v1/owners/{id}` | Get owner by ID |
+| `GET` | `/v1/owners/{id}/pets` | Get all pets for an owner |
 | `PUT` | `/v1/owners/{id}` | Update owner |
+| `PUT` | `/v1/owners/{id}/password` | Change owner password |
+| `PATCH` | `/v1/owners/{id}/visibility` | Set owner visibility |
 | `DELETE` | `/v1/owners/{id}` | Delete owner |
 | `POST` | `/v1/owners/{id}/profile-image` | Upload owner profile image |
 | `DELETE` | `/v1/owners/{id}/profile-image` | Remove owner profile image |
@@ -88,6 +90,8 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 | `GET` | `/v1/browse/images` | Browse all pet images (public, paginated) |
 | `GET` | `/v1/browse/pet-types` | List available pet types (public) |
 | `GET` | `/v1/browse/breeds?petTypeValue=` | List breeds for a pet type (public) |
+| `GET` | `/v1/admin/admins` | List all administrators (admin JWT required) |
+| `PATCH` | `/v1/admin/owners/{id}/active` | Activate or deactivate an owner (admin JWT required) |
 
 ## Constraints
 
@@ -108,7 +112,7 @@ stores the token in `sessionStorage` and attaches it to every authenticated requ
 The `barkfest-ui` React SPA provides:
 
 - **Home page** — browse pet images, filter by pet type and breed, paginated
-- **Login dialog** — username + password; admin checkbox hidden (admin login available via Scalar)
+- **Login dialog** — username + password; admin checkbox hidden pending admin UI feature
 - **Register dialog** — full registration form with display name availability check, password strength meter, and confirm password
 - **Add Pet dialog** — two-step flow: pet details then image upload; closes immediately on success
 - **Update Owner Profile dialog** — two-step flow: personal info then profile photo; closes immediately on success

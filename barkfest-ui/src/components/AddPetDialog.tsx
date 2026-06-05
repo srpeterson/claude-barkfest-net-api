@@ -294,6 +294,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <textarea
                 placeholder="Lazy couch potato or zoomies champion? Tell us!"
                 rows={3}
+                maxLength={300}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground resize-none"
