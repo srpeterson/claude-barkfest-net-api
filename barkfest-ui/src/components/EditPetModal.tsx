@@ -252,6 +252,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Tell us about this pet…"
+                maxLength={300}
                 className={cn(inputCls, 'h-20 py-2.5 resize-none')}
               />
             </div>

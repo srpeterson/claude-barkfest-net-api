@@ -19,26 +19,26 @@ Barkfest.sln
 │   ├── Barkfest.Application
 │   ├── Barkfest.Persistence
 │   ├── Barkfest.Infrastructure
-│   └── Barkfest.API
-└── tests/
-    ├── Barkfest.Tests.Common        ← shared test helpers and builders
-    ├── Barkfest.Domain.Tests
-    ├── Barkfest.Application.Tests
-    ├── Barkfest.Persistence.Tests
-    ├── Barkfest.Infrastructure.Tests
-    ├── Barkfest.API.Tests
-    └── Barkfest.Integration.Tests
+│   ├── Barkfest.API
+│   └── tests/
+│       ├── Barkfest.Tests.Common        ← shared test helpers and builders
+│       ├── Barkfest.Domain.Tests
+│       ├── Barkfest.Application.Tests
+│       ├── Barkfest.Persistence.Tests
+│       ├── Barkfest.Infrastructure.Tests
+│       ├── Barkfest.API.Tests
+│       └── Barkfest.Integration.Tests
 ```
 
 ---
 
 ## Phase 1 — Solution Scaffold
 
-- [ ] Create solution file `Barkfest.sln`
-- [ ] Create all 13 projects with correct project types and target framework `net10.0`
-- [ ] Add all project references as defined below
-- [ ] Add all NuGet packages as defined below
-- [ ] Create `.gitignore` appropriate for a .NET solution
+- [x] Create solution file `Barkfest.sln`
+- [x] Create all 13 projects with correct project types and target framework `net10.0`
+- [x] Add all project references as defined below
+- [x] Add all NuGet packages as defined below
+- [x] Create `.gitignore` appropriate for a .NET solution
 
 ### Project References
 
@@ -100,11 +100,11 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 2.1 Exceptions
 
-- [ ] Create `Barkfest.Domain/Exceptions/DomainException.cs`
+- [x] Create `Barkfest.Domain/Exceptions/DomainException.cs`
 
 ### 2.2 Value Objects — use `sealed record`
 
-- [ ] Create `Barkfest.Domain/ValueObjects/ProfileImage.cs`
+- [x] Create `Barkfest.Domain/ValueObjects/ProfileImage.cs`
   - Properties: `BlobName` (string), `ContentType` (string)
   - Private constructor, static `Create()` factory method
   - Validates: `BlobName` required, `ContentType` required and validated via `SupportedImageType`
@@ -113,7 +113,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 2.3 Static Classes
 
-- [ ] Create `Barkfest.Domain/ValueObjects/SupportedImageType.cs`
+- [x] Create `Barkfest.Domain/ValueObjects/SupportedImageType.cs`
   - `AllowedContentTypes`: `image/jpeg`, `image/jpg`, `image/png`
   - `AllowedExtensions`: `.jpeg`, `.jpg`, `.png`
   - `IsContentTypeSupported(string contentType)` — case insensitive
@@ -121,10 +121,10 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 2.4 SmartEnums — extend `SmartEnum<T>`
 
-- [ ] Create `Barkfest.Domain/Enums/PetType.cs`
+- [x] Create `Barkfest.Domain/Enums/PetType.cs`
   - `Dog` (1), `Cat` (2), `Other` (3)
 
-- [ ] Create `Barkfest.Domain/Enums/DogBreed.cs`
+- [x] Create `Barkfest.Domain/Enums/DogBreed.cs`
   - Top 25 AKC registered breeds (2025 rankings):
     1. French Bulldog, 2. Labrador Retriever, 3. Golden Retriever,
     4. German Shepherd Dog, 5. Dachshund, 6. Poodle, 7. Beagle,
@@ -136,7 +136,7 @@ Individual `.csproj` files reference packages without version numbers.
   - Designer crossbreeds: `Labradoodle` (26), `Goldendoodle` (27), `Cockapoo` (28)
   - Catch-alls: `Mixed` (29), `Other` (30)
 
-- [ ] Create `Barkfest.Domain/Enums/CatBreed.cs`
+- [x] Create `Barkfest.Domain/Enums/CatBreed.cs`
   - Top 25 CFA registered breeds (2025 rankings):
     1. Maine Coon, 2. Ragdoll, 3. Exotic, 4. Persian, 5. Devon Rex,
     6. British Shorthair, 7. Abyssinian, 8. American Shorthair, 9. Scottish Fold,
@@ -149,7 +149,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 2.5 Entities — use `class` (mutable, identity-based)
 
-- [ ] Create `Barkfest.Domain/Entities/Owner.cs`
+- [x] Create `Barkfest.Domain/Entities/Owner.cs`
   - Properties: `Id` (Guid), `FirstName`, `LastName`, `Email`, `PhoneNumber` (nullable),
     `ProfileImage` (nullable `ProfileImage` value object),
     `Pets` (`IReadOnlyCollection<Pet>`), `CreatedAt`
@@ -166,19 +166,19 @@ Individual `.csproj` files reference packages without version numbers.
     - `SetProfileImage(string blobName, string contentType)` — delegates to `ProfileImage.Create()`
     - `RemoveProfileImage()` — sets `ProfileImage` to null
 
-- [ ] Create `Barkfest.Domain/Entities/Breed.cs` (abstract base)
+- [x] Create `Barkfest.Domain/Entities/Breed.cs` (abstract base)
   - Properties: `Id` (Guid), `PetId` (Guid), `Pet`
   - `Id` initialised with `Guid.CreateVersion7()`
 
-- [ ] Create `Barkfest.Domain/Entities/DogBreedInfo.cs` (extends `Breed`)
+- [x] Create `Barkfest.Domain/Entities/DogBreedInfo.cs` (extends `Breed`)
   - Properties: `DogBreed` (SmartEnum)
   - `SetDogBreed(DogBreed)` — null throws `DomainException`
 
-- [ ] Create `Barkfest.Domain/Entities/CatBreedInfo.cs` (extends `Breed`)
+- [x] Create `Barkfest.Domain/Entities/CatBreedInfo.cs` (extends `Breed`)
   - Properties: `CatBreed` (SmartEnum)
   - `SetCatBreed(CatBreed)` — null throws `DomainException`
 
-- [ ] Create `Barkfest.Domain/Entities/PetImage.cs`
+- [x] Create `Barkfest.Domain/Entities/PetImage.cs`
   - Properties: `Id` (Guid), `PetId` (Guid), `Pet`, `BlobName`, `ContentType`, `DisplayOrder`, `CreatedAt`
   - `Id` initialised with `Guid.CreateVersion7()`
   - `CreatedAt` initialised with `DateTime.UtcNow`
@@ -189,7 +189,7 @@ Individual `.csproj` files reference packages without version numbers.
     - `SetImage(string blobName, string contentType)` — validates via `SupportedImageType`
     - `SetDisplayOrder(int order)` — must be zero or greater
 
-- [ ] Create `Barkfest.Domain/Entities/Pet.cs`
+- [x] Create `Barkfest.Domain/Entities/Pet.cs`
   - Properties: `Id` (Guid), `Name`, `Description` (nullable), `DateOfBirth` (nullable `DateOnly`),
     `PetType`, `Breed` (nullable), `ProfileImage` (nullable `ProfileImage` value object),
     `Images` (`IReadOnlyCollection<PetImage>`), `OwnerId` (Guid), `Owner`, `CreatedAt`
@@ -215,14 +215,14 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 2.6 Interfaces
 
-- [ ] Create `Barkfest.Domain/Interfaces/IOwnerRepository.cs`
+- [x] Create `Barkfest.Domain/Interfaces/IOwnerRepository.cs`
   - `GetByIdAsync(Guid id, CancellationToken)`
   - `GetAllAsync(CancellationToken)`
   - `AddAsync(Owner, CancellationToken)`
   - `UpdateAsync(Owner, CancellationToken)`
   - `DeleteAsync(Guid id, CancellationToken)`
 
-- [ ] Create `Barkfest.Domain/Interfaces/IPetRepository.cs`
+- [x] Create `Barkfest.Domain/Interfaces/IPetRepository.cs`
   - `GetByIdAsync(Guid id, CancellationToken)`
   - `GetAllAsync(CancellationToken)`
   - `GetByOwnerIdAsync(Guid ownerId, CancellationToken)`
@@ -230,7 +230,7 @@ Individual `.csproj` files reference packages without version numbers.
   - `UpdateAsync(Pet, CancellationToken)`
   - `DeleteAsync(Guid id, CancellationToken)`
 
-- [ ] Create `Barkfest.Domain/Interfaces/IUnitOfWork.cs`
+- [x] Create `Barkfest.Domain/Interfaces/IUnitOfWork.cs`
   - `SaveChangesAsync(CancellationToken)`
 
 ---
@@ -239,117 +239,117 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 3.1 Common
 
-- [ ] Create `Barkfest.Application/Common/Exceptions/NotFoundException.cs`
-- [ ] Create `Barkfest.Application/Common/Interfaces/IBlobStorageService.cs`
+- [x] Create `Barkfest.Application/Common/Exceptions/NotFoundException.cs`
+- [x] Create `Barkfest.Application/Common/Interfaces/IBlobStorageService.cs`
   - `UploadAsync(string containerName, string blobName, Stream content, string contentType, CancellationToken)`
   - `DownloadAsync(string containerName, string blobName, CancellationToken)`
   - `DeleteAsync(string containerName, string blobName, CancellationToken)`
   - `ExistsAsync(string containerName, string blobName, CancellationToken)`
-- [ ] Create `Barkfest.Application/Common/Behaviors/ValidationBehavior.cs`
-- [ ] Create `Barkfest.Application/Common/Behaviors/LoggingBehavior.cs`
+- [x] Create `Barkfest.Application/Common/Behaviors/ValidationBehavior.cs`
+- [x] Create `Barkfest.Application/Common/Behaviors/LoggingBehavior.cs`
 
 ### 3.2 DTOs — use `record`
 
-- [ ] Create `Barkfest.Application/Features/Owners/DTOs/OwnerDto.cs` (record)
+- [x] Create `Barkfest.Application/Features/Owners/DTOs/OwnerDto.cs` (record)
   - `Guid Id`, `string FirstName`, `string LastName`, `string Email`,
     `string? PhoneNumber`, `ProfileImageDto? ProfileImage`, `DateTime CreatedAt`
 
-- [ ] Create `Barkfest.Application/Features/Pets/DTOs/PetDto.cs` (record)
+- [x] Create `Barkfest.Application/Features/Pets/DTOs/PetDto.cs` (record)
   - `Guid Id`, `string Name`, `string? Description`, `DateOnly? DateOfBirth`,
     `int? Age`, `string PetType`, `string? Breed`, `ProfileImageDto? ProfileImage`,
     `IReadOnlyCollection<PetImageDto> Images`, `Guid OwnerId`, `DateTime CreatedAt`
 
-- [ ] Create `Barkfest.Application/Features/Pets/DTOs/PetImageDto.cs` (record)
+- [x] Create `Barkfest.Application/Features/Pets/DTOs/PetImageDto.cs` (record)
   - `Guid Id`, `string BlobName`, `string ContentType`, `int DisplayOrder`, `DateTime CreatedAt`
 
-- [ ] Create `Barkfest.Application/Features/Pets/DTOs/ProfileImageDto.cs` (record)
+- [x] Create `Barkfest.Application/Features/Pets/DTOs/ProfileImageDto.cs` (record)
   - `string BlobName`, `string ContentType`
 
 ### 3.3 Mappings — static extension methods, no AutoMapper
 
-- [ ] Create `Barkfest.Application/Features/Owners/OwnerMappings.cs`
+- [x] Create `Barkfest.Application/Features/Owners/OwnerMappings.cs`
   - `ToDto(this Owner)` → `OwnerDto`
   - `ToDtoList(this IEnumerable<Owner>)` → `IEnumerable<OwnerDto>`
 
-- [ ] Create `Barkfest.Application/Features/Pets/PetMappings.cs`
+- [x] Create `Barkfest.Application/Features/Pets/PetMappings.cs`
   - `ToDto(this Pet)` → `PetDto`
   - `ToDtoList(this IEnumerable<Pet>)` → `IEnumerable<PetDto>`
 
 ### 3.4 Owner Commands and Queries — use `record` for commands/queries, `class` for handlers/validators
 
-- [ ] `CreateOwner/CreateOwnerCommand.cs` (record) — `IRequest<Guid>`
-- [ ] `CreateOwner/CreateOwnerCommandHandler.cs` (class)
-- [ ] `CreateOwner/CreateOwnerCommandValidator.cs` (class)
+- [x] `CreateOwner/CreateOwnerCommand.cs` (record) — `IRequest<Guid>`
+- [x] `CreateOwner/CreateOwnerCommandHandler.cs` (class)
+- [x] `CreateOwner/CreateOwnerCommandValidator.cs` (class)
   - `FirstName`: not empty, max length via `Owner.FirstNameMaxLength`
   - `LastName`: not empty, max length via `Owner.LastNameMaxLength`
   - `Email`: not empty, valid email format, max length via `Owner.EmailMaxLength`
 
-- [ ] `UpdateOwner/UpdateOwnerCommand.cs` (record) — `IRequest`
-- [ ] `UpdateOwner/UpdateOwnerCommandHandler.cs` (class)
-- [ ] `UpdateOwner/UpdateOwnerCommandValidator.cs` (class) — same rules as Create
+- [x] `UpdateOwner/UpdateOwnerCommand.cs` (record) — `IRequest`
+- [x] `UpdateOwner/UpdateOwnerCommandHandler.cs` (class)
+- [x] `UpdateOwner/UpdateOwnerCommandValidator.cs` (class) — same rules as Create
 
-- [ ] `DeleteOwner/DeleteOwnerCommand.cs` (record) — `IRequest`
-- [ ] `DeleteOwner/DeleteOwnerCommandHandler.cs` (class)
+- [x] `DeleteOwner/DeleteOwnerCommand.cs` (record) — `IRequest`
+- [x] `DeleteOwner/DeleteOwnerCommandHandler.cs` (class)
 
-- [ ] `UploadOwnerProfileImage/UploadOwnerProfileImageCommand.cs` (record)
-- [ ] `UploadOwnerProfileImage/UploadOwnerProfileImageCommandHandler.cs` (class)
-- [ ] `UploadOwnerProfileImage/UploadOwnerProfileImageCommandValidator.cs` (class)
+- [x] `UploadOwnerProfileImage/UploadOwnerProfileImageCommand.cs` (record)
+- [x] `UploadOwnerProfileImage/UploadOwnerProfileImageCommandHandler.cs` (class)
+- [x] `UploadOwnerProfileImage/UploadOwnerProfileImageCommandValidator.cs` (class)
   - `ContentType`: must pass `SupportedImageType.IsContentTypeSupported()`
   - `FileName`: must pass `SupportedImageType.IsFileExtensionSupported()`
 
-- [ ] `RemoveOwnerProfileImage/RemoveOwnerProfileImageCommand.cs` (record)
-- [ ] `RemoveOwnerProfileImage/RemoveOwnerProfileImageCommandHandler.cs` (class)
+- [x] `RemoveOwnerProfileImage/RemoveOwnerProfileImageCommand.cs` (record)
+- [x] `RemoveOwnerProfileImage/RemoveOwnerProfileImageCommandHandler.cs` (class)
   - Only calls `IBlobStorageService.DeleteAsync()` if owner has an existing image
 
-- [ ] `GetOwnerById/GetOwnerByIdQuery.cs` (record) — `IRequest<OwnerDto>`
-- [ ] `GetOwnerById/GetOwnerByIdQueryHandler.cs` (class)
+- [x] `GetOwnerById/GetOwnerByIdQuery.cs` (record) — `IRequest<OwnerDto>`
+- [x] `GetOwnerById/GetOwnerByIdQueryHandler.cs` (class)
 
-- [ ] `GetAllOwners/GetAllOwnersQuery.cs` (record) — `IRequest<IEnumerable<OwnerDto>>`
-- [ ] `GetAllOwners/GetAllOwnersQueryHandler.cs` (class)
+- [x] `GetAllOwners/GetAllOwnersQuery.cs` (record) — `IRequest<IEnumerable<OwnerDto>>`
+- [x] `GetAllOwners/GetAllOwnersQueryHandler.cs` (class)
 
 ### 3.5 Pet Commands and Queries
 
-- [ ] `CreatePet/CreatePetCommand.cs` (record) — `IRequest<Guid>`
-- [ ] `CreatePet/CreatePetCommandHandler.cs` (class)
-- [ ] `CreatePet/CreatePetCommandValidator.cs` (class)
+- [x] `CreatePet/CreatePetCommand.cs` (record) — `IRequest<Guid>`
+- [x] `CreatePet/CreatePetCommandHandler.cs` (class)
+- [x] `CreatePet/CreatePetCommandValidator.cs` (class)
   - `Name`: not empty, max length via `Pet.NameMaxLength`
 
-- [ ] `UpdatePet/UpdatePetCommand.cs` (record) — `IRequest`
-- [ ] `UpdatePet/UpdatePetCommandHandler.cs` (class)
-- [ ] `UpdatePet/UpdatePetCommandValidator.cs` (class) — same rules as Create
+- [x] `UpdatePet/UpdatePetCommand.cs` (record) — `IRequest`
+- [x] `UpdatePet/UpdatePetCommandHandler.cs` (class)
+- [x] `UpdatePet/UpdatePetCommandValidator.cs` (class) — same rules as Create
 
-- [ ] `DeletePet/DeletePetCommand.cs` (record) — `IRequest`
-- [ ] `DeletePet/DeletePetCommandHandler.cs` (class)
+- [x] `DeletePet/DeletePetCommand.cs` (record) — `IRequest`
+- [x] `DeletePet/DeletePetCommandHandler.cs` (class)
 
-- [ ] `UploadPetProfileImage/UploadPetProfileImageCommand.cs` (record)
-- [ ] `UploadPetProfileImage/UploadPetProfileImageCommandHandler.cs` (class)
-- [ ] `UploadPetProfileImage/UploadPetProfileImageCommandValidator.cs` (class)
+- [x] `UploadPetProfileImage/UploadPetProfileImageCommand.cs` (record)
+- [x] `UploadPetProfileImage/UploadPetProfileImageCommandHandler.cs` (class)
+- [x] `UploadPetProfileImage/UploadPetProfileImageCommandValidator.cs` (class)
   - Same image type validation as Owner
 
-- [ ] `RemovePetProfileImage/RemovePetProfileImageCommand.cs` (record)
-- [ ] `RemovePetProfileImage/RemovePetProfileImageCommandHandler.cs` (class)
+- [x] `RemovePetProfileImage/RemovePetProfileImageCommand.cs` (record)
+- [x] `RemovePetProfileImage/RemovePetProfileImageCommandHandler.cs` (class)
 
-- [ ] `AddPetImage/AddPetImageCommand.cs` (record)
-- [ ] `AddPetImage/AddPetImageCommandHandler.cs` (class)
+- [x] `AddPetImage/AddPetImageCommand.cs` (record)
+- [x] `AddPetImage/AddPetImageCommandHandler.cs` (class)
   - Enforces `Pet.MaxImages` limit
-- [ ] `AddPetImage/AddPetImageCommandValidator.cs` (class)
+- [x] `AddPetImage/AddPetImageCommandValidator.cs` (class)
   - Same image type validation as Owner
 
-- [ ] `RemovePetImage/RemovePetImageCommand.cs` (record)
-- [ ] `RemovePetImage/RemovePetImageCommandHandler.cs` (class)
+- [x] `RemovePetImage/RemovePetImageCommand.cs` (record)
+- [x] `RemovePetImage/RemovePetImageCommandHandler.cs` (class)
 
-- [ ] `GetPetById/GetPetByIdQuery.cs` (record) — `IRequest<PetDto>`
-- [ ] `GetPetById/GetPetByIdQueryHandler.cs` (class)
+- [x] `GetPetById/GetPetByIdQuery.cs` (record) — `IRequest<PetDto>`
+- [x] `GetPetById/GetPetByIdQueryHandler.cs` (class)
 
-- [ ] `GetAllPets/GetAllPetsQuery.cs` (record) — `IRequest<IEnumerable<PetDto>>`
-- [ ] `GetAllPets/GetAllPetsQueryHandler.cs` (class)
+- [x] `GetAllPets/GetAllPetsQuery.cs` (record) — `IRequest<IEnumerable<PetDto>>`
+- [x] `GetAllPets/GetAllPetsQueryHandler.cs` (class)
 
-- [ ] `GetPetsByOwnerId/GetPetsByOwnerIdQuery.cs` (record) — `IRequest<IEnumerable<PetDto>>`
-- [ ] `GetPetsByOwnerId/GetPetsByOwnerIdQueryHandler.cs` (class)
+- [x] `GetPetsByOwnerId/GetPetsByOwnerIdQuery.cs` (record) — `IRequest<IEnumerable<PetDto>>`
+- [x] `GetPetsByOwnerId/GetPetsByOwnerIdQueryHandler.cs` (class)
 
 ### 3.6 Dependency Injection
 
-- [ ] Create `Barkfest.Application/DependencyInjection.cs`
+- [x] Create `Barkfest.Application/DependencyInjection.cs`
   - `AddApplication()` extension method
   - Registers MediatR with `ValidationBehavior` and `LoggingBehavior`
   - Registers FluentValidation validators
@@ -360,7 +360,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 4.1 DbContext
 
-- [ ] Create `Barkfest.Persistence/AppDbContext.cs`
+- [x] Create `Barkfest.Persistence/AppDbContext.cs`
   - `DbSet<Owner> Owners`
   - `DbSet<Pet> Pets`
   - `DbSet<PetImage> PetImages`
@@ -372,7 +372,7 @@ Individual `.csproj` files reference packages without version numbers.
 > in the database via `HasColumnName()`. This ensures raw SQL and Dapper queries
 > are self-describing in joins.
 
-- [ ] Create `Barkfest.Persistence/Configurations/OwnerConfiguration.cs`
+- [x] Create `Barkfest.Persistence/Configurations/OwnerConfiguration.cs`
   - `Id` → column `OwnerId`, default `newsequentialid()`
   - `FirstName` → `nvarchar(50)`, not null
   - `LastName` → `nvarchar(100)`, not null
@@ -380,7 +380,7 @@ Individual `.csproj` files reference packages without version numbers.
   - `PhoneNumber` → `nvarchar(max)`, nullable
   - `OwnsOne(ProfileImage)` → columns `ProfileImageBlobName` nvarchar(500), `ProfileImageContentType` nvarchar(100), both nullable
 
-- [ ] Create `Barkfest.Persistence/Configurations/PetConfiguration.cs`
+- [x] Create `Barkfest.Persistence/Configurations/PetConfiguration.cs`
   - `Id` → column `PetId`, default `newsequentialid()`
   - `OwnerId` → FK → `Owners.OwnerId`, cascade delete
   - `Name` → `nvarchar(75)`, not null
@@ -391,14 +391,14 @@ Individual `.csproj` files reference packages without version numbers.
   - `Ignore(p => p.Age)` — computed, not stored
   - One-to-many with `Owner` via `HasOne(...).WithMany(o => o.Pets)`
 
-- [ ] Create `Barkfest.Persistence/Configurations/PetImageConfiguration.cs`
+- [x] Create `Barkfest.Persistence/Configurations/PetImageConfiguration.cs`
   - `Id` → column `PetImageId`, default `newsequentialid()`
   - `PetId` → column `PetId`, FK → `Pets.PetId`, cascade delete
   - `BlobName` → `nvarchar(500)`, not null
   - `ContentType` → `nvarchar(100)`, not null
   - `DisplayOrder` → `int`, not null
 
-- [ ] Create `Barkfest.Persistence/Configurations/BreedConfiguration.cs`
+- [x] Create `Barkfest.Persistence/Configurations/BreedConfiguration.cs`
   - `Id` → column `BreedId`, default `newsequentialid()`
   - `PetId` → column `PetId`, FK → `Pets.PetId`, cascade delete
   - TPH discriminator column `BreedType` nvarchar(50): `"Dog"` → `DogBreedInfo`, `"Cat"` → `CatBreedInfo`
@@ -408,20 +408,20 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 4.3 Repositories
 
-- [ ] Create `Barkfest.Persistence/Repositories/OwnerRepository.cs` implementing `IOwnerRepository`
-- [ ] Create `Barkfest.Persistence/Repositories/PetRepository.cs` implementing `IPetRepository`
-- [ ] Create `Barkfest.Persistence/UnitOfWork.cs` implementing `IUnitOfWork`
+- [x] Create `Barkfest.Persistence/Repositories/OwnerRepository.cs` implementing `IOwnerRepository`
+- [x] Create `Barkfest.Persistence/Repositories/PetRepository.cs` implementing `IPetRepository`
+- [x] Create `Barkfest.Persistence/UnitOfWork.cs` implementing `IUnitOfWork`
 
 ### 4.4 Migration
 
-- [ ] Generate migration `InitialCreate`:
+- [x] Generate migration `InitialCreate`:
   ```bash
   dotnet ef migrations add InitialCreate \
     --project src/Barkfest.Persistence \
     --startup-project src/Barkfest.API
   ```
-- [ ] Verify `Up()` method creates all tables with correct column names, types, and constraints
-- [ ] Do NOT run `dotnet ef database update` — migration applied at runtime via `MigrateAsync()`
+- [x] Verify `Up()` method creates all tables with correct column names, types, and constraints
+- [x] Do NOT run `dotnet ef database update` — migration applied at runtime via `MigrateAsync()`
 
 **Expected tables and columns:**
 
@@ -442,7 +442,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 4.5 Dependency Injection
 
-- [ ] Create `Barkfest.Persistence/DependencyInjection.cs`
+- [x] Create `Barkfest.Persistence/DependencyInjection.cs`
   - `AddPersistence(IServiceCollection, IConfiguration)` extension method
   - Registers `AppDbContext` with SQL Server using `services.AddDbContext<AppDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("barkfest")))`
   - Registers `IOwnerRepository` → `OwnerRepository`
@@ -454,12 +454,12 @@ Individual `.csproj` files reference packages without version numbers.
 
 ## Phase 5 — Infrastructure Layer
 
-- [ ] Create `Barkfest.Infrastructure/Storage/AzureBlobStorageService.cs` implementing `IBlobStorageService`
+- [x] Create `Barkfest.Infrastructure/Storage/AzureBlobStorageService.cs` implementing `IBlobStorageService`
   - `UploadAsync()`, `DownloadAsync()`, `DeleteAsync()`, `ExistsAsync()`
 
-- [ ] Create `Barkfest.Infrastructure/Messaging/EmailService.cs`
+- [x] Create `Barkfest.Infrastructure/Messaging/EmailService.cs`
 
-- [ ] Create `Barkfest.Infrastructure/DependencyInjection.cs`
+- [x] Create `Barkfest.Infrastructure/DependencyInjection.cs`
   - `AddInfrastructure(IHostApplicationBuilder)` extension method
   - Registers `BlobServiceClient` using `builder.AddAzureBlobClient("barkfest-blobs")`
   - Registers `IBlobStorageService` → `AzureBlobStorageService`
@@ -470,7 +470,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 6.1 Controllers
 
-- [ ] Create `Barkfest.API/Controllers/OwnersController.cs`
+- [x] Create `Barkfest.API/Controllers/OwnersController.cs`
   - `GET    /api/owners`                               → `GetAllOwnersQuery`
   - `GET    /api/owners/{id:guid}`                     → `GetOwnerByIdQuery` — 404 if not found
   - `POST   /api/owners`                               → `CreateOwnerCommand` — 201 Created
@@ -479,7 +479,7 @@ Individual `.csproj` files reference packages without version numbers.
   - `POST   /api/owners/{id:guid}/profile-image`       → `UploadOwnerProfileImageCommand`
   - `DELETE /api/owners/{id:guid}/profile-image`       → `RemoveOwnerProfileImageCommand`
 
-- [ ] Create `Barkfest.API/Controllers/PetsController.cs`
+- [x] Create `Barkfest.API/Controllers/PetsController.cs`
   - `GET    /api/pets`                                 → `GetAllPetsQuery`
   - `GET    /api/pets/{id:guid}`                       → `GetPetByIdQuery` — 404 if not found
   - `GET    /api/owners/{ownerId:guid}/pets`           → `GetPetsByOwnerIdQuery`
@@ -493,14 +493,14 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 6.2 Middleware
 
-- [ ] Create `Barkfest.API/Middleware/ExceptionHandlingMiddleware.cs`
+- [x] Create `Barkfest.API/Middleware/ExceptionHandlingMiddleware.cs`
   - Catches `NotFoundException` → 404
   - Catches `DomainException` → 400
   - Catches unhandled exceptions → 500
 
 ### 6.3 Program.cs
 
-- [ ] Configure `Program.cs`:
+- [x] Configure `Program.cs`:
   ```csharp
   builder.AddServiceDefaults();
 
@@ -536,7 +536,7 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 6.4 Configuration
 
-- [ ] Create `appsettings.json`:
+- [x] Create `appsettings.json`:
   ```json
   {
     "ConnectionStrings": {
@@ -553,14 +553,14 @@ Individual `.csproj` files reference packages without version numbers.
 
 ### 7.1 Barkfest.Domain.Tests
 
-- [ ] `OwnerTests.cs`
+- [x] `OwnerTests.cs`
   - `SetFirstName`: valid, trim, at max length, null throws, empty throws, whitespace throws, exceeds max length throws
   - `SetLastName`: valid, trim, at max length, null throws, empty throws, whitespace throws, exceeds max length throws
   - `SetEmail`: valid, lowercase and trim, at max length, null throws, empty throws, whitespace throws, no @ symbol throws, no domain throws, no TLD throws, spaces throw, exceeds max length throws
   - `SetProfileImage`: valid, null blob name throws, empty blob name throws, null content type throws, empty content type throws, unsupported content type throws
   - `RemoveProfileImage`: clears profile image
 
-- [ ] `PetTests.cs`
+- [x] `PetTests.cs`
   - `SetName`: valid, trim, at max length, null throws, empty throws, whitespace throws, exceeds max length throws
   - `SetDescription`: valid, trim, accepts null
   - `SetDateOfBirth`: valid, accepts null, future date throws
@@ -573,36 +573,36 @@ Individual `.csproj` files reference packages without version numbers.
   - `RemoveImage`: removes when found, not found throws
   - Use `Pet.MaxImages` constant — never hardcode the number
 
-- [ ] `PetImageTests.cs`
+- [x] `PetImageTests.cs`
   - `SetImage`: valid, jpeg accepted, jpg accepted, png accepted, null blob name throws, empty blob name throws, null content type throws, empty content type throws, unsupported content type throws
   - `SetDisplayOrder`: valid, zero accepted, negative throws
 
-- [ ] `ProfileImageTests.cs`
+- [x] `ProfileImageTests.cs`
   - `Create`: valid, lowercases and trims content type, trims blob name, jpeg accepted, jpg accepted, png accepted
   - `Create` sad path: null blob name throws, empty blob name throws, whitespace blob name throws, null content type throws, empty content type throws, whitespace content type throws, unsupported content type throws
   - Equality: same values are equal, different values are not equal
 
-- [ ] `BreedTests.cs`
+- [x] `BreedTests.cs`
   - `SetDogBreed`: valid, null throws
   - `SetCatBreed`: valid, null throws
 
-- [ ] `SupportedImageTypeTests.cs`
+- [x] `SupportedImageTypeTests.cs`
   - `IsContentTypeSupported`: jpeg true, jpg true, png true, unsupported false, case insensitive
   - `IsFileExtensionSupported`: .jpeg true, .jpg true, .png true, unsupported false, case insensitive
 
-- [ ] `PetTypeTests.cs`
+- [x] `PetTypeTests.cs`
   - Has Dog, Cat, Other values
   - Has exactly 3 values
   - Lookup by name: Dog, Cat, Other, invalid throws
   - Lookup by value: Dog, Cat, Other, invalid throws
 
-- [ ] `DogBreeedTests.cs`
+- [x] `DogBreeedTests.cs`
   - Has exactly 30 values
   - Includes Labradoodle, Goldendoodle, Cockapoo, Mixed, Other
   - Lookup by name, lookup by value, invalid name throws, invalid value throws
   - Unique values, unique names
 
-- [ ] `CatBreedTests.cs`
+- [x] `CatBreedTests.cs`
   - Has exactly 29 values
   - Includes DomesticShorthair, Tabby, Mixed, Other
   - Lookup by name, lookup by value, invalid name throws, invalid value throws
@@ -612,90 +612,90 @@ Individual `.csproj` files reference packages without version numbers.
 
 Use NSubstitute for all mocking. Use Shouldly for all assertions.
 
-- [ ] `CreateOwnerCommandHandlerTests.cs`
-- [ ] `UpdateOwnerCommandHandlerTests.cs`
-- [ ] `DeleteOwnerCommandHandlerTests.cs`
-- [ ] `GetOwnerByIdQueryHandlerTests.cs` — returns OwnerDto when found, throws NotFoundException when not found
-- [ ] `GetAllOwnersQueryHandlerTests.cs`
+- [x] `CreateOwnerCommandHandlerTests.cs`
+- [x] `UpdateOwnerCommandHandlerTests.cs`
+- [x] `DeleteOwnerCommandHandlerTests.cs`
+- [x] `GetOwnerByIdQueryHandlerTests.cs` — returns OwnerDto when found, throws NotFoundException when not found
+- [x] `GetAllOwnersQueryHandlerTests.cs`
 
-- [ ] `CreateOwnerCommandValidatorTests.cs`
+- [x] `CreateOwnerCommandValidatorTests.cs`
   - `FirstName`: valid, at max length, empty fails, null fails, whitespace fails, exceeds max length fails
   - `LastName`: valid, at max length, empty fails, null fails, whitespace fails, exceeds max length fails
   - `Email`: valid, at max length, empty fails, null fails, whitespace fails, no @ symbol fails, no domain fails, no TLD fails, spaces fail, exceeds max length fails
 
-- [ ] `UpdateOwnerCommandValidatorTests.cs` — mirror same cases as Create
+- [x] `UpdateOwnerCommandValidatorTests.cs` — mirror same cases as Create
 
-- [ ] `UploadOwnerProfileImageCommandHandlerTests.cs`
+- [x] `UploadOwnerProfileImageCommandHandlerTests.cs`
   - Uploads image and updates owner
   - Throws NotFoundException when owner not found
 
-- [ ] `UploadOwnerProfileImageCommandValidatorTests.cs`
+- [x] `UploadOwnerProfileImageCommandValidatorTests.cs`
   - Content type: jpeg passes, jpg passes, png passes, unsupported fails
   - Extension: .jpeg passes, .jpg passes, .png passes, unsupported fails
 
-- [ ] `RemoveOwnerProfileImageCommandHandlerTests.cs`
+- [x] `RemoveOwnerProfileImageCommandHandlerTests.cs`
   - Removes from blob storage and clears owner
   - Throws NotFoundException when owner not found
   - Does not call blob storage when owner has no existing image
 
-- [ ] `CreatePetCommandHandlerTests.cs`
-- [ ] `UpdatePetCommandHandlerTests.cs`
-- [ ] `DeletePetCommandHandlerTests.cs`
-- [ ] `GetPetByIdQueryHandlerTests.cs`
-- [ ] `GetAllPetsQueryHandlerTests.cs`
-- [ ] `GetPetsByOwnerIdQueryHandlerTests.cs`
+- [x] `CreatePetCommandHandlerTests.cs`
+- [x] `UpdatePetCommandHandlerTests.cs`
+- [x] `DeletePetCommandHandlerTests.cs`
+- [x] `GetPetByIdQueryHandlerTests.cs`
+- [x] `GetAllPetsQueryHandlerTests.cs`
+- [x] `GetPetsByOwnerIdQueryHandlerTests.cs`
 
-- [ ] `CreatePetCommandValidatorTests.cs`
+- [x] `CreatePetCommandValidatorTests.cs`
   - `Name`: valid, at max length, empty fails, null fails, whitespace fails, exceeds max length fails
 
-- [ ] `UpdatePetCommandValidatorTests.cs` — mirror same cases as Create
+- [x] `UpdatePetCommandValidatorTests.cs` — mirror same cases as Create
 
-- [ ] `AddPetImageCommandHandlerTests.cs`
+- [x] `AddPetImageCommandHandlerTests.cs`
   - Adds image successfully
   - Throws when max images exceeded
   - Throws NotFoundException when pet not found
 
-- [ ] `AddPetImageCommandValidatorTests.cs`
+- [x] `AddPetImageCommandValidatorTests.cs`
   - Content type: jpeg passes, jpg passes, png passes, unsupported fails
   - Extension: .jpeg passes, .jpg passes, .png passes, unsupported fails
 
-- [ ] `RemovePetImageCommandHandlerTests.cs`
+- [x] `RemovePetImageCommandHandlerTests.cs`
   - Removes from blob storage and pet
   - Throws NotFoundException when pet not found
 
-- [ ] `ValidationBehaviorTests.cs`
+- [x] `ValidationBehaviorTests.cs`
 
 ### 7.3 Barkfest.Persistence.Tests
 
-- [ ] `Fixtures/DatabaseFixture.cs` — Testcontainers SQL Server, applies migrations via `MigrateAsync()`
-- [ ] `Repositories/OwnerRepositoryTests.cs`
-- [ ] `Repositories/PetRepositoryTests.cs`
-- [ ] `Configurations/OwnerConfigurationTests.cs`
-- [ ] `Configurations/PetConfigurationTests.cs`
-- [ ] `Configurations/PetImageConfigurationTests.cs`
-- [ ] `Configurations/BreedConfigurationTests.cs`
+- [x] `Fixtures/DatabaseFixture.cs` — Testcontainers SQL Server, applies migrations via `MigrateAsync()`
+- [x] `Repositories/OwnerRepositoryTests.cs`
+- [x] `Repositories/PetRepositoryTests.cs`
+- [x] `Configurations/OwnerConfigurationTests.cs`
+- [x] `Configurations/PetConfigurationTests.cs`
+- [x] `Configurations/PetImageConfigurationTests.cs`
+- [x] `Configurations/BreedConfigurationTests.cs`
 
 ### 7.4 Barkfest.Infrastructure.Tests
 
-- [ ] `Fixtures/AzuriteFixture.cs` — Testcontainers Azurite
-- [ ] `Storage/AzureBlobStorageServiceTests.cs`
+- [x] `Fixtures/AzuriteFixture.cs` — Testcontainers Azurite
+- [x] `Storage/AzureBlobStorageServiceTests.cs`
 
 ### 7.5 Barkfest.API.Tests
 
-- [ ] `Fixtures/ApiFactory.cs`
+- [x] `Fixtures/ApiFactory.cs`
   - Extends `WebApplicationFactory<Program>`
   - Replaces SQL Server with Testcontainers SQL Server
   - Replaces Azure Blob Storage with Testcontainers Azurite
   - Both run in containers — no real external services
 
-- [ ] `Controllers/OwnersControllerTests.cs`
+- [x] `Controllers/OwnersControllerTests.cs`
   - CRUD: GET 200, POST 201, PUT 200, DELETE 204, not found 404
   - Email: missing 400, invalid format 400, exceeds max length 400
   - FirstName: missing 400, exceeds max length 400
   - LastName: missing 400, exceeds max length 400
   - Profile image: valid upload 200, not found 404, unsupported content type 400, unsupported extension 400
 
-- [ ] `Controllers/PetsControllerTests.cs`
+- [x] `Controllers/PetsControllerTests.cs`
   - CRUD: GET 200, POST 201, PUT 200, DELETE 204, not found 404
   - Name: missing 400, exceeds max length 400
   - Profile image: valid upload 200, not found 404, unsupported content type 400
@@ -705,15 +705,15 @@ Use NSubstitute for all mocking. Use Shouldly for all assertions.
 
 References `Barkfest.API` — uses `WebApplicationFactory<Program>` with Testcontainers (SQL Server + Azurite). Fully self-contained; no running AppHost required.
 
-- [ ] `Config/IntegrationTestSettings.cs` — base URL and settings
-- [ ] `Flows/OwnerFlowTests.cs`
+- [x] `Config/IntegrationTestSettings.cs` — base URL and settings
+- [x] `Flows/OwnerFlowTests.cs`
   - Full lifecycle: create → read → update → delete → confirm 404
   - Email: missing 400, invalid 400, exceeds max length 400
   - FirstName: missing 400, exceeds max length 400
   - LastName: missing 400, exceeds max length 400
   - Profile image: upload succeeds, unsupported type 400, remove succeeds
 
-- [ ] `Flows/PetFlowTests.cs`
+- [x] `Flows/PetFlowTests.cs`
   - Full lifecycle: create → read → update → delete → confirm 404
   - Name: missing 400, exceeds max length 400
   - Profile image: upload succeeds, unsupported type 400, remove succeeds
@@ -729,11 +729,11 @@ Bicep) is included in this phase. Goal: any dev can clone the repo and be fully 
 
 ### 8.1 Create Projects
 
-- [ ] Create `src/Barkfest.AppHost` — Aspire host project (`Microsoft.NET.Sdk`)
-- [ ] Create `src/Barkfest.ServiceDefaults` — Aspire defaults project (`Microsoft.NET.Sdk`)
-- [ ] Add `Barkfest.AppHost` → `Barkfest.API` project reference
-- [ ] Add `Barkfest.API` → `Barkfest.ServiceDefaults` project reference
-- [ ] Add NuGet packages per Phase 1 NuGet table
+- [x] Create `src/Barkfest.AppHost` — Aspire host project (`Microsoft.NET.Sdk`)
+- [x] Create `src/Barkfest.ServiceDefaults` — Aspire defaults project (`Microsoft.NET.Sdk`)
+- [x] Add `Barkfest.AppHost` → `Barkfest.API` project reference
+- [x] Add `Barkfest.API` → `Barkfest.ServiceDefaults` project reference
+- [x] Add NuGet packages per Phase 1 NuGet table
 
 ### 8.2 AppHost — `Program.cs`
 
@@ -1186,17 +1186,15 @@ Extend the public browse API to support server-side pagination, featured-image-o
 
 ## Phase 15 — Handoff Home Page
 
-See [`docs/features/handoff-home-page/PLAN.md`](features/handoff-home-page/PLAN.md),
-[`PROGRESS.md`](features/handoff-home-page/PROGRESS.md), and
-[`DECISIONS.md`](features/handoff-home-page/DECISIONS.md).
+Per-feature plan, progress, and decisions docs were removed in PR #16 (repo housekeeping).
+See [PROGRESS.md](PROGRESS.md) for the completed phase summary.
 
 ---
 
 ## Phase 16 — Home Page Wire Filter
 
-See [`docs/features/home-page-wire-filter/PLAN.md`](features/home-page-wire-filter/PLAN.md),
-[`PROGRESS.md`](features/home-page-wire-filter/PROGRESS.md), and
-[`DECISIONS.md`](features/home-page-wire-filter/DECISIONS.md).
+Per-feature plan, progress, and decisions docs were removed in PR #16 (repo housekeeping).
+See [PROGRESS.md](PROGRESS.md) for the completed phase summary.
 
 ---
 
