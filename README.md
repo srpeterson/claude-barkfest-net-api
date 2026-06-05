@@ -3,6 +3,7 @@
 A .NET 10 Clean Architecture pet management API.
 Owners register themselves and their pets. Relational data lives in SQL Server via EF Core.
 Pet and owner profile images are stored in Azure Blob Storage.
+The frontend is a React + TypeScript app built with Vite, located in the `barkfest-ui` directory.
 
 ---
 
@@ -23,25 +24,37 @@ Pet and owner profile images are stored in Azure Blob Storage.
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (Included with Visual Studio 2026)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop) - must be running before starting the app
-- [Git](https://git-scm.com/downloads)
-- [Node.js](https://nodejs.org/) (LTS) - required for the frontend (`barkfest-ui`)
+- [Git](https://git-scm.com/downloads) (v2.23 or later) - for cloning the repository and version control
+- [Node.js](https://nodejs.org/) (LTS, v20 or later) - required for the frontend (`barkfest-ui`)
 - **pnpm** - package manager used by `barkfest-ui`. Install once via:
   ```bash
   npm install -g pnpm
   ```
-- **EF Core CLI tools** (`dotnet ef`) - minimum version **10.0.8**
+- **EF Core CLI tools** (`dotnet ef`) — used to create and manage database migrations.
 
-  The repo includes a `dotnet-tools.json` manifest pinned to `10.0.8`.
-  Install the exact version with:
-  ```bash
-  dotnet tool restore
-  ```
-  To verify the install:
+  **Step 1 — Check what you already have:**
   ```bash
   dotnet ef --version
   ```
-  You should see `10.0.8` (or later). If `dotnet ef` is not recognised, make sure
-  `~/.dotnet/tools` is on your `PATH`.
+  - If a version number is printed, you have a global install. That is fine — the next step installs a separate local version scoped to this repo and will not touch your global install.
+  - If you get "command not found" or "is not recognised", you have nothing installed globally. That is also fine — the next step handles everything.
+
+  **Step 2 — Install the repo's pinned version:**
+
+  The repo includes a `.config/dotnet-tools.json` manifest that pins the exact version required. Run this once from the **repo root**:
+  ```bash
+  dotnet tool restore
+  ```
+  This installs `dotnet ef 10.0.8` locally, scoped to this repo only. It will not affect any other projects on your machine.
+
+  **Step 3 — Verify:**
+  ```bash
+  dotnet ef --version
+  ```
+  You should see `10.0.8`. If `dotnet ef` is still not recognised, make sure `~/.dotnet/tools` is on your `PATH`.
+
+  > **Will this affect other projects using an older version of `dotnet ef`?**
+  > No. `dotnet tool restore` installs the tool locally inside this repo — it is completely isolated from any global install and from other projects. Each project manages its own local tool versions independently.
 
 ### (Highly Recommended) Pull Docker images before running the app for the first time
 
@@ -50,7 +63,7 @@ Pet and owner profile images are stored in Azure Blob Storage.
 > can be very slow, hang indefinitely, or fail silently, leaving you with a broken startup
 > and no obvious error message.
 
-Run these two commands while Docker Desktop is running:
+Run these two commands from any terminal while Docker Desktop is running (directory does not matter):
 
 ```bash
 docker pull mcr.microsoft.com/mssql/server:2022-latest
@@ -61,7 +74,7 @@ Each pull may take a few minutes on first download. When complete, each command 
 either `Status: Downloaded newer image` (new download) or `Status: Image is up to date`
 (already cached) - either means the image is ready.
 
-To verify both images are available locally:
+To verify both images are available locally (again, any terminal):
 
 ```bash
 docker images
@@ -74,6 +87,8 @@ will start the containers immediately on every subsequent run without any networ
 > IPv6 on your Windows network adapter: Control Panel → Network and Internet → Network
 > Connections → right-click your active adapter → Properties → uncheck
 > **Internet Protocol Version 6 (TCP/IPv6)** → OK.
+>
+> Once the image has downloaded successfully, go back and re-enable IPv6 using the same steps — leaving it disabled long-term can affect other software on your machine.
 
 ---
 
@@ -106,58 +121,47 @@ forwards API calls to `https://localhost:7101` without any configuration.
 
 ---
 
-## First Login (Local Development Only)
+## First Steps (Local Development)
 
-> **This section applies to local development only.** The credentials below are committed
-> to source control for developer convenience and are not suitable for any shared or
-> production environment.
+> Aspire is configured to start all the services including the UI. Normally all you need to do is run Aspire and follow the link shown next to `barkfest-ui`. From there you can do all the functions that call back to the API such as registering a new owner.
+>
+> The steps below are for developers who want to test the API directly using Scalar, Bruno, or Postman. You still need Aspire running to get the `{url}:{port}` that the API is running on.
 
-On startup, `SeedAdminAsync` checks whether an administrator account already exists and, if not,
-creates one using the credentials in `appsettings.Development.json`. No manual database setup is
-required.
-
-**Default dev credentials:**
-
-| Field | Value |
-|---|---|
-| Username | `admin` |
-| Email | `admin@barkfest.dev` |
-| Password | `Admin1234!` |
-
-Once the API is running, authenticate via Scalar or any HTTP client:
+### Register as an owner
 
 ```
-POST https://localhost:{port}/v1/auth/admin/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "Admin1234!"
-}
-```
-
-The response contains an `accessToken` (JWT). Pass it as a Bearer token on all subsequent requests:
-
-```
-Authorization: Bearer <accessToken>
-```
-
-It is good practice to create a second administrator account immediately after first login
-so that access is never dependent on a single set of credentials. Use Scalar or any HTTP
-client with the bearer token from the login step above:
-
-```
-POST https://localhost:{port}/v1/admin/admins
-Authorization: Bearer <accessToken>
+POST https://localhost:{port}/v1/auth/register
 Content-Type: application/json
 
 {
   "username": "yourUsername",
-  "name": "Your Name",
+  "firstName": "Your",
+  "lastName": "Name",
   "email": "your@email.com",
+  "password": "YourPassword1!",
   "phoneNumber": "+15555550101",
+  "displayName": "Your Display Name"
+}
+```
+
+`phoneNumber` and `displayName` are optional. A successful registration returns `201 Created`.
+
+### Log in
+
+```
+POST https://localhost:{port}/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "yourUsername",
   "password": "YourPassword1!"
 }
+```
+
+The response contains an `accessToken` (JWT), your `accountId`, and `expiresAt`. Pass the token as a Bearer token on all subsequent requests:
+
+```
+Authorization: Bearer <accessToken>
 ```
 
 ---
@@ -188,38 +192,48 @@ Static Web Apps. No manual steps required.
 
 ### .NET tests
 
+**Before running tests, make sure Docker Desktop is running.** The test suite uses Testcontainers — a library that automatically spins up real SQL Server and Azurite containers for tests that need them, then tears them down when the run is complete. You do not need to set anything up manually; Docker just needs to be available. This applies whether you are running tests from Visual Studio or the command line.
+
+The first run may be slower if the container images have not been pulled yet (see the Docker images section above). Subsequent runs will be faster.
+
+The primary way to run tests is via **Visual Studio's Test Explorer** — open it from View → Test Explorer, then run all tests, a specific project, or an individual test with a single click.
+
+**From the command line** (used by CI, or if you prefer the terminal):
 ```bash
 dotnet test
 ```
-
-All tests manage their own infrastructure via Testcontainers (SQL Server and Azurite containers
-are started and torn down automatically per test run). Docker Desktop must be running.
+Run from the **repo root**. A passing run prints:
+```
+Passed! - Failed: 0, Passed: X, Skipped: 0, Total: X
+```
 
 ### Frontend tests
 
+All frontend test commands are run from the **repo root** — the `--dir barkfest-ui` flag targets the correct directory automatically.
+
+**Single-pass (use this before committing):**
 ```bash
 pnpm --dir barkfest-ui test
 ```
+Runs all tests once and exits. Safe to run in CI.
 
-Runs Vitest in single-pass mode (no watch). Safe to run in CI and as part of a pre-commit check.
-
-Interactive watch mode during development:
-
+**Watch mode (use this during development):**
 ```bash
 pnpm --dir barkfest-ui test:watch
 ```
+Re-runs tests automatically whenever you save a file. Useful when actively writing or changing tests.
 
-Visual test UI (opens in browser):
-
+**Visual UI (opens in browser):**
 ```bash
 pnpm --dir barkfest-ui test:ui
 ```
+Opens an interactive test runner in your browser — lets you see which tests passed or failed, filter by file, and re-run individual tests.
 
-Frontend tests do **not** require Docker or a running API - they are pure unit and component tests.
+Frontend tests do **not** require Docker or a running API — they are pure unit and component tests.
 
 ---
 
-## Testing on a Mobile Device
+## Viewing UI on a Mobile Device
 
 Both your development machine and phone must be on the same Wi-Fi network.
 

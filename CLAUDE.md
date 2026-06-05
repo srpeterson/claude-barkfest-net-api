@@ -602,7 +602,7 @@ await act.ShouldThrowAsync<NotFoundException>();
 
    ```bash
    dotnet test
-   npm test --prefix barkfest-ui
+   pnpm --dir barkfest-ui test
    pnpm --dir barkfest-ui build
    ```
 
