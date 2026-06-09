@@ -292,7 +292,7 @@ validators, tests, EF Core configuration.
 |---|---|---|
 | `AccountConstraints.UsernameMaxLength` | 50 | `ValueObjects/AccountConstraints.cs` |
 | `AccountConstraints.EmailMaxLength` | 75 | `ValueObjects/AccountConstraints.cs` |
-| `AccountConstraints.PasswordMinLength` | 10 | `ValueObjects/AccountConstraints.cs` |
+| `AccountConstraints.PasswordMinLength` | 8 | `ValueObjects/AccountConstraints.cs` |
 | `AccountConstraints.PasswordMaxLength` | 72 | `ValueObjects/AccountConstraints.cs` |
 | `E164PhoneNumber.MaxLength` | 25 | `ValueObjects/E164PhoneNumber.cs` |
 | `Owner.DisplayNameMaxLength` | 25 | `Owner.cs` |
@@ -316,7 +316,7 @@ validators, tests, EF Core configuration.
 - `LastName` - required, max `Owner.LastNameMaxLength` chars, trimmed
 - `Email` - required, valid email format, max `AccountConstraints.EmailMaxLength` chars, lowercased and trimmed, unique (contact only - not used for login)
 - `PhoneNumber` - optional, E.164 format if provided, max `E164PhoneNumber.MaxLength` chars
-- `Password` - min `AccountConstraints.PasswordMinLength` (10) chars, max `AccountConstraints.PasswordMaxLength` (72) chars; stored as `PasswordHash` (BCrypt); 72-char max is a BCrypt limit - characters beyond it are silently ignored
+- `Password` - min `AccountConstraints.PasswordMinLength` (8) chars, max `AccountConstraints.PasswordMaxLength` (72) chars; stored as `PasswordHash` (BCrypt); 72-char max is a BCrypt limit - characters beyond it are silently ignored
 - `IsEmailVerified` - defaults `false`; set to `true` via `MarkEmailVerified()`; paired with `VerificationToken` (nullable string cleared on verification)
 - `IsActive` - defaults `true`; set by administrators via `SetOwnerActive`
 - `IsVisible` - defaults `true`; set by the owner; controls public browse visibility

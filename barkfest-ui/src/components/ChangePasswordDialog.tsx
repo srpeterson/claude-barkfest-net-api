@@ -41,7 +41,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
   const pwSameAsOld = current !== '' && next !== '' && next === current
   const pwMismatch  = confirm !== '' && next !== confirm
   const allFilled   = current !== '' && next !== '' && confirm !== ''
-  const canSubmit   = allFilled && !pwWeak && !pwSameAsOld && !pwMismatch && !isLoading
+  const canSubmit   = allFilled && !pwSameAsOld && !pwMismatch && !isLoading
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -123,6 +123,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
                 id="cp-new"
                 type={showNew ? 'text' : 'password'}
                 autoComplete="new-password"
+                minLength={8} maxLength={72}
                 value={next}
                 onChange={e => setNext(e.target.value)}
                 className={inputCls}
@@ -150,10 +151,8 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
             {pwSameAsOld && (
               <p className="text-xs text-destructive mt-1">New password must be different from your current password.</p>
             )}
-            {!pwSameAsOld && pwWeak && strength.feedback.suggestions[0] && (
-              <p className="text-xs text-destructive mt-1">
-                {strength.feedback.suggestions[0]}
-              </p>
+            {!pwSameAsOld && pwWeak && (
+              <p className="text-xs text-destructive mt-1">Try a longer or less predictable password.</p>
             )}
           </div>
 

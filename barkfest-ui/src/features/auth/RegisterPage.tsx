@@ -77,7 +77,6 @@ export function RegisterPage() {
     !dnTooShort &&
     dnStatus === 'available' &&
     form.password &&
-    !pwWeak &&
     form.confirmPassword &&
     !pwMismatch &&
     !isLoading
@@ -353,7 +352,7 @@ export function RegisterPage() {
                 <input
                   id="r-pw" name="password"
                   type={showPw ? 'text' : 'password'}
-                  autoComplete="new-password" minLength={10} maxLength={72}
+                  autoComplete="new-password" minLength={8} maxLength={72}
                   value={form.password} onChange={handleChange}
                   className={inputCls + ' pr-11'}
                 />
@@ -384,8 +383,8 @@ export function RegisterPage() {
                   </p>
                 </div>
               )}
-              {pwWeak && strength.feedback?.suggestions?.[0] && (
-                <p className="text-xs text-destructive mt-1">{strength.feedback.suggestions[0]}</p>
+              {pwWeak && (
+                <p className="text-xs text-destructive mt-1">Try a longer or less predictable password.</p>
               )}
             </div>
 
