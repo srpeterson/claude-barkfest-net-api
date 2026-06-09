@@ -26,6 +26,14 @@ The frontend is a React + TypeScript app built with Vite, located in the `barkfe
 - [Docker Desktop](https://www.docker.com/products/docker-desktop) - must be running before starting the app
 - [Git](https://git-scm.com/downloads) (v2.23 or later) - for cloning the repository and version control
 - [Node.js](https://nodejs.org/) (LTS, v20 or later) - required for the frontend (`barkfest-ui`)
+
+  **Check if Node.js and npm are installed correctly:**
+  ```bash
+  node --version
+  npm --version
+  ```
+  Both commands should print a version number. If either is not recognised, install Node.js from the link above — npm is included automatically.
+
 - **pnpm** - package manager used by `barkfest-ui`. Install once via:
   ```bash
   npm install -g pnpm
@@ -237,7 +245,7 @@ Frontend tests do **not** require Docker or a running API — they are pure unit
 
 Both your development machine and phone must be on the same Wi-Fi network.
 
-Vite proxies all `/v1/...` API calls server-side to `https://localhost:7101`, so the phone never talks to the .NET API directly - no certificate issues, no CORS configuration needed. No `.env` file required.
+The `barkfest-ui` dev server intercepts all `/v1/...` API calls and forwards them from your machine to `https://localhost:7101`. The phone only ever talks to the dev server — no certificate issues, no CORS configuration needed. No `.env` file required.
 
 **1. Start Aspire as normal**
 
@@ -260,14 +268,14 @@ ipconfig
 
 Look for the **IPv4 Address** under your physical Ethernet or Wi-Fi adapter - something like `192.168.1.45`. Ignore the `vEthernet (WSL)` adapter.
 
-**4. Start Vite manually with `--host`**
+**4. Start the `barkfest-ui` dev server with `--host`**
 
 ```bash
 cd barkfest-ui
 pnpm dev --host
 ```
 
-Vite will print two Network URLs - use the one matching your physical adapter IP:
+The dev server will print one or more Network URLs. Use the one that matches the IP you found in ipconfig, for example:
 
 ```
   ➜  Network: http://192.168.1.45:5173/
