@@ -251,7 +251,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                       {dobUnknown && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </div>
                     <span className="text-sm font-semibold">
-                      Rescue / Not sure
+                      Best Guess
                     </span>
                   </label>
                   <div className={cn(
