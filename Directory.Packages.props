@@ -15,8 +15,10 @@
   </ItemGroup>
   <!-- Infrastructure -->
   <ItemGroup>
+    <PackageVersion Include="Azure.ResourceManager" Version="1.14.0" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.28.0" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.4.2" />
+    <PackageVersion Include="MessagePack" Version="2.5.301" />
   </ItemGroup>
   <!--
     Persistence / EF Core
