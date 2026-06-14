@@ -1,7 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Auth.Commands.AdminLogin;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -34,22 +34,25 @@ public class AdminLoginCommandHandlerTests
         var result = await _adminLoginCommandHandler.Handle(
             new AdminLoginCommand("admin", "secretpass"), CancellationToken.None);
 
-        result.AccessToken.ShouldBe("admin-jwt-token");
-        result.AccountId.ShouldBe(administrator.Id);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.AccessToken.ShouldBe("admin-jwt-token");
+        result.Value.AccountId.ShouldBe(administrator.Id);
     }
 
     [Fact]
-    public async Task Handle_When_UsernameNotFound_Throws_NotFoundException()
+    public async Task Handle_When_UsernameNotFound_Returns_NotFoundError()
     {
         _administratorRepository.GetByUsernameAsync("ghost", CancellationToken.None).Returns((Administrator?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _adminLoginCommandHandler.Handle(
-                new AdminLoginCommand("ghost", "pass"), CancellationToken.None));
+        var result = await _adminLoginCommandHandler.Handle(
+            new AdminLoginCommand("ghost", "pass"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PasswordIsWrong_Throws_NotFoundException()
+    public async Task Handle_When_PasswordIsWrong_Returns_NotFoundError()
     {
         var administrator = new Administrator();
         administrator.SetUsername("admin");
@@ -58,8 +61,10 @@ public class AdminLoginCommandHandlerTests
         _administratorRepository.GetByUsernameAsync("admin", CancellationToken.None).Returns(administrator);
         _passwordHasher.Verify("wrongpass", administrator.PasswordHash).Returns(false);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _adminLoginCommandHandler.Handle(
-                new AdminLoginCommand("admin", "wrongpass"), CancellationToken.None));
+        var result = await _adminLoginCommandHandler.Handle(
+            new AdminLoginCommand("admin", "wrongpass"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

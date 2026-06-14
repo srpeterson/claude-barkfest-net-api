@@ -1,7 +1,7 @@
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Auth.Commands.Register;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -30,7 +30,8 @@ public class RegisterCommandHandlerTests
 
         var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
 
-        result.ShouldNotBe(Guid.Empty);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBe(Guid.Empty);
     }
 
     [Fact]
@@ -59,7 +60,10 @@ public class RegisterCommandHandlerTests
 
         var command = new RegisterCommand("taken", "Bob", "Baker", "bob@example.com", null, "pass123");
 
-        await Should.ThrowAsync<DomainException>(() => _registerCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 
     [Fact]
@@ -71,6 +75,9 @@ public class RegisterCommandHandlerTests
 
         var command = new RegisterCommand("newuser", "Bob", "Baker", "taken@example.com", null, "pass123");
 
-        await Should.ThrowAsync<DomainException>(() => _registerCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 }

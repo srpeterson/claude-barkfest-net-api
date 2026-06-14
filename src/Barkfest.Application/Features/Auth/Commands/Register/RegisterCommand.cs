@@ -1,7 +1,9 @@
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Auth.Commands.Register;
@@ -13,36 +15,43 @@ public record RegisterCommand(
     string Email,
     string? PhoneNumber,
     string Password,
-    string? DisplayName = null) : IRequest<Guid>;
+    string? DisplayName = null) : IRequest<Result<Guid, Error>>;
 
 public class RegisterCommandHandler(
     IOwnerRepository ownerRepository,
     IPasswordHasher passwordHasher,
-    IUnitOfWork unitOfWork) : IRequestHandler<RegisterCommand, Guid>
+    IUnitOfWork unitOfWork) : IRequestHandler<RegisterCommand, Result<Guid, Error>>
 {
-    public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid, Error>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var existingByUsername = await ownerRepository.GetByUsernameAsync(request.Username, cancellationToken);
         if (existingByUsername is not null)
-            throw new DomainException("That username is already taken.");
+            return new DomainRuleError("That username is already taken.");
 
         var existingByEmail = await ownerRepository.GetByEmailAsync(request.Email, cancellationToken);
         if (existingByEmail is not null)
-            throw new DomainException("An account with this email address already exists.");
+            return new DomainRuleError("An account with this email address already exists.");
 
-        var owner = Owner.Create(
-            request.Username,
-            request.FirstName,
-            request.LastName,
-            request.Email,
-            passwordHasher.Hash(request.Password),
-            request.PhoneNumber);
+        var creation = DomainResult.Try(() =>
+        {
+            var owner = Owner.Create(
+                request.Username,
+                request.FirstName,
+                request.LastName,
+                request.Email,
+                passwordHasher.Hash(request.Password),
+                request.PhoneNumber);
 
-        owner.SetDisplayName(request.DisplayName);
+            owner.SetDisplayName(request.DisplayName);
+            return owner;
+        });
 
-        await ownerRepository.AddAsync(owner, cancellationToken);
+        if (creation.IsFailure)
+            return creation.Error;
+
+        await ownerRepository.AddAsync(creation.Value, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return owner.Id;
+        return creation.Value.Id;
     }
 }

@@ -95,7 +95,9 @@ Note: orphan-blob sweeper remains a separate future task (compensation is best-e
 - [x] Owners (GetById, GetAll, Update, Delete, ChangePassword, SetVisibility, profile image upload/remove,
       CreateOwner) + GetPetsByOwnerId; params `id`/`Id` → `ownerId`/`OwnerId`; #6 ordering applied to
       owner profile-image upload/remove. `GetAllPets` left as plain list (no failure path, unwired).
-- [ ] Auth (Register / Login / AdminLogin / Check queries)
+- [x] Auth: Register / Login / AdminLogin → Result (DomainRuleError for duplicates; NotFoundError for
+      bad credentials; ForbiddenError for inactive). CheckUsername / CheckDisplayName left as plain `bool`
+      (infallible). AuthController translates via ToActionResult.
 - [ ] Administrators (create / delete / password / list)
 - [ ] Browse queries
 - [ ] Remove dead arms of `ExceptionHandlingMiddleware` (leave only the 500 handler)

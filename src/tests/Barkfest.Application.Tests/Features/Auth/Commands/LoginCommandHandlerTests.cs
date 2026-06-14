@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Auth.Commands.Login;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -33,22 +32,26 @@ public class LoginCommandHandlerTests
 
         var result = await _loginCommandHandler.Handle(command, CancellationToken.None);
 
-        result.AccessToken.ShouldBe("jwt-token");
-        result.AccountId.ShouldBe(owner.Id);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.AccessToken.ShouldBe("jwt-token");
+        result.Value.AccountId.ShouldBe(owner.Id);
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         _ownerRepository.GetByUsernameAsync("ghost", CancellationToken.None).Returns((Owner?)null);
 
         var command = new LoginCommand("ghost", "pass123");
 
-        await Should.ThrowAsync<NotFoundException>(() => _loginCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _loginCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PasswordIsWrong_Throws_NotFoundException()
+    public async Task Handle_When_PasswordIsWrong_Returns_NotFoundError()
     {
         var owner = new OwnerBuilder().WithUsername("alice").Build();
         _ownerRepository.GetByUsernameAsync("alice", CancellationToken.None).Returns(owner);
@@ -56,11 +59,14 @@ public class LoginCommandHandlerTests
 
         var command = new LoginCommand("alice", "wrongpass");
 
-        await Should.ThrowAsync<NotFoundException>(() => _loginCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _loginCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsInactive_Throws_ForbiddenException()
+    public async Task Handle_When_OwnerIsInactive_Returns_ForbiddenError()
     {
         var owner = new OwnerBuilder().WithUsername("inactive").Build();
         owner.SetIsActive(false);
@@ -69,6 +75,9 @@ public class LoginCommandHandlerTests
 
         var command = new LoginCommand("inactive", "pass123");
 
-        await Should.ThrowAsync<ForbiddenException>(() => _loginCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _loginCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }
