@@ -132,6 +132,68 @@ public class PetRepositoryTests(DatabaseFixture fixture)
         result.Images.First().BlobName.ShouldBe("pets/abc/gallery/photo.jpg");
     }
 
+    [Fact]
+    public async Task IncrementLikesAsync_When_PetExists_Returns_NewCount()
+    {
+        var (owner, _) = await SeedOwner();
+        var pet = BuildPet(owner.Id, "Buddy", PetType.Dog);
+        await _petRepository.AddAsync(pet);
+        await _context.SaveChangesAsync();
+
+        var result = await _petRepository.IncrementLikesAsync(pet.Id);
+
+        result.PetExists.ShouldBeTrue();
+        result.Likes.ShouldBe(1);
+        var stored = await _context.Pets.AsNoTracking().FirstAsync(p => p.Id == pet.Id);
+        stored.Likes.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task IncrementLikesAsync_When_PetNotFound_Returns_PetExistsFalse()
+    {
+        var result = await _petRepository.IncrementLikesAsync(Guid.NewGuid());
+
+        result.PetExists.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task DecrementLikesAsync_When_LikesIsPositive_Returns_NewCount()
+    {
+        var (owner, _) = await SeedOwner();
+        var pet = BuildPet(owner.Id, "Buddy", PetType.Dog);
+        await _petRepository.AddAsync(pet);
+        await _context.SaveChangesAsync();
+        await _petRepository.IncrementLikesAsync(pet.Id);
+        await _petRepository.IncrementLikesAsync(pet.Id);
+
+        var result = await _petRepository.DecrementLikesAsync(pet.Id);
+
+        result.PetExists.ShouldBeTrue();
+        result.Likes.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task DecrementLikesAsync_When_LikesIsZero_Returns_Zero()
+    {
+        var (owner, _) = await SeedOwner();
+        var pet = BuildPet(owner.Id, "Buddy", PetType.Dog);
+        await _petRepository.AddAsync(pet);
+        await _context.SaveChangesAsync();
+
+        var result = await _petRepository.DecrementLikesAsync(pet.Id);
+
+        result.PetExists.ShouldBeTrue();
+        result.Likes.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task DecrementLikesAsync_When_PetNotFound_Returns_PetExistsFalse()
+    {
+        var result = await _petRepository.DecrementLikesAsync(Guid.NewGuid());
+
+        result.PetExists.ShouldBeFalse();
+    }
+
     private async Task<(Owner owner, OwnerRepository repo)> SeedOwner(string email = "owner@example.com")
     {
         var ownerRepo = new OwnerRepository(_context);

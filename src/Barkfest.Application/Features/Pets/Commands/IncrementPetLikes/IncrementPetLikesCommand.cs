@@ -7,23 +7,19 @@ namespace Barkfest.Application.Features.Pets.Commands.IncrementPetLikes;
 
 public record IncrementPetLikesCommand(Guid PetId) : IRequest<int>;
 
-public class IncrementPetLikesCommandHandler(
-    IPetRepository petRepository,
-    IUnitOfWork unitOfWork)
+public class IncrementPetLikesCommandHandler(IPetRepository petRepository)
     : IRequestHandler<IncrementPetLikesCommand, int>
 {
     public async Task<int> Handle(IncrementPetLikesCommand request, CancellationToken cancellationToken)
     {
-        var pet = await petRepository.GetByIdAsync(request.PetId, cancellationToken);
+        // Atomic relative update in the repository — no entity load, no IUnitOfWork.
+        // The likes counters intentionally bypass the change tracker to avoid lost
+        // updates under concurrency (see CLAUDE.md).
+        var result = await petRepository.IncrementLikesAsync(request.PetId, cancellationToken);
 
-        if (pet is null)
+        if (!result.PetExists)
             throw new NotFoundException(nameof(Pet), request.PetId);
 
-        pet.IncrementLikes();
-
-        await petRepository.UpdateAsync(pet, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return pet.Likes;
+        return result.Likes;
     }
 }

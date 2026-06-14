@@ -6,8 +6,8 @@ namespace Barkfest.Persistence.Repositories;
 
 public class OwnerRepository(AppDbContext context) : IOwnerRepository
 {
-    public async Task<Owner?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await context.Owners.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+    public async Task<Owner?> GetByIdAsync(Guid ownerId, CancellationToken cancellationToken = default) =>
+        await context.Owners.FirstOrDefaultAsync(o => o.Id == ownerId, cancellationToken);
 
     public async Task<Owner?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default) =>
         await context.Owners.FirstOrDefaultAsync(o => o.Username == username.Trim(), cancellationToken);
@@ -39,9 +39,9 @@ public class OwnerRepository(AppDbContext context) : IOwnerRepository
         return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
-        var owner = await context.Owners.FindAsync([id], cancellationToken);
+        var owner = await context.Owners.FindAsync([ownerId], cancellationToken);
         if (owner is not null)
             context.Owners.Remove(owner);
     }
