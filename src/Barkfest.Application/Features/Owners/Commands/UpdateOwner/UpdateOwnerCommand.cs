@@ -1,45 +1,54 @@
-using Barkfest.Application.Common.Exceptions;
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Owners.Commands.UpdateOwner;
 
 public record UpdateOwnerCommand(
-    Guid Id,
+    Guid OwnerId,
     string FirstName,
     string LastName,
     string Email,
     string? PhoneNumber,
-    string? DisplayName = null) : IRequest;
+    string? DisplayName = null) : IRequest<Result<Unit, Error>>;
 
 public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
-    : IRequestHandler<UpdateOwnerCommand>
+    : IRequestHandler<UpdateOwnerCommand, Result<Unit, Error>>
 {
-    public async Task Handle(UpdateOwnerCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Unit, Error>> Handle(UpdateOwnerCommand request, CancellationToken cancellationToken)
     {
-        var owner = await ownerRepository.GetByIdAsync(request.Id, cancellationToken);
+        var owner = await ownerRepository.GetByIdAsync(request.OwnerId, cancellationToken);
 
         if (owner is null)
-            throw new NotFoundException(nameof(Owner), request.Id);
+            return new NotFoundError(nameof(Owner), request.OwnerId);
 
         if (owner.Id != currentUserService.OwnerId)
-            throw new ForbiddenException();
+            return new ForbiddenError();
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var existingByEmail = await ownerRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
-        if (existingByEmail is not null && existingByEmail.Id != request.Id)
-            throw new DomainException("An account with this email address already exists.");
+        if (existingByEmail is not null && existingByEmail.Id != request.OwnerId)
+            return new DomainRuleError("An account with this email address already exists.");
 
-        owner.SetFirstName(request.FirstName);
-        owner.SetLastName(request.LastName);
-        owner.SetEmail(request.Email);
-        owner.SetPhoneNumber(request.PhoneNumber);
-        owner.SetDisplayName(request.DisplayName);
+        var mutation = DomainResult.Try(() =>
+        {
+            owner.SetFirstName(request.FirstName);
+            owner.SetLastName(request.LastName);
+            owner.SetEmail(request.Email);
+            owner.SetPhoneNumber(request.PhoneNumber);
+            owner.SetDisplayName(request.DisplayName);
+        });
+
+        if (mutation.IsFailure)
+            return mutation.Error;
 
         await ownerRepository.UpdateAsync(owner, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Unit.Value;
     }
 }

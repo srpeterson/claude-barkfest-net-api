@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.UploadOwnerProfileImage;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -24,7 +23,7 @@ public class UploadOwnerProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_ImageFailsModeration_Throws_DomainException()
+    public async Task Handle_When_ImageFailsModeration_Returns_DomainRuleError()
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
@@ -34,7 +33,10 @@ public class UploadOwnerProfileImageCommandHandlerTests
 
         var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", Stream.Null, "image/jpeg");
 
-        await Should.ThrowAsync<DomainException>(() => _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 
     [Fact]
@@ -62,7 +64,7 @@ public class UploadOwnerProfileImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerHasExistingImage_Deletes_OldThenUploadsNew()
+    public async Task Handle_When_OwnerHasExistingImage_UploadsNew_AndDeletesOld()
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
@@ -93,7 +95,10 @@ public class UploadOwnerProfileImageCommandHandlerTests
 
         var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", Stream.Null, "image/jpeg");
 
-        await Should.ThrowAsync<NotFoundException>(() => _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -106,6 +111,9 @@ public class UploadOwnerProfileImageCommandHandlerTests
 
         var command = new UploadOwnerProfileImageCommand(ownerId, "photo.jpg", Stream.Null, "image/jpeg");
 
-        await Should.ThrowAsync<ForbiddenException>(() => _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _uploadOwnerProfileImageCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

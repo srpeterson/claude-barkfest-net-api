@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.ChangeOwnerPassword;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -45,10 +44,12 @@ public class ChangeOwnerPasswordCommandHandlerTests
         var ownerId = Guid.NewGuid();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _changeOwnerPasswordCommandHandler.Handle(
-                new ChangeOwnerPasswordCommand(ownerId, "OldPassword1!", "NewPassword1!"),
-                CancellationToken.None));
+        var result = await _changeOwnerPasswordCommandHandler.Handle(
+            new ChangeOwnerPasswordCommand(ownerId, "OldPassword1!", "NewPassword1!"),
+            CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
@@ -58,10 +59,12 @@ public class ChangeOwnerPasswordCommandHandlerTests
         _currentUserService.OwnerId.Returns((Guid?)ownerId);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _changeOwnerPasswordCommandHandler.Handle(
-                new ChangeOwnerPasswordCommand(ownerId, "OldPassword1!", "NewPassword1!"),
-                CancellationToken.None));
+        var result = await _changeOwnerPasswordCommandHandler.Handle(
+            new ChangeOwnerPasswordCommand(ownerId, "OldPassword1!", "NewPassword1!"),
+            CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -72,9 +75,11 @@ public class ChangeOwnerPasswordCommandHandlerTests
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         _passwordHasher.Verify("WrongPassword1!", owner.PasswordHash).Returns(false);
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _changeOwnerPasswordCommandHandler.Handle(
-                new ChangeOwnerPasswordCommand(owner.Id, "WrongPassword1!", "NewPassword1!"),
-                CancellationToken.None));
+        var result = await _changeOwnerPasswordCommandHandler.Handle(
+            new ChangeOwnerPasswordCommand(owner.Id, "WrongPassword1!", "NewPassword1!"),
+            CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

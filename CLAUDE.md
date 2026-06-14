@@ -75,7 +75,7 @@ This is one of the most important rules in this file. The choice between `class`
 | Domain Entities (`Owner`, `Pet`, `PetImage`) | `class` | Mutable state, identity-based equality |
 | Value Objects (`ProfileImage`) | `sealed record` | Immutable, structural equality, no boilerplate |
 | DTOs (`OwnerDto`, `PetDto`, `PetImageDto`, `ProfileImageDto`) | `record` | Immutable data carriers |
-| MediatR Commands (`CreateOwnerCommand` etc.) | `record` | Immutable, concise syntax |
+| MediatR Commands (`CreatePetCommand` etc.) | `record` | Immutable, concise syntax |
 | MediatR Queries (`GetOwnerByIdQuery` etc.) | `record` | Immutable, concise syntax |
 | Handlers, Validators, Repositories, Services | `class` | Behaviour, dependencies, mutable state |
 | EF Core Configurations, DbContext | `class` | Infrastructure concerns |
@@ -106,12 +106,13 @@ public record OwnerDto(
     ProfileImageDto? ProfileImage,
     DateTime CreatedAt);
 
-// Command - record
-public record CreateOwnerCommand(
-    string FirstName,
-    string LastName,
-    string Email,
-    string? PhoneNumber) : IRequest<Guid>;
+// Command - record (handlers return Result<T, Error> - see Error Handling)
+public record CreatePetCommand(
+    string Name,
+    string? Description,
+    DateOnly? DateOfBirth,
+    int PetTypeValue,
+    int BreedValue) : IRequest<Result<Guid, Error>>;
 
 // Query - record
 public record GetOwnerByIdQuery(Guid Id) : IRequest<OwnerDto>;
@@ -242,7 +243,7 @@ public static class OwnerMappings
 - Pipeline behaviours: `ValidationBehavior` (runs first), `LoggingBehavior`
 - Commands that return nothing use `IRequest` (not `IRequest<Unit>`)
 - Commands that create a resource return `IRequest<Guid>` (the new entity Id)
-- **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreateOwnerCommand.cs`, `LoginCommand.cs`, etc.
+- **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreatePetCommand.cs`, `LoginCommand.cs`, etc.
 
 ---
 
@@ -252,14 +253,13 @@ public static class OwnerMappings
 `AbstractValidator<T>` and is executed automatically by `ValidationBehavior`.
 
 ```csharp
-public class CreateOwnerCommandValidator : AbstractValidator<CreateOwnerCommand>
+public class CreatePetCommandValidator : AbstractValidator<CreatePetCommand>
 {
-    public CreateOwnerCommandValidator()
+    public CreatePetCommandValidator()
     {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .MaximumLength(AccountConstraints.EmailMaxLength)
-            .Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").WithMessage("Email must be a valid email address.");
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Name is required.")
+            .MaximumLength(Pet.NameMaxLength);
     }
 }
 ```
@@ -547,12 +547,12 @@ any other generic placeholder.
 
 ```csharp
 // Correct - name reflects the concrete type
-private readonly CreateOwnerCommandHandler _createOwnerCommandHandler;
-private readonly CreateOwnerCommandValidator _createOwnerCommandValidator;
-private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
+private readonly CreatePetCommandHandler _createPetCommandHandler;
+private readonly CreatePetCommandValidator _createPetCommandValidator;
+private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
 
 // Wrong - generic placeholder conveys nothing
-private readonly CreateOwnerCommandHandler _sut;
+private readonly CreatePetCommandHandler _sut;
 ```
 
 The field name must match the class name in camelCase with a leading underscore,

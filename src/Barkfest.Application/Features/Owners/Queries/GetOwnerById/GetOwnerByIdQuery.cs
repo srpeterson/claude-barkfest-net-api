@@ -1,31 +1,32 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.DTOs;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Owners.Queries.GetOwnerById;
 
-public record GetOwnerByIdQuery(Guid Id) : IRequest<OwnerDto>;
+public record GetOwnerByIdQuery(Guid OwnerId) : IRequest<Result<OwnerDto, Error>>;
 
 public class GetOwnerByIdQueryHandler(IOwnerRepository ownerRepository, ICurrentUserService currentUserService)
-    : IRequestHandler<GetOwnerByIdQuery, OwnerDto>
+    : IRequestHandler<GetOwnerByIdQuery, Result<OwnerDto, Error>>
 {
-    public async Task<OwnerDto> Handle(GetOwnerByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<OwnerDto, Error>> Handle(GetOwnerByIdQuery request, CancellationToken cancellationToken)
     {
-        var owner = await ownerRepository.GetByIdAsync(request.Id, cancellationToken);
+        var owner = await ownerRepository.GetByIdAsync(request.OwnerId, cancellationToken);
 
         if (owner is null)
-            throw new NotFoundException(nameof(Owner), request.Id);
+            return new NotFoundError(nameof(Owner), request.OwnerId);
 
         // IsActive is admin-controlled — inactive owners are hidden from everyone except admins.
         if (!owner.IsActive && !currentUserService.IsAdmin)
-            throw new NotFoundException(nameof(Owner), request.Id);
+            return new NotFoundError(nameof(Owner), request.OwnerId);
 
         // IsVisible is owner-controlled — hidden from others, but the owner can always see their own profile.
         if (!owner.IsVisible && !currentUserService.IsAdmin && currentUserService.OwnerId != owner.Id)
-            throw new NotFoundException(nameof(Owner), request.Id);
+            return new NotFoundError(nameof(Owner), request.OwnerId);
 
         return owner.ToDto();
     }

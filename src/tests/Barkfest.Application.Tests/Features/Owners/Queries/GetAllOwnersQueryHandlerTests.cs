@@ -1,6 +1,6 @@
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Queries.GetAllOwners;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -30,7 +30,8 @@ public class GetAllOwnersQueryHandlerTests
 
         var result = await _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
 
-        var list = result.ToList();
+        result.IsSuccess.ShouldBeTrue();
+        var list = result.Value.ToList();
         list.Count.ShouldBe(2);
         list[0].FirstName.ShouldBe("Alice");
         list[1].FirstName.ShouldBe("Bob");
@@ -43,16 +44,18 @@ public class GetAllOwnersQueryHandlerTests
 
         var result = await _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
 
-        result.ShouldBeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeEmpty();
     }
 
     [Fact]
-    public async Task Handle_When_NotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_NotAdmin_Returns_ForbiddenError()
     {
         _currentUserService.IsAdmin.Returns(false);
 
-        var act = () => _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
+        var result = await _getAllOwnersQueryHandler.Handle(new GetAllOwnersQuery(), CancellationToken.None);
 
-        await act.ShouldThrowAsync<ForbiddenException>();
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

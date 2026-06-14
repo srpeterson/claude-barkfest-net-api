@@ -7,6 +7,7 @@ using Barkfest.Application.Features.Owners.Commands.UploadOwnerProfileImage;
 using Barkfest.Application.Features.Owners.Queries.GetAllOwners;
 using Barkfest.Application.Features.Owners.Queries.GetOwnerById;
 using Barkfest.Application.Features.Pets.Queries.GetPetsByOwnerId;
+using Barkfest.API.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,72 +22,72 @@ public class OwnerController(IMediator mediator) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var owners = await mediator.Send(new GetAllOwnersQuery(), cancellationToken);
-        return Ok(owners);
+        var result = await mediator.Send(new GetAllOwnersQuery(), cancellationToken);
+        return result.ToActionResult();
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{ownerId:guid}")]
+    public async Task<IActionResult> GetById(Guid ownerId, CancellationToken cancellationToken)
     {
-        var owner = await mediator.Send(new GetOwnerByIdQuery(id), cancellationToken);
-        return Ok(owner);
+        var result = await mediator.Send(new GetOwnerByIdQuery(ownerId), cancellationToken);
+        return result.ToActionResult();
     }
 
-    [HttpGet("{id:guid}/pets")]
-    public async Task<IActionResult> GetPets(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{ownerId:guid}/pets")]
+    public async Task<IActionResult> GetPets(Guid ownerId, CancellationToken cancellationToken)
     {
-        var pets = await mediator.Send(new GetPetsByOwnerIdQuery(id), cancellationToken);
-        return Ok(pets);
+        var result = await mediator.Send(new GetPetsByOwnerIdQuery(ownerId), cancellationToken);
+        return result.ToActionResult();
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, UpdateOwnerRequest request, CancellationToken cancellationToken)
+    [HttpPut("{ownerId:guid}")]
+    public async Task<IActionResult> Update(Guid ownerId, UpdateOwnerRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(
-            new UpdateOwnerCommand(id, request.FirstName, request.LastName, request.Email, request.PhoneNumber, request.DisplayName),
+        var result = await mediator.Send(
+            new UpdateOwnerCommand(ownerId, request.FirstName, request.LastName, request.Email, request.PhoneNumber, request.DisplayName),
             cancellationToken);
 
-        return NoContent();
+        return result.ToNoContentResult();
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{ownerId:guid}")]
+    public async Task<IActionResult> Delete(Guid ownerId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new DeleteOwnerCommand(id), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new DeleteOwnerCommand(ownerId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
-    [HttpPost("{id:guid}/profile-image")]
+    [HttpPost("{ownerId:guid}/profile-image")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadProfileImage(Guid id, IFormFile file, CancellationToken cancellationToken)
+    public async Task<IActionResult> UploadProfileImage(Guid ownerId, IFormFile file, CancellationToken cancellationToken)
     {
         await using var stream = file.OpenReadStream();
-        await mediator.Send(
-            new UploadOwnerProfileImageCommand(id, file.FileName, stream, file.ContentType),
+        var result = await mediator.Send(
+            new UploadOwnerProfileImageCommand(ownerId, file.FileName, stream, file.ContentType),
             cancellationToken);
 
-        return NoContent();
+        return result.ToNoContentResult();
     }
 
-    [HttpDelete("{id:guid}/profile-image")]
-    public async Task<IActionResult> RemoveProfileImage(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{ownerId:guid}/profile-image")]
+    public async Task<IActionResult> RemoveProfileImage(Guid ownerId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new RemoveOwnerProfileImageCommand(id), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new RemoveOwnerProfileImageCommand(ownerId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
-    [HttpPut("{id:guid}/password")]
-    public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangeOwnerPasswordRequest request, CancellationToken cancellationToken)
+    [HttpPut("{ownerId:guid}/password")]
+    public async Task<IActionResult> ChangePassword(Guid ownerId, [FromBody] ChangeOwnerPasswordRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(new ChangeOwnerPasswordCommand(id, request.CurrentPassword, request.NewPassword), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new ChangeOwnerPasswordCommand(ownerId, request.CurrentPassword, request.NewPassword), cancellationToken);
+        return result.ToNoContentResult();
     }
 
-    [HttpPatch("{id:guid}/visibility")]
-    public async Task<IActionResult> SetVisibility(Guid id, [FromBody] SetOwnerVisibilityRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{ownerId:guid}/visibility")]
+    public async Task<IActionResult> SetVisibility(Guid ownerId, [FromBody] SetOwnerVisibilityRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(new SetOwnerVisibilityCommand(id, request.IsVisible), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new SetOwnerVisibilityCommand(ownerId, request.IsVisible), cancellationToken);
+        return result.ToNoContentResult();
     }
 }
 

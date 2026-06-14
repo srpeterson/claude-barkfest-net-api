@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.SetOwnerVisibility;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -42,11 +41,13 @@ public class SetOwnerVisibilityCommandHandlerTests
     {
         var owner = new OwnerBuilder().Build();
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
-        // OwnerId returns Guid.Empty by default (NSubstitute default for Guid)
+        // OwnerId returns null by default (NSubstitute default for Guid?)
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _setOwnerVisibilityCommandHandler.Handle(
-                new SetOwnerVisibilityCommand(owner.Id, false), CancellationToken.None));
+        var result = await _setOwnerVisibilityCommandHandler.Handle(
+            new SetOwnerVisibilityCommand(owner.Id, false), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
@@ -55,8 +56,10 @@ public class SetOwnerVisibilityCommandHandlerTests
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _setOwnerVisibilityCommandHandler.Handle(
-                new SetOwnerVisibilityCommand(ownerId, false), CancellationToken.None));
+        var result = await _setOwnerVisibilityCommandHandler.Handle(
+            new SetOwnerVisibilityCommand(ownerId, false), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.RemoveOwnerProfileImage;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -59,8 +58,11 @@ public class RemoveOwnerProfileImageCommandHandlerTests
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _removeOwnerProfileImageCommandHandler.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None));
+        var result = await _removeOwnerProfileImageCommandHandler.Handle(
+            new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -71,7 +73,10 @@ public class RemoveOwnerProfileImageCommandHandlerTests
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _removeOwnerProfileImageCommandHandler.Handle(new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None));
+        var result = await _removeOwnerProfileImageCommandHandler.Handle(
+            new RemoveOwnerProfileImageCommand(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

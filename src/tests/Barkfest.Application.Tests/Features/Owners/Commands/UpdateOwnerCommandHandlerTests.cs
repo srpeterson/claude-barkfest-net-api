@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.UpdateOwner;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -46,7 +45,10 @@ public class UpdateOwnerCommandHandlerTests
 
         var command = new UpdateOwnerCommand(ownerId, "John", "Doe", "john@example.com", null);
 
-        await Should.ThrowAsync<NotFoundException>(() => _updateOwnerCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _updateOwnerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -59,6 +61,9 @@ public class UpdateOwnerCommandHandlerTests
 
         var command = new UpdateOwnerCommand(ownerId, "John", "Doe", "john@example.com", null);
 
-        await Should.ThrowAsync<ForbiddenException>(() => _updateOwnerCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _updateOwnerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

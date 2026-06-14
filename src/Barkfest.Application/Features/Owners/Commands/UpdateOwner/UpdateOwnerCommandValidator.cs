@@ -8,7 +8,7 @@ public class UpdateOwnerCommandValidator : AbstractValidator<UpdateOwnerCommand>
 {
     public UpdateOwnerCommandValidator()
     {
-        RuleFor(x => x.Id)
+        RuleFor(x => x.OwnerId)
             .NotEmpty();
 
         RuleFor(x => x.FirstName)

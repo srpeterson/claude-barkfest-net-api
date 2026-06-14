@@ -90,15 +90,21 @@ Note: orphan-blob sweeper remains a separate future task (compensation is best-e
 
 ---
 
-## Phase 3 — Sweep remaining features
+## Phase 3 — Sweep remaining features (one commit per feature)
 
-- [ ] Owners (CRUD, profile image, visibility)
+- [x] Owners (GetById, GetAll, Update, Delete, ChangePassword, SetVisibility, profile image upload/remove,
+      CreateOwner) + GetPetsByOwnerId; params `id`/`Id` → `ownerId`/`OwnerId`; #6 ordering applied to
+      owner profile-image upload/remove. `GetAllPets` left as plain list (no failure path, unwired).
 - [ ] Auth (Register / Login / AdminLogin / Check queries)
 - [ ] Administrators (create / delete / password / list)
 - [ ] Browse queries
 - [ ] Remove dead arms of `ExceptionHandlingMiddleware` (leave only the 500 handler)
 
-**Commit(s):** one per feature area or one sweep commit (TBD).
+Note: `CreateOwnerCommand` was dead code (unwired — no controller route; used `new Owner()` instead of
+the `Owner.Create()` factory; never set username/password) and has been **deleted** (command, validator,
+and both test files). `CLAUDE.md` examples that referenced it were repointed to `CreatePetCommand`.
+
+**Commit(s):** one per feature area.
 
 ---
 
