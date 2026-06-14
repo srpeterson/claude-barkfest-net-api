@@ -1,9 +1,8 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -51,7 +50,10 @@ public class UpdatePetCommandHandlerTests
 
         var command = new UpdatePetCommand(petId, "Luna", null, null, PetType.Cat.Value, CatBreed.Siamese.Value);
 
-        await Should.ThrowAsync<NotFoundException>(() => _updatePetCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _updatePetCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -64,6 +66,9 @@ public class UpdatePetCommandHandlerTests
 
         var command = new UpdatePetCommand(petId, "Luna", null, null, PetType.Cat.Value, CatBreed.Siamese.Value);
 
-        await Should.ThrowAsync<ForbiddenException>(() => _updatePetCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _updatePetCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

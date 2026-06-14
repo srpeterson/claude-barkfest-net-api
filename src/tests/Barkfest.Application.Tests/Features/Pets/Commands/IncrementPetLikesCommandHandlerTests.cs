@@ -1,5 +1,5 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Features.Pets.Commands.IncrementPetLikes;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -25,7 +25,8 @@ public class IncrementPetLikesCommandHandlerTests
         var result = await _incrementPetLikesCommandHandler.Handle(
             new IncrementPetLikesCommand(petId), CancellationToken.None);
 
-        result.ShouldBe(5);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBe(5);
         await _petRepository.Received(1).IncrementLikesAsync(petId, CancellationToken.None);
     }
 
@@ -36,8 +37,10 @@ public class IncrementPetLikesCommandHandlerTests
         _petRepository.IncrementLikesAsync(petId, CancellationToken.None)
             .Returns(new LikeUpdateResult(PetExists: false, Likes: 0));
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _incrementPetLikesCommandHandler.Handle(
-                new IncrementPetLikesCommand(petId), CancellationToken.None));
+        var result = await _incrementPetLikesCommandHandler.Handle(
+            new IncrementPetLikesCommand(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

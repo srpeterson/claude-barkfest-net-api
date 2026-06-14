@@ -8,6 +8,7 @@ using Barkfest.Application.Features.Pets.Commands.RemovePetImage;
 using Barkfest.Application.Features.Pets.Commands.SetFeaturedImage;
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
 using Barkfest.Application.Features.Pets.Queries.GetPetById;
+using Barkfest.API.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,52 +20,52 @@ namespace Barkfest.API.Controllers;
 [Authorize]
 public class PetController(IMediator mediator) : ControllerBase
 {
-    [HttpGet("{id:guid}")]
+    [HttpGet("{petId:guid}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(Guid petId, CancellationToken cancellationToken)
     {
-        var pet = await mediator.Send(new GetPetByIdQuery(id), cancellationToken);
-        return Ok(pet);
+        var result = await mediator.Send(new GetPetByIdQuery(petId), cancellationToken);
+        return result.ToActionResult();
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(CreatePetRequest request, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(
+        var result = await mediator.Send(
             new CreatePetCommand(request.Name, request.Description, request.DateOfBirth, request.PetTypeValue, request.BreedValue),
             cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id }, null);
+        return result.ToActionResult(petId => CreatedAtAction(nameof(GetById), new { petId }, null));
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, UpdatePetRequest request, CancellationToken cancellationToken)
+    [HttpPut("{petId:guid}")]
+    public async Task<IActionResult> Update(Guid petId, UpdatePetRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(
-            new UpdatePetCommand(id, request.Name, request.Description, request.DateOfBirth, request.PetTypeValue, request.BreedValue),
+        var result = await mediator.Send(
+            new UpdatePetCommand(petId, request.Name, request.Description, request.DateOfBirth, request.PetTypeValue, request.BreedValue),
             cancellationToken);
 
-        return NoContent();
+        return result.ToNoContentResult();
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{petId:guid}")]
+    public async Task<IActionResult> Delete(Guid petId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new DeletePetCommand(id), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new DeletePetCommand(petId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
-    [HttpPost("{id:guid}/images")]
+    [HttpPost("{petId:guid}/images")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(65 * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 65 * 1024 * 1024)]
-    public async Task<IActionResult> AddImages(Guid id, IFormFileCollection files, CancellationToken cancellationToken)
+    public async Task<IActionResult> AddImages(Guid petId, IFormFileCollection files, CancellationToken cancellationToken)
     {
         var uploads = files
             .Select(f => new PetImageUpload(f.FileName, f.OpenReadStream(), f.ContentType, f.Length))
             .ToList();
 
-        var result = await mediator.Send(new AddPetImagesCommand(id, uploads), cancellationToken);
+        var result = await mediator.Send(new AddPetImagesCommand(petId, uploads), cancellationToken);
 
         if (result.Results.Any(r => !r.Success))
             return StatusCode(207, result);
@@ -72,42 +73,42 @@ public class PetController(IMediator mediator) : ControllerBase
         return StatusCode(201, result);
     }
 
-    [HttpPost("{id:guid}/images/batch-delete")]
+    [HttpPost("{petId:guid}/images/batch-delete")]
     public async Task<IActionResult> BatchDeleteImages(
-        Guid id, BatchDeleteImagesRequest request, CancellationToken cancellationToken)
+        Guid petId, BatchDeleteImagesRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(new BatchDeletePetImagesCommand(id, request.ImageIds), cancellationToken);
+        await mediator.Send(new BatchDeletePetImagesCommand(petId, request.ImageIds), cancellationToken);
         return NoContent();
     }
 
-    [HttpPut("{id:guid}/images/{imageId:guid}/featured")]
-    public async Task<IActionResult> SetFeaturedImage(Guid id, Guid imageId, CancellationToken cancellationToken)
+    [HttpPut("{petId:guid}/images/{imageId:guid}/featured")]
+    public async Task<IActionResult> SetFeaturedImage(Guid petId, Guid imageId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new SetFeaturedImageCommand(id, imageId), cancellationToken);
+        await mediator.Send(new SetFeaturedImageCommand(petId, imageId), cancellationToken);
         return NoContent();
     }
 
-    [HttpDelete("{id:guid}/images/{imageId:guid}")]
-    public async Task<IActionResult> RemoveImage(Guid id, Guid imageId, CancellationToken cancellationToken)
+    [HttpDelete("{petId:guid}/images/{imageId:guid}")]
+    public async Task<IActionResult> RemoveImage(Guid petId, Guid imageId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new RemovePetImageCommand(id, imageId), cancellationToken);
+        await mediator.Send(new RemovePetImageCommand(petId, imageId), cancellationToken);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/likes")]
+    [HttpPost("{petId:guid}/likes")]
     [AllowAnonymous]
-    public async Task<IActionResult> IncrementLikes(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> IncrementLikes(Guid petId, CancellationToken cancellationToken)
     {
-        var likes = await mediator.Send(new IncrementPetLikesCommand(id), cancellationToken);
-        return Ok(likes);
+        var result = await mediator.Send(new IncrementPetLikesCommand(petId), cancellationToken);
+        return result.ToActionResult();
     }
 
-    [HttpDelete("{id:guid}/likes")]
+    [HttpDelete("{petId:guid}/likes")]
     [AllowAnonymous]
-    public async Task<IActionResult> DecrementLikes(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DecrementLikes(Guid petId, CancellationToken cancellationToken)
     {
-        var likes = await mediator.Send(new DecrementPetLikesCommand(id), cancellationToken);
-        return Ok(likes);
+        var result = await mediator.Send(new DecrementPetLikesCommand(petId), cancellationToken);
+        return result.ToActionResult();
     }
 }
 

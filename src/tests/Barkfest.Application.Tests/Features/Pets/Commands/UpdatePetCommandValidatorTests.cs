@@ -33,14 +33,14 @@ public class UpdatePetCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_When_IdIsEmpty_Fails_ForId()
+    public void Validate_When_PetIdIsEmpty_Fails_ForPetId()
     {
         var command = new UpdatePetCommand(Guid.Empty, "Bruno", null, null, PetType.Dog.Value, DogBreed.Beagle.Value);
 
         var result = _updatePetCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Id));
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.PetId));
     }
 
     // -----------------------------------------------------------------------

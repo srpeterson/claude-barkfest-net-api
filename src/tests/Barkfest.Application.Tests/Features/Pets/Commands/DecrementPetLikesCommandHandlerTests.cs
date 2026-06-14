@@ -1,5 +1,5 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Features.Pets.Commands.DecrementPetLikes;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -25,7 +25,8 @@ public class DecrementPetLikesCommandHandlerTests
         var result = await _decrementPetLikesCommandHandler.Handle(
             new DecrementPetLikesCommand(petId), CancellationToken.None);
 
-        result.ShouldBe(2);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBe(2);
         await _petRepository.Received(1).DecrementLikesAsync(petId, CancellationToken.None);
     }
 
@@ -39,7 +40,8 @@ public class DecrementPetLikesCommandHandlerTests
         var result = await _decrementPetLikesCommandHandler.Handle(
             new DecrementPetLikesCommand(petId), CancellationToken.None);
 
-        result.ShouldBe(0);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBe(0);
     }
 
     [Fact]
@@ -49,8 +51,10 @@ public class DecrementPetLikesCommandHandlerTests
         _petRepository.DecrementLikesAsync(petId, CancellationToken.None)
             .Returns(new LikeUpdateResult(PetExists: false, Likes: 0));
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _decrementPetLikesCommandHandler.Handle(
-                new DecrementPetLikesCommand(petId), CancellationToken.None));
+        var result = await _decrementPetLikesCommandHandler.Handle(
+            new DecrementPetLikesCommand(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

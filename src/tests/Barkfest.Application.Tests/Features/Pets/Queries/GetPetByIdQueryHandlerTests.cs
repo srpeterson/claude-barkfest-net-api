@@ -1,7 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Queries.GetPetById;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -30,22 +30,25 @@ public class GetPetByIdQueryHandlerTests
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
 
-        result.Name.ShouldBe("Buddy");
-        result.PetType.ShouldBe("Dog");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Name.ShouldBe("Buddy");
+        result.Value.PetType.ShouldBe("Dog");
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None));
+        var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsInactive_Throws_NotFoundException()
+    public async Task Handle_When_OwnerIsInactive_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
@@ -55,8 +58,10 @@ public class GetPetByIdQueryHandlerTests
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         // IsAdmin returns false by default (NSubstitute default for bool)
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None));
+        var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -72,11 +77,12 @@ public class GetPetByIdQueryHandlerTests
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
 
-        result.Name.ShouldBe("Rex");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Name.ShouldBe("Rex");
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsInvisible_Throws_NotFoundException()
+    public async Task Handle_When_OwnerIsInvisible_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
@@ -84,10 +90,12 @@ public class GetPetByIdQueryHandlerTests
         var pet = new PetBuilder().WithOwnerId(owner.Id).Build();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
-        // IsAdmin returns false and OwnerId returns Guid.Empty by default (NSubstitute)
+        // IsAdmin returns false and OwnerId returns null by default (NSubstitute)
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None));
+        var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -103,7 +111,8 @@ public class GetPetByIdQueryHandlerTests
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
 
-        result.Name.ShouldBe("Luna");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Name.ShouldBe("Luna");
     }
 
     [Fact]
@@ -119,6 +128,7 @@ public class GetPetByIdQueryHandlerTests
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
 
-        result.Name.ShouldBe("Luna");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Name.ShouldBe("Luna");
     }
 }

@@ -1,16 +1,17 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Commands.DecrementPetLikes;
 
-public record DecrementPetLikesCommand(Guid PetId) : IRequest<int>;
+public record DecrementPetLikesCommand(Guid PetId) : IRequest<Result<int, Error>>;
 
 public class DecrementPetLikesCommandHandler(IPetRepository petRepository)
-    : IRequestHandler<DecrementPetLikesCommand, int>
+    : IRequestHandler<DecrementPetLikesCommand, Result<int, Error>>
 {
-    public async Task<int> Handle(DecrementPetLikesCommand request, CancellationToken cancellationToken)
+    public async Task<Result<int, Error>> Handle(DecrementPetLikesCommand request, CancellationToken cancellationToken)
     {
         // Atomic relative update that floors at zero in the repository — no entity
         // load, no IUnitOfWork. The likes counters intentionally bypass the change
@@ -18,7 +19,7 @@ public class DecrementPetLikesCommandHandler(IPetRepository petRepository)
         var result = await petRepository.DecrementLikesAsync(request.PetId, cancellationToken);
 
         if (!result.PetExists)
-            throw new NotFoundException(nameof(Pet), request.PetId);
+            return new NotFoundError(nameof(Pet), request.PetId);
 
         return result.Likes;
     }

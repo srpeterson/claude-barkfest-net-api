@@ -55,15 +55,19 @@ adapter, so upgrading the domain to return `Result` is a localized follow-up.
 
 ---
 
-## Phase 1 — Pets slice, non-image (prove + lock the pattern)
+## Phase 1 — Pets slice, non-image (prove + lock the pattern) ✅
 
-- [ ] `GetPetByIdQuery` → `Result<PetDto, Error>` (NotFound; visibility → NotFound)
-- [ ] `CreatePetCommand` → `Result<Guid, Error>` (validation; domain lift via `DomainResult.Try`)
-- [ ] `UpdatePetCommand` → `Result<Success, Error>` (NotFound, Forbidden, validation)
-- [ ] `DeletePetCommand` → `Result<Success, Error>`
-- [ ] `IncrementPetLikes` / `DecrementPetLikes` → `Result<int, Error>` (map `LikeUpdateResult.PetExists == false` → `NotFoundError`)
-- [ ] MediatR request signatures → `IRequest<Result<…, Error>>`; `PetController` actions use `.ToActionResult()`
-- [ ] Rewrite Pets handler unit tests; API/integration tests pass unchanged
+- [x] `GetPetByIdQuery` → `Result<PetDto, Error>` (NotFound; visibility → NotFound)
+- [x] `CreatePetCommand` → `Result<Guid, Error>` (validation; domain lift via `DomainResult.Try`)
+- [x] `UpdatePetCommand` → `Result<Unit, Error>` (NotFound, Forbidden, validation; mutations lifted)
+- [x] `DeletePetCommand` → `Result<Unit, Error>` (NotFound, Forbidden; blob ordering unchanged, fixed in Phase 2)
+- [x] `IncrementPetLikes` / `DecrementPetLikes` → `Result<int, Error>` (map `LikeUpdateResult.PetExists == false` → `NotFoundError`)
+- [x] MediatR request signatures → `IRequest<Result<…, Error>>`; `PetController` actions use `.ToActionResult()` / `.ToNoContentResult()`
+- [x] Rewrite Pets handler unit tests; API/integration tests pass unchanged (773 total green)
+- [x] Locked idioms: implicit `return new XError(...)` / `return value`; `Result<Unit, Error>` for no-payload commands (204);
+      no try/catch in handlers except `DomainResult.Try`; visibility/active checks → `NotFoundError` (no existence leak)
+- [x] Naming: renamed Pet command/query params and all `PetController` action params/routes `id`/`Id` → `petId`/`PetId`.
+      (Entity & DTO `Id` properties intentionally unchanged — DTO `Id` is the JSON contract; Owner/Admin params handled in Phase 3.)
 
 **Commit:** "Migrate Pets (non-image) handlers to Result" — review/pattern-lock checkpoint.
 

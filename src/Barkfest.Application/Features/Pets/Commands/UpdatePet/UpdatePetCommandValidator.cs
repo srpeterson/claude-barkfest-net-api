@@ -8,7 +8,7 @@ public class UpdatePetCommandValidator : AbstractValidator<UpdatePetCommand>
 {
     public UpdatePetCommandValidator()
     {
-        RuleFor(x => x.Id)
+        RuleFor(x => x.PetId)
             .NotEmpty();
 
         RuleFor(x => x.Name)

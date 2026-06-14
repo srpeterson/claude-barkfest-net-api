@@ -1,34 +1,37 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.DTOs;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Queries.GetPetById;
 
-public record GetPetByIdQuery(Guid Id) : IRequest<PetDto>;
+public record GetPetByIdQuery(Guid PetId) : IRequest<Result<PetDto, Error>>;
 
 public class GetPetByIdQueryHandler(
     IPetRepository petRepository,
     IOwnerRepository ownerRepository,
     ICurrentUserService currentUserService)
-    : IRequestHandler<GetPetByIdQuery, PetDto>
+    : IRequestHandler<GetPetByIdQuery, Result<PetDto, Error>>
 {
-    public async Task<PetDto> Handle(GetPetByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PetDto, Error>> Handle(GetPetByIdQuery request, CancellationToken cancellationToken)
     {
-        var pet = await petRepository.GetByIdAsync(request.Id, cancellationToken);
+        var pet = await petRepository.GetByIdAsync(request.PetId, cancellationToken);
 
         if (pet is null)
-            throw new NotFoundException(nameof(Pet), request.Id);
+            return new NotFoundError(nameof(Pet), request.PetId);
 
         var owner = await ownerRepository.GetByIdAsync(pet.OwnerId, cancellationToken);
 
+        // A hidden/suspended owner's pet is reported as not found to non-privileged callers,
+        // matching the previous behaviour (404 rather than 403, to avoid leaking existence).
         if (owner is null || (!owner.IsActive && !currentUserService.IsAdmin))
-            throw new NotFoundException(nameof(Pet), request.Id);
+            return new NotFoundError(nameof(Pet), request.PetId);
 
         if (!owner.IsVisible && !currentUserService.IsAdmin && currentUserService.OwnerId != pet.OwnerId)
-            throw new NotFoundException(nameof(Pet), request.Id);
+            return new NotFoundError(nameof(Pet), request.PetId);
 
         return pet.ToDto();
     }
