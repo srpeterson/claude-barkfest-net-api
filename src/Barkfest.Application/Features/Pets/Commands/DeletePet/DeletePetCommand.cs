@@ -28,11 +28,16 @@ public class DeletePetCommandHandler(
         if (pet.OwnerId != currentUserService.OwnerId)
             return new ForbiddenError();
 
-        foreach (var image in pet.Images)
-            await blobStorageService.DeleteAsync(ContainerName, image.BlobName, cancellationToken);
+        // Capture blob names before deletion, then commit the DB delete (cascade removes the
+        // PetImages rows) before deleting blobs — fail toward orphaned blobs, never rows that
+        // point at deleted blobs (see RemovePetImage for the rationale).
+        var blobNames = pet.Images.Select(i => i.BlobName).ToList();
 
         await petRepository.DeleteAsync(request.PetId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        foreach (var blobName in blobNames)
+            await blobStorageService.DeleteAsync(ContainerName, blobName, cancellationToken);
 
         return Unit.Value;
     }

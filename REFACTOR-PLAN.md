@@ -73,14 +73,18 @@ adapter, so upgrading the domain to return `Result` is a localized follow-up.
 
 ---
 
-## Phase 2 — Pets images + fold in blob/DB ordering (#6)
+## Phase 2 — Pets images + fold in blob/DB ordering (#6) ✅
 
-- [ ] `AddPetImages` → `Result<AddPetImagesResult, Error>` (whole-op failures as `Error`; per-image
-      moderation failures stay in payload, 207 preserved)
-- [ ] `RemovePetImage`, `BatchDeletePetImages` → `Result<Success, Error>`
-- [ ] Apply #6 ordering: deletes = **save DB first, then blob**; adds = **upload, save, compensating
-      blob-delete on failure**. (Orphan-sweeper is a separate future task, not this branch.)
-- [ ] Tests for Result mapping and new ordering
+- [x] `AddPetImages` → `Result<AddPetImagesResult, Error>` (whole-op failures as `Error`; per-image
+      moderation failures stay in payload, 207 preserved; slot-exceeded → `DomainRuleError`)
+- [x] `RemovePetImage`, `BatchDeletePetImages`, `SetFeaturedImage` → `Result<Unit, Error>`
+- [x] Apply #6 ordering: deletes (`RemovePetImage`, `BatchDeletePetImages`, `DeletePet`) =
+      **save DB first, then blob**; `AddPetImages` = **upload, save, compensating blob-delete on save failure**
+- [x] Controller: `AddImages` returns `ToActionResult()` on failure, else 207/201 from payload;
+      other image actions use `ToNoContentResult()`
+- [x] Tests for Result mapping and ordering; integration tests (Azurite) verify end-to-end. 773 total green.
+
+Note: orphan-blob sweeper remains a separate future task (compensation is best-effort), not this branch.
 
 **Commit:** "Migrate Pets image handlers to Result and fix blob/DB ordering (#6)"
 

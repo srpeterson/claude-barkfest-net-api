@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.AddPetImages;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -32,29 +31,33 @@ public class AddPetImagesCommandHandlerTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         _petRepository.GetByIdAsync(Arg.Any<Guid>(), CancellationToken.None).Returns((Pet?)null);
 
-        await Should.ThrowAsync<NotFoundException>(() =>
-            _addPetImagesCommandHandler.Handle(
-                BuildCommand(Guid.NewGuid(), ["photo.jpg"]), CancellationToken.None));
+        var result = await _addPetImagesCommandHandler.Handle(
+            BuildCommand(Guid.NewGuid(), ["photo.jpg"]), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var pet = new PetBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _petRepository.GetByIdAsync(pet.Id, CancellationToken.None).Returns(pet);
 
-        await Should.ThrowAsync<ForbiddenException>(() =>
-            _addPetImagesCommandHandler.Handle(
-                BuildCommand(pet.Id, ["photo.jpg"]), CancellationToken.None));
+        var result = await _addPetImagesCommandHandler.Handle(
+            BuildCommand(pet.Id, ["photo.jpg"]), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
-    public async Task Handle_When_SubmittedCountExceedsAvailableSlots_Throws_DomainException()
+    public async Task Handle_When_SubmittedCountExceedsAvailableSlots_Returns_DomainRuleError()
     {
         var pet = new PetBuilder().Build();
         for (var i = 0; i < Pet.MaxImages - 1; i++)
@@ -64,9 +67,11 @@ public class AddPetImagesCommandHandlerTests
         _petRepository.GetByIdAsync(pet.Id, CancellationToken.None).Returns(pet);
 
         // 1 slot remaining, submitting 2
-        await Should.ThrowAsync<DomainException>(() =>
-            _addPetImagesCommandHandler.Handle(
-                BuildCommand(pet.Id, ["photo1.jpg", "photo2.jpg"]), CancellationToken.None));
+        var result = await _addPetImagesCommandHandler.Handle(
+            BuildCommand(pet.Id, ["photo1.jpg", "photo2.jpg"]), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 
     // -----------------------------------------------------------------------
@@ -83,9 +88,10 @@ public class AddPetImagesCommandHandlerTests
         var result = await _addPetImagesCommandHandler.Handle(
             BuildCommand(pet.Id, ["photo1.jpg", "photo2.jpg"]), CancellationToken.None);
 
-        result.Results.Count.ShouldBe(2);
-        result.Results.ShouldAllBe(r => r.Success);
-        result.Results.ShouldAllBe(r => r.ImageId.HasValue);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Results.Count.ShouldBe(2);
+        result.Value.Results.ShouldAllBe(r => r.Success);
+        result.Value.Results.ShouldAllBe(r => r.ImageId.HasValue);
     }
 
     [Fact]
@@ -142,9 +148,10 @@ public class AddPetImagesCommandHandlerTests
 
         var result = await _addPetImagesCommandHandler.Handle(command, CancellationToken.None);
 
-        result.Results.Count(r => r.Success).ShouldBe(1);
-        result.Results.Count(r => !r.Success).ShouldBe(1);
-        result.Results.First(r => !r.Success).FailureReason.ShouldNotBeNullOrEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Results.Count(r => r.Success).ShouldBe(1);
+        result.Value.Results.Count(r => !r.Success).ShouldBe(1);
+        result.Value.Results.First(r => !r.Success).FailureReason.ShouldNotBeNullOrEmpty();
     }
 
     [Fact]
@@ -177,7 +184,7 @@ public class AddPetImagesCommandHandlerTests
         var result = await _addPetImagesCommandHandler.Handle(
             BuildCommand(pet.Id, ["photo1.jpg", "photo2.jpg"]), CancellationToken.None);
 
-        var firstImageId = result.Results[0].ImageId!.Value;
+        var firstImageId = result.Value.Results[0].ImageId!.Value;
         pet.FeaturedImage!.Id.ShouldBe(firstImageId);
     }
 

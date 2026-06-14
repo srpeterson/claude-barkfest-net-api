@@ -67,32 +67,35 @@ public class PetController(IMediator mediator) : ControllerBase
 
         var result = await mediator.Send(new AddPetImagesCommand(petId, uploads), cancellationToken);
 
-        if (result.Results.Any(r => !r.Success))
-            return StatusCode(207, result);
+        if (result.IsFailure)
+            return result.ToActionResult();
 
-        return StatusCode(201, result);
+        var payload = result.Value;
+        return payload.Results.Any(r => !r.Success)
+            ? StatusCode(207, payload)
+            : StatusCode(201, payload);
     }
 
     [HttpPost("{petId:guid}/images/batch-delete")]
     public async Task<IActionResult> BatchDeleteImages(
         Guid petId, BatchDeleteImagesRequest request, CancellationToken cancellationToken)
     {
-        await mediator.Send(new BatchDeletePetImagesCommand(petId, request.ImageIds), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new BatchDeletePetImagesCommand(petId, request.ImageIds), cancellationToken);
+        return result.ToNoContentResult();
     }
 
     [HttpPut("{petId:guid}/images/{imageId:guid}/featured")]
     public async Task<IActionResult> SetFeaturedImage(Guid petId, Guid imageId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new SetFeaturedImageCommand(petId, imageId), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new SetFeaturedImageCommand(petId, imageId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
     [HttpDelete("{petId:guid}/images/{imageId:guid}")]
     public async Task<IActionResult> RemoveImage(Guid petId, Guid imageId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new RemovePetImageCommand(petId, imageId), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new RemovePetImageCommand(petId, imageId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
     [HttpPost("{petId:guid}/likes")]

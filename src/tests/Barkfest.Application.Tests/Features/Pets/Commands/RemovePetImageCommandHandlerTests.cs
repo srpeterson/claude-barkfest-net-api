@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.RemovePetImage;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -46,12 +45,15 @@ public class RemovePetImageCommandHandlerTests
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _removePetImageCommandHandler.Handle(new RemovePetImageCommand(petId, Guid.NewGuid()), CancellationToken.None));
+        var result = await _removePetImageCommandHandler.Handle(
+            new RemovePetImageCommand(petId, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_ImageNotFoundOnPet_Throws_NotFoundException()
+    public async Task Handle_When_ImageNotFoundOnPet_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
@@ -60,19 +62,25 @@ public class RemovePetImageCommandHandlerTests
 
         var command = new RemovePetImageCommand(petId, Guid.NewGuid());
 
-        await Should.ThrowAsync<NotFoundException>(() => _removePetImageCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _removePetImageCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _removePetImageCommandHandler.Handle(new RemovePetImageCommand(petId, Guid.NewGuid()), CancellationToken.None));
+        var result = await _removePetImageCommandHandler.Handle(
+            new RemovePetImageCommand(petId, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
