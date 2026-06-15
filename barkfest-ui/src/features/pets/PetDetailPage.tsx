@@ -469,17 +469,6 @@ export function PetDetailPage() {
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes kenburns {
-          0%   { transform: scale(1.16) translate(0, 0); }
-          100% { transform: scale(1.34) translate(-2.5%, -2%); }
-        }
-        @media (prefers-reduced-motion: no-preference) {
-          .kenburns { animation: kenburns 14s ease-in-out infinite alternate; }
-        }
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
     </div>
   )
 }

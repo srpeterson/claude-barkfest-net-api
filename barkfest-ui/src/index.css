@@ -200,3 +200,24 @@
 .animate-backdrop-in {
     animation: backdrop-in 0.25s ease both;
 }
+
+/* ── Pet detail stage — Ken Burns drift + fade ────────────────────── */
+@keyframes kenburns {
+    0%   { transform: scale(1.16) translate(0, 0); }
+    100% { transform: scale(1.34) translate(-2.5%, -2%); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .kenburns { animation: kenburns 14s ease-in-out infinite alternate; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ── Auth pages — hide brand panel / show mobile header on narrow screens ── */
+@media (max-width: 680px) {
+    .brand-panel { display: none !important; }
+    .mobile-auth-header { display: flex !important; }
+}

@@ -8,6 +8,7 @@ import { BarkfestMark } from '@/components/BarkfestMark'
 import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter'
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
 import { inputBaseCls } from '@/lib/formStyles'
+import { LIMITS } from '@/config/constraints'
 
 const inputCls = `${inputBaseCls} h-11 bg-background pl-3 pr-11`
 
@@ -36,7 +37,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
   const allFilled   = current !== '' && next !== '' && confirm !== ''
   const canSubmit   = allFilled && !pwSameAsOld && !pwMismatch && !isLoading
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit || !accountId) return
     setError(null)
@@ -116,7 +117,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
                 id="cp-new"
                 type={showNew ? 'text' : 'password'}
                 autoComplete="new-password"
-                minLength={8} maxLength={72}
+                minLength={LIMITS.passwordMin} maxLength={LIMITS.passwordMax}
                 value={next}
                 onChange={e => setNext(e.target.value)}
                 className={inputCls}

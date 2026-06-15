@@ -15,10 +15,9 @@ import { DropZone } from '@/components/ui/DropZone'
 import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { addPetImages, createPet, setFeaturedImage } from '@/lib/api'
+import { MAX_PET_IMAGES } from '@/lib/imageUpload'
+import { LIMITS } from '@/config/constraints'
 import type { CreatePetRequest } from '@/types/pet'
-
-// Matches Pet.MaxImages in Barkfest.Domain
-const MAX_IMAGES = 6
 
 // Converts an approximate age (years) to a date of birth string (YYYY-MM-DD)
 // by subtracting the given number of years from today's date.
@@ -59,7 +58,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
     getRootProps,
     getInputProps,
     isDragActive,
-  } = useImageUpload({ maxFiles: MAX_IMAGES })
+  } = useImageUpload({ maxFiles: MAX_PET_IMAGES })
 
   // ── Refs ──────────────────────────────────────────────────────────
   const dateInputRef = useRef<HTMLInputElement>(null)
@@ -167,7 +166,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
                 type="text"
                 autoFocus
                 placeholder="What is your fur baby's name?"
-                maxLength={75}
+                maxLength={LIMITS.petName}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
@@ -294,7 +293,7 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
               <textarea
                 placeholder="Lazy couch potato or zoomies champion? Tell us!"
                 rows={3}
-                maxLength={300}
+                maxLength={LIMITS.petDescription}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground resize-none"
@@ -336,12 +335,12 @@ export function AddPetDialog({ onClose, onSuccess }: AddPetDialogProps) {
             )}
 
             {/* Upload zone — hidden once the limit is reached */}
-            {images.length < MAX_IMAGES && (
+            {images.length < MAX_PET_IMAGES && (
               <DropZone
                 getRootProps={getRootProps}
                 getInputProps={getInputProps}
                 isDragActive={isDragActive}
-                hint={`JPG or PNG · max 10 MB · up to ${MAX_IMAGES - images.length} more`}
+                hint={`JPG or PNG · max 10 MB · up to ${MAX_PET_IMAGES - images.length} more`}
               />
             )}
 

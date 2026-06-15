@@ -9,8 +9,9 @@ import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
 import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
 import { useObjectUrls } from '@/hooks/useObjectUrls'
 import { getBlobImageUrl } from '@/lib/imageUrl'
-import { IMAGE_ACCEPT, MAX_IMAGE_SIZE_BYTES } from '@/lib/imageUpload'
+import { IMAGE_ACCEPT, MAX_IMAGE_SIZE_BYTES, MAX_PET_IMAGES } from '@/lib/imageUpload'
 import { inputBaseCls } from '@/lib/formStyles'
+import { LIMITS } from '@/config/constraints'
 import {
   addPetImages,
   removePetImage,
@@ -18,8 +19,6 @@ import {
   updatePet,
 } from '@/lib/api'
 import type { PetDto } from '@/lib/api'
-
-const MAX_IMAGES = 6
 
 const inputCls = `${inputBaseCls} h-11 bg-background px-3.5`
 
@@ -69,7 +68,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
   const objectUrls = useObjectUrls()
 
   const onDrop = useCallback((accepted: File[]) => {
-    const remaining = MAX_IMAGES - existingVisible.length - newImages.length
+    const remaining = MAX_PET_IMAGES - existingVisible.length - newImages.length
     const toAdd = accepted.slice(0, remaining).map(f => ({
       file: f,
       previewUrl: objectUrls.create(f),
@@ -82,7 +81,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
     accept: IMAGE_ACCEPT,
     maxSize: MAX_IMAGE_SIZE_BYTES,
     multiple: true,
-    disabled: existingVisible.length + newImages.length >= MAX_IMAGES,
+    disabled: existingVisible.length + newImages.length >= MAX_PET_IMAGES,
   })
 
   function removeNew(index: number) {
@@ -106,7 +105,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
   }, [removedIds, featuredKey, pet.images])
 
   const totalImages = existingVisible.length + newImages.length
-  const slotsLeft   = MAX_IMAGES - totalImages
+  const slotsLeft   = MAX_PET_IMAGES - totalImages
 
   // ── Submission ────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -202,7 +201,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                maxLength={75}
+                maxLength={LIMITS.petName}
                 autoFocus
                 className={inputCls}
               />
@@ -234,7 +233,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Tell us about this pet…"
-                maxLength={300}
+                maxLength={LIMITS.petDescription}
                 className={cn(inputCls, 'h-20 py-2.5 resize-none')}
               />
             </div>
@@ -254,7 +253,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
 
             {/* Add more drop target */}
             <p className="text-[13px] text-muted-foreground">
-              Add up to {MAX_IMAGES} photos of {name.trim() || pet.name}.
+              Add up to {MAX_PET_IMAGES} photos of {name.trim() || pet.name}.
             </p>
             <DropZone
               getRootProps={getRootProps}

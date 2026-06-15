@@ -6,6 +6,7 @@ import { getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
 import { inputBaseCls } from '@/lib/formStyles'
+import { LIMITS } from '@/config/constraints'
 
 // Brand panel mosaic — local pet photos served from public/pets/
 // TODO (Roadmap #24): replace with live browse API images
@@ -33,7 +34,7 @@ export function LoginPage() {
 
   const allFilled = username.trim() !== '' && password !== ''
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!allFilled) return
     setLoading(true)
@@ -150,7 +151,7 @@ export function LoginPage() {
                 id="si-un"
                 type="text"
                 autoComplete="username"
-                maxLength={25}
+                maxLength={LIMITS.username}
                 autoFocus
                 placeholder="Your username"
                 value={username}
@@ -178,7 +179,7 @@ export function LoginPage() {
                   id="si-pw"
                   type={showPw ? 'text' : 'password'}
                   autoComplete="current-password"
-                  maxLength={72}
+                  maxLength={LIMITS.passwordMax}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className={inputCls + ' pr-12'}
@@ -229,13 +230,6 @@ export function LoginPage() {
 
       {/* ── Forgot password modal ── */}
       {forgotOpen && <ForgotPasswordModal onClose={() => setForgotOpen(false)} />}
-
-      <style>{`
-        @media (max-width: 680px) {
-          .brand-panel { display: none !important; }
-          .mobile-auth-header { display: flex !important; }
-        }
-      `}</style>
     </div>
   )
 }

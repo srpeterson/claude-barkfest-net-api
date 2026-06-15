@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { flushSync } from 'react-dom'
-import isEmail from 'validator/lib/isEmail'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, Loader2, Upload, UserCircle, X } from 'lucide-react'
 import { BarkfestMark } from '@/components/BarkfestMark'
@@ -21,6 +20,8 @@ import { invalidateBrowse } from '@/lib/browseCache'
 import { useObjectUrls } from '@/hooks/useObjectUrls'
 import { IMAGE_ACCEPT, MAX_IMAGE_SIZE_BYTES } from '@/lib/imageUpload'
 import { inputBaseCls } from '@/lib/formStyles'
+import { isValidEmail } from '@/lib/email'
+import { LIMITS } from '@/config/constraints'
 
 interface UpdateOwnerProfileDialogProps {
   onClose: () => void
@@ -70,7 +71,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   const displayNameTooShort = displayNameStripped.length > 0 && displayNameStripped.length < 4
   const displayNameChanged = displayName.trim() !== savedDisplayName.trim()
 
-  const emailInvalid = email.trim() !== '' && !isEmail(email.trim())
+  const emailInvalid = email.trim() !== '' && !isValidEmail(email)
 
   const step1Valid =
     firstName.trim() !== '' &&
@@ -301,7 +302,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 label="First name"
                 id="upd-firstName"
                 required
-                maxLength={50}
+                maxLength={LIMITS.firstName}
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
               />
@@ -309,7 +310,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 label="Last name"
                 id="upd-lastName"
                 required
-                maxLength={100}
+                maxLength={LIMITS.lastName}
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
               />
@@ -321,7 +322,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
                 id="upd-email"
                 type="email"
                 required
-                maxLength={75}
+                maxLength={LIMITS.email}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
@@ -334,7 +335,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
               <ProfileField
                 label="Display name"
                 id="upd-displayName"
-                maxLength={25}
+                maxLength={LIMITS.displayName}
                 placeholder="Shown on pet cards"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
