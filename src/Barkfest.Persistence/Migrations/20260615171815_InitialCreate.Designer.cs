@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Barkfest.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260604150555_InitialCreate")]
+    [Migration("20260615171815_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Barkfest.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -86,6 +86,10 @@ namespace Barkfest.Persistence.Migrations
                         .HasMaxLength(25)
                         .HasColumnType("nvarchar(25)");
 
+                    b.Property<string>("DisplayNameNormalized")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(75)
@@ -133,6 +137,10 @@ namespace Barkfest.Persistence.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DisplayNameNormalized")
+                        .IsUnique()
+                        .HasFilter("[DisplayNameNormalized] IS NOT NULL");
 
                     b.HasIndex("Email")
                         .IsUnique();

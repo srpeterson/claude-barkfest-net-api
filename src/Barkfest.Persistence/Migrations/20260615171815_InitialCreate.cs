@@ -35,6 +35,7 @@ namespace Barkfest.Persistence.Migrations
                     OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "newsequentialid()"),
                     Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     DisplayName = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true),
+                    DisplayNameNormalized = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true),
                     FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(75)", maxLength: 75, nullable: false),
@@ -112,6 +113,13 @@ namespace Barkfest.Persistence.Migrations
                 table: "Administrators",
                 column: "Username",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Owners_DisplayNameNormalized",
+                table: "Owners",
+                column: "DisplayNameNormalized",
+                unique: true,
+                filter: "[DisplayNameNormalized] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Owners_Email",
