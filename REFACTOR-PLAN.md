@@ -98,7 +98,9 @@ Note: orphan-blob sweeper remains a separate future task (compensation is best-e
 - [x] Auth: Register / Login / AdminLogin → Result (DomainRuleError for duplicates; NotFoundError for
       bad credentials; ForbiddenError for inactive). CheckUsername / CheckDisplayName left as plain `bool`
       (infallible). AuthController translates via ToActionResult.
-- [ ] Administrators (create / delete / password / list)
+- [x] Administrators: CreateAdministrator, DeleteAdministrator, UpdateAdministratorPassword, SetOwnerActive,
+      GetAllAdministrators → Result. Admin gate / self-delete → ForbiddenError; duplicates → DomainRuleError.
+      Params `id`/`Id` → `administratorId`/`AdministratorId` (owner-active route → `ownerId`).
 - [ ] Browse queries
 - [ ] Remove dead arms of `ExceptionHandlingMiddleware` (leave only the 500 handler)
 

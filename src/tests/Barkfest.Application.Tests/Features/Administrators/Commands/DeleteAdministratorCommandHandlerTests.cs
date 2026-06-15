@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Administrators.Commands.DeleteAdministrator;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -46,21 +45,25 @@ public class DeleteAdministratorCommandHandlerTests
         _currentUserService.IsAdmin.Returns(true);
         _currentUserService.AdminId.Returns((Guid?)adminId);
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _deleteAdministratorCommandHandler.Handle(
-                new DeleteAdministratorCommand(adminId), CancellationToken.None));
+        var result = await _deleteAdministratorCommandHandler.Handle(
+            new DeleteAdministratorCommand(adminId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotAdmin_Returns_ForbiddenError()
     {
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _deleteAdministratorCommandHandler.Handle(
-                new DeleteAdministratorCommand(Guid.NewGuid()), CancellationToken.None));
+        var result = await _deleteAdministratorCommandHandler.Handle(
+            new DeleteAdministratorCommand(Guid.NewGuid()), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
-    public async Task Handle_When_AdministratorNotFound_Throws_NotFoundException()
+    public async Task Handle_When_AdministratorNotFound_Returns_NotFoundError()
     {
         var callerId = Guid.NewGuid();
         var targetId = Guid.NewGuid();
@@ -68,8 +71,10 @@ public class DeleteAdministratorCommandHandlerTests
         _currentUserService.AdminId.Returns((Guid?)callerId);
         _administratorRepository.GetByIdAsync(targetId, CancellationToken.None).Returns((Administrator?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _deleteAdministratorCommandHandler.Handle(
-                new DeleteAdministratorCommand(targetId), CancellationToken.None));
+        var result = await _deleteAdministratorCommandHandler.Handle(
+            new DeleteAdministratorCommand(targetId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

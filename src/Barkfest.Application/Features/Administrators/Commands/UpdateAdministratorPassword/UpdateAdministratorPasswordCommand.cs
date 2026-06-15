@@ -1,32 +1,34 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Administrators.Commands.UpdateAdministratorPassword;
 
-public record UpdateAdministratorPasswordCommand(Guid Id, string NewPassword) : IRequest;
+public record UpdateAdministratorPasswordCommand(Guid AdministratorId, string NewPassword) : IRequest<Result<Unit, Error>>;
 
 public class UpdateAdministratorPasswordCommandHandler(
     IAdministratorRepository administratorRepository,
     IUnitOfWork unitOfWork,
     IPasswordHasher passwordHasher,
-    ICurrentUserService currentUserService) : IRequestHandler<UpdateAdministratorPasswordCommand>
+    ICurrentUserService currentUserService) : IRequestHandler<UpdateAdministratorPasswordCommand, Result<Unit, Error>>
 {
-    public async Task Handle(UpdateAdministratorPasswordCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Unit, Error>> Handle(UpdateAdministratorPasswordCommand request, CancellationToken cancellationToken)
     {
         if (!currentUserService.IsAdmin)
-            throw new ForbiddenException();
+            return new ForbiddenError();
 
-        var administrator = await administratorRepository.GetByIdAsync(request.Id, cancellationToken);
+        var administrator = await administratorRepository.GetByIdAsync(request.AdministratorId, cancellationToken);
 
         if (administrator is null)
-            throw new NotFoundException(nameof(Administrator), request.Id);
+            return new NotFoundError(nameof(Administrator), request.AdministratorId);
 
         administrator.SetPasswordHash(passwordHasher.Hash(request.NewPassword));
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Unit.Value;
     }
 }

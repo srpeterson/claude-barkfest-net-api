@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Administrators.Commands.SetOwnerActive;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -44,20 +43,24 @@ public class SetOwnerActiveCommandHandlerTests
         var ownerId = Guid.NewGuid();
         // IsAdmin returns false by default (NSubstitute default for bool)
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _setOwnerActiveCommandHandler.Handle(
-                new SetOwnerActiveCommand(ownerId, false), CancellationToken.None));
+        var result = await _setOwnerActiveCommandHandler.Handle(
+            new SetOwnerActiveCommand(ownerId, false), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _currentUserService.IsAdmin.Returns(true);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _setOwnerActiveCommandHandler.Handle(
-                new SetOwnerActiveCommand(ownerId, false), CancellationToken.None));
+        var result = await _setOwnerActiveCommandHandler.Handle(
+            new SetOwnerActiveCommand(ownerId, false), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }
