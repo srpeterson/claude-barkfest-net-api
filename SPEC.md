@@ -112,7 +112,7 @@ cookie (`Secure`, `SameSite=Strict`) and read server-side on every authenticated
 
 The `barkfest-ui` React SPA provides:
 
-- **Home page** — browse pet images, filter by pet type and breed, paginated
+- **Home page** — browse pet images, filter by pet type and breed, paginated; each card shows the owner's display name with their profile image (or a paw-print placeholder when none is set)
 - **Login dialog** — username + password; admin checkbox hidden pending admin UI feature
 - **Register dialog** — full registration form with display name availability check, password strength meter, and confirm password
 - **Add Pet dialog** — two-step flow: pet details then image upload; closes immediately on success

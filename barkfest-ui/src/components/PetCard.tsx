@@ -48,7 +48,15 @@ export function PetCard({ pet, index }: PetCardProps) {
             <div className="flex items-center gap-1 min-w-0 text-xs text-muted-foreground">
               {pet.displayName && (
                 <>
-                  <PawPrint size={11} className="text-primary shrink-0" />
+                  {pet.ownerProfileImageBlobName ? (
+                    <img
+                      src={getBlobImageUrl(pet.ownerProfileImageBlobName, 'owner-profile-images')}
+                      alt=""
+                      className="w-[16px] h-[16px] rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <PawPrint size={11} className="text-primary shrink-0" />
+                  )}
                   <span className="truncate">{pet.displayName}</span>
                 </>
               )}

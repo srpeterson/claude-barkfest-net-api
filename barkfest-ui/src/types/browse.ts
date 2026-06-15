@@ -5,6 +5,7 @@ export interface BrowseImageDto {
   isFeaturedImage: boolean
   createdAt: string
   displayName: string | null
+  ownerProfileImageBlobName?: string | null
   petId: string
   petName: string
   petDescription?: string
