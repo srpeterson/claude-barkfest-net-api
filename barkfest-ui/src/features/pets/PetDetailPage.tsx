@@ -7,6 +7,7 @@ import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib
 import type { PetDto } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { invalidateBrowse } from '@/lib/browseCache'
+import { queryKeys } from '@/lib/queryKeys'
 import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/Navbar'
@@ -34,7 +35,7 @@ export function PetDetailPage() {
   const [isDeleting, setIsDeleting]       = useState(false)
 
   const { data: pet, isLoading, isError } = useQuery({
-    queryKey: ['pet', petId],
+    queryKey: queryKeys.pet(petId!),
     queryFn: () => getPetDetail(petId!),
     enabled: !!petId,
     retry: false,
@@ -47,7 +48,7 @@ export function PetDetailPage() {
   }, [isError, queryClient])
 
   const { data: owner } = useQuery({
-    queryKey: ['owner', pet?.ownerId],
+    queryKey: queryKeys.owner(pet?.ownerId as string),
     queryFn: () => getOwnerById(pet!.ownerId),
     enabled: !!pet?.ownerId && isAuthenticated,
   })
@@ -91,7 +92,7 @@ export function PetDetailPage() {
     try {
       if (next) await likePet(pet.petId)
       else await unlikePet(pet.petId)
-      queryClient.setQueryData<PetDto>(['pet', petId], old =>
+      queryClient.setQueryData<PetDto>(queryKeys.pet(petId!), old =>
         old ? { ...old, likes: newCount } : old
       )
       invalidateBrowse(queryClient)
@@ -107,7 +108,7 @@ export function PetDetailPage() {
     try {
       await deletePet(pet.petId)
       invalidateBrowse(queryClient)
-      queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
       navigate('/')
     } catch {
       setIsDeleting(false)
@@ -435,7 +436,7 @@ export function PetDetailPage() {
           pet={pet}
           onClose={() => setEditOpen(false)}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['pet', petId] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.pet(petId!) })
             invalidateBrowse(queryClient)
             setEditOpen(false)
           }}

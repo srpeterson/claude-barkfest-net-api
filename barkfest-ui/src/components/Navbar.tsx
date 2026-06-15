@@ -9,6 +9,7 @@ import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
 import { logout, getOwnerById, getOwnerPets } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
 import { invalidateBrowse } from '@/lib/browseCache'
+import { queryKeys } from '@/lib/queryKeys'
 import { getPetTypeLabel, MAX_PETS_PER_OWNER } from '@/config/petTypes'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { AddPetDialog } from '@/components/AddPetDialog'
@@ -58,7 +59,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   // Keep the profile image and display name in sync with the server so changes
   // on another device (or another tab) are picked up when the user returns.
   const { data: ownerMeta } = useQuery({
-    queryKey: ['owner', accountId, 'meta'],
+    queryKey: queryKeys.ownerMeta(accountId!),
     queryFn: async () => {
       const owner = await getOwnerById(accountId!)
       return {
@@ -80,7 +81,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   const queryClient = useQueryClient()
 
   const { data: ownerPets, isLoading: isLoadingPets } = useQuery({
-    queryKey: ['owner', 'pets', accountId],
+    queryKey: queryKeys.ownerPets(accountId!),
     queryFn: () => getOwnerPets(accountId!),
     enabled: isAuthenticated && accountType === 'owner' && !!accountId,
     staleTime: 30 * 1000,
@@ -107,7 +108,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
 
   function handlePetAdded() {
     invalidateBrowse(queryClient)
-    queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
+    queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
   }
 
   async function handleSignOut() {

@@ -7,6 +7,7 @@ import { HeroSection } from '@/components/HeroSection'
 import { PetGrid } from '@/components/PetGrid'
 import { Footer } from '@/components/Footer'
 import { getBrowseImages } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import type { BrowseImageDto, PagedResult } from '@/types/browse'
 
 const PAGE_SIZE = 9
@@ -25,7 +26,7 @@ export function HomePage() {
   )
 
   const { data, isLoading } = useQuery<PagedResult<BrowseImageDto>>({
-    queryKey: ['browse', 'images', page, petTypeValue, breedValue],
+    queryKey: queryKeys.browseImagesList(page, petTypeValue, breedValue),
     queryFn: () => getBrowseImages({
       page,
       pageSize: PAGE_SIZE,
