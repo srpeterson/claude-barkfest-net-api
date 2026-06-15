@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { NativeSelect } from '@/components/ui/select'
-import { getBrowseBreeds, getBrowsePetTypes } from '@/lib/api'
+import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
 
 interface PetTypeBreedFormFieldsProps {
   petTypeValue: number
@@ -19,27 +18,8 @@ export function PetTypeBreedFormFields({
   petTypeClassName,
   breedClassName,
 }: PetTypeBreedFormFieldsProps) {
-  const { data: petTypes = [] } = useQuery({
-    queryKey: ['browse', 'pet-types'],
-    queryFn: getBrowsePetTypes,
-    staleTime: Infinity,
-  })
-
-  const { data: rawBreeds = [] } = useQuery({
-
-    queryKey: ['browse', 'breeds', petTypeValue],
-    queryFn: () => getBrowseBreeds(petTypeValue),
-    enabled: !!petTypeValue,
-    staleTime: Infinity,
-  })
-
-  const breeds = [...rawBreeds].sort((a, b) => {
-    if (a.name === 'Other') return 1
-    if (b.name === 'Other') return -1
-    if (a.name === 'Mixed') return 1
-    if (b.name === 'Mixed') return -1
-    return a.name.localeCompare(b.name)
-  })
+  const { data: petTypes = [] } = usePetTypeOptions()
+  const { data: breeds = [] } = useBreedOptions(petTypeValue)
 
   return (
     <>

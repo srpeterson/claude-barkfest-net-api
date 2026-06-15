@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import type { FileRejection } from 'react-dropzone'
-
-// Matches PetImage.MaxImageSizeBytes in Barkfest.Domain
-const DEFAULT_MAX_SIZE_BYTES = 10 * 1024 * 1024
+import { useObjectUrls } from '@/hooks/useObjectUrls'
+import { IMAGE_ACCEPT, MAX_IMAGE_SIZE_BYTES } from '@/lib/imageUpload'
 
 export interface ImageFile {
   file: File
@@ -17,16 +16,13 @@ interface UseImageUploadOptions {
 
 export function useImageUpload({
   maxFiles,
-  maxSizeBytes = DEFAULT_MAX_SIZE_BYTES,
+  maxSizeBytes = MAX_IMAGE_SIZE_BYTES,
 }: UseImageUploadOptions) {
   const [images, setImages] = useState<ImageFile[]>([])
   const [featuredIndex, setFeaturedIndex] = useState(0)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
-  const createdUrls = useRef<string[]>([])
-  useEffect(() => {
-    return () => { createdUrls.current.forEach(url => URL.revokeObjectURL(url)) }
-  }, [])
+  const objectUrls = useObjectUrls()
 
   const onDrop = useCallback((accepted: File[], rejected: FileRejection[]) => {
     setUploadError(null)
@@ -44,17 +40,16 @@ export function useImageUpload({
     }
 
     const remaining = maxFiles - images.length
-    const newFiles = accepted.slice(0, remaining).map(file => {
-      const previewUrl = URL.createObjectURL(file)
-      createdUrls.current.push(previewUrl)
-      return { file, previewUrl }
-    })
+    const newFiles = accepted.slice(0, remaining).map(file => ({
+      file,
+      previewUrl: objectUrls.create(file),
+    }))
     setImages(prev => [...prev, ...newFiles])
-  }, [images.length, maxFiles])
+  }, [images.length, maxFiles, objectUrls])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
+    accept: IMAGE_ACCEPT,
     maxSize: maxSizeBytes,
     multiple: maxFiles > 1,
     disabled: images.length >= maxFiles,

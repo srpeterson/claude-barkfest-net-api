@@ -5,8 +5,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { logout, getBrowseBreeds, getBrowsePetTypes, getOwnerById, getOwnerPets } from '@/lib/api'
+import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
+import { logout, getOwnerById, getOwnerPets } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { invalidateBrowse } from '@/lib/browseCache'
 import { getPetTypeLabel, MAX_PETS_PER_OWNER } from '@/config/petTypes'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { AddPetDialog } from '@/components/AddPetDialog'
@@ -90,21 +92,9 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   const [sheetOpen, setSheetOpen] = useState(false)
   const hasActiveFilters = !!filterProps && (filterProps.petTypeValue !== 0 || filterProps.breedValue !== 0)
 
-  // Queries for the desktop pill label
-  const { data: petTypes = [] } = useQuery({
-    queryKey: ['browse', 'pet-types'],
-    queryFn: getBrowsePetTypes,
-    enabled: !!filterProps,
-    staleTime: Infinity,
-  })
-
-  // Fetch breeds for the active type so the mobile pill label resolves correctly
-  const { data: activeBreeds = [] } = useQuery({
-    queryKey: ['browse', 'breeds', filterProps?.petTypeValue ?? 0],
-    queryFn: () => getBrowseBreeds(filterProps!.petTypeValue),
-    enabled: !!filterProps && !!filterProps.petTypeValue,
-    staleTime: Infinity,
-  })
+  // Queries for the desktop/mobile filter pill labels — deferred until a filter is active
+  const { data: petTypes = [] } = usePetTypeOptions(!!filterProps)
+  const { data: activeBreeds = [] } = useBreedOptions(filterProps?.petTypeValue ?? 0)
 
   function getMobileFilterLabel() {
     if (!filterProps || !filterProps.petTypeValue) return 'All Pets'
@@ -116,8 +106,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   }
 
   function handlePetAdded() {
-    queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-    queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+    invalidateBrowse(queryClient)
     queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
   }
 

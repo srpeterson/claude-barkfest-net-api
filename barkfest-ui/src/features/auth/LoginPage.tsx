@@ -4,6 +4,8 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
+import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
+import { inputBaseCls } from '@/lib/formStyles'
 
 // Brand panel mosaic — local pet photos served from public/pets/
 // TODO (Roadmap #24): replace with live browse API images
@@ -14,12 +16,7 @@ const PET_IMAGES = [
   { src: '/pets/pet-4.jpg', tall: false },
 ]
 
-const inputCls = [
-  'w-full h-12 rounded-xl border-[1.5px] border-border',
-  'bg-card text-foreground px-3.5 text-sm',
-  'outline-none box-border transition',
-  'focus:border-primary focus:ring-2 focus:ring-primary/30',
-].join(' ')
+const inputCls = `${inputBaseCls} h-12 bg-card px-3.5`
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -231,38 +228,7 @@ export function LoginPage() {
       </div>
 
       {/* ── Forgot password modal ── */}
-      {forgotOpen && (
-        <div
-          className="animate-backdrop-in fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={() => setForgotOpen(false)}
-        >
-          <div
-            className="animate-dialog-appear w-full max-w-[360px] bg-card rounded-[20px] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.18)] relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <BarkfestMark size={22} />
-              <span className="font-heading text-[17px] font-bold">Barkfest</span>
-            </div>
-            <h3 className="font-heading text-xl font-bold mb-2">Forgot your password?</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-1.5">
-              Woof! Automated reset is on its way. Until then, shoot us an email and we'll get your paws back on the keys. Don't forget to include your username:
-            </p>
-            <a
-              href="mailto:srpeterson@outlook.com"
-              className="text-sm font-semibold text-primary no-underline inline-block mb-[22px]"
-            >
-              srpeterson@outlook.com
-            </a>
-            <button
-              onClick={() => setForgotOpen(false)}
-              className="block w-full h-[42px] rounded-[10px] border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {forgotOpen && <ForgotPasswordModal onClose={() => setForgotOpen(false)} />}
 
       <style>{`
         @media (max-width: 680px) {

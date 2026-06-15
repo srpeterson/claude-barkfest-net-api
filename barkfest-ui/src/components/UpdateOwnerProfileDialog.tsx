@@ -17,13 +17,14 @@ import {
   ApiError,
 } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { invalidateBrowse } from '@/lib/browseCache'
+import { useObjectUrls } from '@/hooks/useObjectUrls'
+import { IMAGE_ACCEPT, MAX_IMAGE_SIZE_BYTES } from '@/lib/imageUpload'
+import { inputBaseCls } from '@/lib/formStyles'
 
 interface UpdateOwnerProfileDialogProps {
   onClose: () => void
 }
-
-// Matches PetImage.MaxImageSizeBytes in Barkfest.Domain
-const MAX_SIZE_BYTES = 10 * 1024 * 1024
 
 export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogProps) {
   const { accountId, setProfileImage } = useAuth()
@@ -57,7 +58,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
   const [newImagePreviewUrl, setNewImagePreviewUrl] = useState<string | null>(null)
   const [imageCleared, setImageCleared] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
-  const previewUrlRef = useRef<string | null>(null)
+  const objectUrls = useObjectUrls()
 
   // ── Submission ────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -135,13 +136,6 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
     checkDN(displayName)
   }, [displayName, checkDN])
 
-  // ── Revoke object URL on unmount ──────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
-    }
-  }, [])
-
   // ── Dropzone ──────────────────────────────────────────────────────────
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop(accepted, rejected) {
@@ -155,25 +149,21 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
       }
       if (accepted.length === 0) return
 
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
-      const url = URL.createObjectURL(accepted[0])
-      previewUrlRef.current = url
+      if (newImagePreviewUrl) objectUrls.revoke(newImagePreviewUrl)
+      const url = objectUrls.create(accepted[0])
       setNewImageFile(accepted[0])
       setNewImagePreviewUrl(url)
       setImageCleared(false)
     },
-    accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
-    maxSize: MAX_SIZE_BYTES,
+    accept: IMAGE_ACCEPT,
+    maxSize: MAX_IMAGE_SIZE_BYTES,
     multiple: false,
     disabled: isSubmitting || showNewImage || showExistingImage,
   })
 
   function handleClearImage() {
     if (newImageFile) {
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current)
-        previewUrlRef.current = null
-      }
+      if (newImagePreviewUrl) objectUrls.revoke(newImagePreviewUrl)
       setNewImageFile(null)
       setNewImagePreviewUrl(null)
     } else {
@@ -229,8 +219,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
       // Invalidate browse cache when a field visible on pet tiles changed — the
       // display name and the owner's profile image (shown next to the name).
       if (displayNameChanged || profileImageChanged) {
-        queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-        queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+        invalidateBrowse(queryClient)
       }
 
       onClose()
@@ -516,7 +505,7 @@ function ProfileField({ label, id, type = 'text', required, maxLength, placehold
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full h-11 rounded-xl border-[1.5px] border-border bg-background text-foreground px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground transition"
+        className={`${inputBaseCls} h-11 bg-background px-3 placeholder:text-muted-foreground`}
       />
     </div>
   )

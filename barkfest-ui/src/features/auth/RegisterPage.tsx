@@ -2,16 +2,13 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { Link, useNavigate } from 'react-router-dom'
 import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
-import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { checkDisplayName, checkUsername, login, register } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter'
+import { inputBaseCls } from '@/lib/formStyles'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
-const STRENGTH_BG     = ['bg-[#e5484d]', 'bg-[#f76b15]', 'bg-[#d4a017]', 'bg-accent', 'bg-accent']
-const STRENGTH_TEXT   = ['text-[#e5484d]', 'text-[#f76b15]', 'text-[#d4a017]', 'text-accent', 'text-accent']
 
 const PET_IMAGES = [
   'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=120&h=120&fit=crop&auto=format',
@@ -21,12 +18,7 @@ const PET_IMAGES = [
   'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=120&h=120&fit=crop&auto=format',
 ]
 
-const inputCls = [
-  'w-full h-[46px] rounded-xl border-[1.5px] border-border',
-  'bg-card text-foreground px-3.5 text-sm',
-  'outline-none box-border transition',
-  'focus:border-primary focus:ring-2 focus:ring-primary/30',
-].join(' ')
+const inputCls = `${inputBaseCls} h-[46px] bg-card px-3.5`
 
 type UnStatus = 'idle' | 'checking' | 'available' | 'taken'
 type DnStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -365,24 +357,7 @@ export function RegisterPage() {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {form.password && (
-                <div className="mt-2">
-                  <div className="flex gap-1 mb-[3px]">
-                    {[0, 1, 2, 3].map(i => (
-                      <div
-                        key={i}
-                        className={cn(
-                          'flex-1 h-[3px] rounded-sm transition-colors',
-                          i < strength.score ? STRENGTH_BG[strength.score] : 'bg-border'
-                        )}
-                      />
-                    ))}
-                  </div>
-                  <p className={cn('text-[11px] font-semibold m-0', STRENGTH_TEXT[strength.score])}>
-                    {STRENGTH_LABELS[strength.score]}
-                  </p>
-                </div>
-              )}
+              {form.password && <PasswordStrengthMeter score={strength.score} />}
               {pwWeak && (
                 <p className="text-xs text-destructive mt-1">Try a longer or less predictable password.</p>
               )}

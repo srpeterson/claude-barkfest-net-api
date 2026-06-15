@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib/api'
 import type { PetDto } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { invalidateBrowse } from '@/lib/browseCache'
 import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/Navbar'
@@ -41,8 +42,7 @@ export function PetDetailPage() {
 
   useEffect(() => {
     if (isError) {
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      invalidateBrowse(queryClient)
     }
   }, [isError, queryClient])
 
@@ -94,8 +94,7 @@ export function PetDetailPage() {
       queryClient.setQueryData<PetDto>(['pet', petId], old =>
         old ? { ...old, likes: newCount } : old
       )
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      invalidateBrowse(queryClient)
     } catch {
       setLiked(!next)
       setLikeCount(prev)
@@ -107,8 +106,7 @@ export function PetDetailPage() {
     setIsDeleting(true)
     try {
       await deletePet(pet.petId)
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      invalidateBrowse(queryClient)
       queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
       navigate('/')
     } catch {
@@ -438,8 +436,7 @@ export function PetDetailPage() {
           onClose={() => setEditOpen(false)}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['pet', petId] })
-            queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-            queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+            invalidateBrowse(queryClient)
             setEditOpen(false)
           }}
         />
