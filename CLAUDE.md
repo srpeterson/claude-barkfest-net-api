@@ -651,6 +651,31 @@ still throw `DomainException`.
 
 ---
 
+## Frontend (barkfest-ui) Conventions
+
+The React UI lives in `barkfest-ui` and follows a feature/component/hook/lib layout. Shared
+concerns are centralized in small modules - reuse these rather than re-duplicating the logic
+inline (a dedicated cleanup pass consolidated the originals):
+
+| Concern | Module | Use |
+|---|---|---|
+| React Query keys | `src/lib/queryKeys.ts` | `queryKeys.*` factory is the single source of cache keys. Never inline `['browse', ...]` / `['owner', ...]` arrays. Reads use the builder functions; invalidation relies on prefix matching. |
+| Browse cache refresh | `src/lib/browseCache.ts` | `invalidateBrowse(queryClient)` after any mutation that changes the public gallery (create/edit/delete/like/visibility/profile). |
+| Pet-type & breed options | `src/hooks/usePetOptions.ts` | `usePetTypeOptions()` / `useBreedOptions(petTypeValue)` - the only place the browse pet-types/breeds queries live. Breeds come pre-sorted. |
+| Breed ordering | `src/lib/breeds.ts` | `sortBreeds()` - alphabetical, `Mixed`/`Other` pinned last. |
+| Form field limits | `src/config/constraints.ts` | `LIMITS.*` mirrors the domain constraints. Never hardcode `maxLength`/`minLength` numbers in inputs. |
+| Image upload config | `src/lib/imageUpload.ts` | `IMAGE_ACCEPT`, `MAX_IMAGE_SIZE_BYTES`, `MAX_PET_IMAGES`. |
+| Object-URL lifecycle | `src/hooks/useObjectUrls.ts` | `create(file)` / `revoke(url)` with auto-cleanup on unmount - for image previews. |
+| Input styling | `src/lib/formStyles.ts` | `inputBaseCls` - compose with per-field height/background/padding. |
+| Email validation | `src/lib/email.ts` | `isValidEmail()` (validator-backed) for client-side UX checks. |
+| Shared dialogs | `src/components/PasswordStrengthMeter.tsx`, `ForgotPasswordModal.tsx` | Reused across the auth pages and profile dialogs. |
+
+- **No inline `<style>` blocks** - animations, keyframes, and media queries live in `src/index.css`.
+- **Tests:** vitest + Testing Library with `describe`/`it`; co-locate `*.test.ts(x)` beside the
+  source. Run via `pnpm --dir barkfest-ui test`. Pin the clock (`vi.setSystemTime`) for date logic.
+
+---
+
 ## Git Workflow
 
 ### Phase 1 - Starting work
