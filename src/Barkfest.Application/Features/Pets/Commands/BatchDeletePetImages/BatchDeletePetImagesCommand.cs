@@ -1,34 +1,35 @@
-using Barkfest.Application.Common.Exceptions;
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Commands.BatchDeletePetImages;
 
 public record BatchDeletePetImagesCommand(
     Guid PetId,
-    IReadOnlyList<Guid> ImageIds) : IRequest;
+    IReadOnlyList<Guid> ImageIds) : IRequest<Result<Unit, Error>>;
 
 public class BatchDeletePetImagesCommandHandler(
     IPetRepository petRepository,
     IBlobStorageService blobStorageService,
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUserService)
-    : IRequestHandler<BatchDeletePetImagesCommand>
+    : IRequestHandler<BatchDeletePetImagesCommand, Result<Unit, Error>>
 {
-    private const string ContainerName = "pet-images";
+    private const string ContainerName = BlobContainers.PetImages;
 
-    public async Task Handle(BatchDeletePetImagesCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Unit, Error>> Handle(BatchDeletePetImagesCommand request, CancellationToken cancellationToken)
     {
         var pet = await petRepository.GetByIdAsync(request.PetId, cancellationToken);
 
         if (pet is null)
-            throw new NotFoundException(nameof(Pet), request.PetId);
+            return new NotFoundError(nameof(Pet), request.PetId);
 
         if (pet.OwnerId != currentUserService.OwnerId)
-            throw new ForbiddenException();
+            return new ForbiddenError();
 
         // Resolve blob names before RemoveImages removes them from the collection.
         var blobNames = pet.Images
@@ -36,13 +37,20 @@ public class BatchDeletePetImagesCommandHandler(
             .Select(i => i.BlobName)
             .ToList();
 
-        // Validates all IDs exist — throws DomainException if any are missing.
-        pet.RemoveImages(request.ImageIds);
+        // RemoveImages validates all IDs exist (throws DomainException if any are missing);
+        // lift that into the railway as a DomainRuleError.
+        var removal = DomainResult.Try(() => pet.RemoveImages(request.ImageIds));
+        if (removal.IsFailure)
+            return removal.Error;
+
+        // Commit the DB removals first, then delete the blobs (see RemovePetImage for the
+        // ordering rationale — fail toward orphaned blobs, never dangling rows).
+        await petRepository.UpdateAsync(pet, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         foreach (var blobName in blobNames)
             await blobStorageService.DeleteAsync(ContainerName, blobName, cancellationToken);
 
-        await petRepository.UpdateAsync(pet, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Unit.Value;
     }
 }

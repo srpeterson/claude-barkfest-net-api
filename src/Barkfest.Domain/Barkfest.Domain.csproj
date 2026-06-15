@@ -4,4 +4,9 @@
     <PackageReference Include="Ardalis.SmartEnum" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Lets test builders populate the internal-set Pet.Owner navigation (see Pet.cs). -->
+    <InternalsVisibleTo Include="Barkfest.Tests.Common" />
+  </ItemGroup>
+
 </Project>

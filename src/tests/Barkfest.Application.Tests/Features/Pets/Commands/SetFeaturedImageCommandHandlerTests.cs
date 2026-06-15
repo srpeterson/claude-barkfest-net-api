@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.SetFeaturedImage;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -39,24 +38,28 @@ public class SetFeaturedImageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         _petRepository.GetByIdAsync(Arg.Any<Guid>(), CancellationToken.None).Returns((Pet?)null);
 
-        await Should.ThrowAsync<NotFoundException>(() =>
-            _setFeaturedImageCommandHandler.Handle(
-                new SetFeaturedImageCommand(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None));
+        var result = await _setFeaturedImageCommandHandler.Handle(
+            new SetFeaturedImageCommand(Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var pet = new PetBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _petRepository.GetByIdAsync(pet.Id, CancellationToken.None).Returns(pet);
 
-        await Should.ThrowAsync<ForbiddenException>(() =>
-            _setFeaturedImageCommandHandler.Handle(
-                new SetFeaturedImageCommand(pet.Id, Guid.NewGuid()), CancellationToken.None));
+        var result = await _setFeaturedImageCommandHandler.Handle(
+            new SetFeaturedImageCommand(pet.Id, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

@@ -10,12 +10,16 @@ public class Pet
 
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     public Guid OwnerId { get; private set; }
-    public Owner Owner { get; private set; } = null!;
+    // internal set (not private) so test builders can populate the navigation the way EF
+    // would on an Include(p => p.Owner). EF still materialises it; Application/Persistence
+    // cannot set it (separate assemblies). The meaningful invariant is OwnerId, set in the ctor.
+    public Owner Owner { get; internal set; } = null!;
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public DateOnly? DateOfBirth { get; private set; }
     public PetType PetType { get; private set; } = null!;
     public int BreedValue { get; private set; }
+    public string BreedName => Breed.NameFor(PetType, BreedValue);
     public int Likes { get; private set; }
     public IReadOnlyCollection<PetImage> Images => _images.AsReadOnly();
     public PetImage? FeaturedImage => _images.FirstOrDefault(i => i.IsFeaturedImage);
@@ -81,11 +85,8 @@ public class Pet
 
     public void SetBreed(int breedValue)
     {
-        if (PetType == PetType.Dog && !DogBreed.TryFromValue(breedValue, out _))
-            throw new DomainException("Invalid dog breed value.");
-
-        if (PetType == PetType.Cat && !CatBreed.TryFromValue(breedValue, out _))
-            throw new DomainException("Invalid cat breed value.");
+        if (!Breed.IsValid(PetType, breedValue))
+            throw new DomainException($"Invalid {PetType.Name.ToLowerInvariant()} breed value.");
 
         BreedValue = breedValue;
     }

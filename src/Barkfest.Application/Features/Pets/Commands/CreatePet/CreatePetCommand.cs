@@ -1,8 +1,10 @@
-using Barkfest.Application.Common.Exceptions;
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Commands.CreatePet;
@@ -12,32 +14,39 @@ public record CreatePetCommand(
     string? Description,
     DateOnly? DateOfBirth,
     int PetTypeValue,
-    int BreedValue) : IRequest<Guid>;
+    int BreedValue) : IRequest<Result<Guid, Error>>;
 
 public class CreatePetCommandHandler(
     IOwnerRepository ownerRepository,
     IPetRepository petRepository,
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUserService)
-    : IRequestHandler<CreatePetCommand, Guid>
+    : IRequestHandler<CreatePetCommand, Result<Guid, Error>>
 {
-    public async Task<Guid> Handle(CreatePetCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid, Error>> Handle(CreatePetCommand request, CancellationToken cancellationToken)
     {
-        var ownerId = currentUserService.OwnerId
-            ?? throw new NotFoundException(nameof(Owner), "unknown");
+        var ownerId = currentUserService.OwnerId;
+        if (ownerId is null)
+            return new NotFoundError(nameof(Owner), "unknown");
 
-        var owner = await ownerRepository.GetByIdAsync(ownerId, cancellationToken);
+        var owner = await ownerRepository.GetByIdAsync(ownerId.Value, cancellationToken);
 
         if (owner is null)
-            throw new NotFoundException(nameof(Owner), ownerId);
+            return new NotFoundError(nameof(Owner), ownerId.Value);
 
         var petType = PetType.FromValue(request.PetTypeValue);
 
-        var pet = Pet.Create(ownerId, request.Name, petType, request.BreedValue, request.Description, request.DateOfBirth);
+        // Lift domain construction (Pet.Create may throw DomainException, e.g. an invalid
+        // breed for the type) into the railway via the single boundary adapter.
+        var petResult = DomainResult.Try(() =>
+            Pet.Create(ownerId.Value, request.Name, petType, request.BreedValue, request.Description, request.DateOfBirth));
 
-        await petRepository.AddAsync(pet, cancellationToken);
+        if (petResult.IsFailure)
+            return petResult.Error;
+
+        await petRepository.AddAsync(petResult.Value, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return pet.Id;
+        return petResult.Value.Id;
     }
 }

@@ -12,10 +12,14 @@ public class PetBuilder
     private PetType _petType = PetType.Dog;
     private int _breedValue = DogBreed.Beagle.Value;
     private readonly List<PetImage> _images = [];
+    private Owner? _owner;
 
-    public PetBuilder WithOwnerId(Guid ownerId)
+    // Populates the Pet.Owner navigation (and aligns OwnerId) the way EF would when it
+    // materialises the pet with an Include(p => p.Owner).
+    public PetBuilder WithOwner(Owner owner)
     {
-        _ownerId = ownerId;
+        _owner = owner;
+        _ownerId = owner.Id;
         return this;
     }
 
@@ -60,6 +64,10 @@ public class PetBuilder
         var pet = Pet.Create(_ownerId, _name, _petType, _breedValue, _description, _dateOfBirth);
         foreach (var image in _images)
             pet.AddImage(image);
+
+        if (_owner is not null)
+            pet.Owner = _owner;
+
         return pet;
     }
 }

@@ -1,8 +1,8 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.CreatePet;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -32,7 +32,8 @@ public class CreatePetCommandHandlerTests
 
         var result = await _createPetCommandHandler.Handle(command, CancellationToken.None);
 
-        result.ShouldNotBe(Guid.Empty);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBe(Guid.Empty);
     }
 
     [Fact]
@@ -58,7 +59,7 @@ public class CreatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _currentUserService.OwnerId.Returns((Guid?)ownerId);
@@ -66,6 +67,9 @@ public class CreatePetCommandHandlerTests
 
         var command = new CreatePetCommand("Buddy", null, null, PetType.Dog.Value, DogBreed.Beagle.Value);
 
-        await Should.ThrowAsync<NotFoundException>(() => _createPetCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _createPetCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

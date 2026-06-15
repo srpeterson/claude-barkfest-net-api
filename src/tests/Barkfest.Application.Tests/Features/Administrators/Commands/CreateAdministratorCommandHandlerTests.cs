@@ -1,7 +1,7 @@
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Administrators.Commands.CreateAdministrator;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -29,10 +29,11 @@ public class CreateAdministratorCommandHandlerTests
         _administratorRepository.GetByEmailAsync("new@barkfest.dev", CancellationToken.None).Returns((Administrator?)null);
         _passwordHasher.Hash("securepass").Returns("$2a$11$hash");
 
-        var id = await _createAdministratorCommandHandler.Handle(
+        var result = await _createAdministratorCommandHandler.Handle(
             new CreateAdministratorCommand("newadmin", "New Admin", "new@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None);
 
-        id.ShouldNotBe(Guid.Empty);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBe(Guid.Empty);
         await _administratorRepository.Received(1).AddAsync(
             Arg.Is<Administrator>(a => a.Username == "newadmin" && a.Name == "New Admin" && a.Email == "new@barkfest.dev"),
             CancellationToken.None);
@@ -40,13 +41,15 @@ public class CreateAdministratorCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotAdmin_Returns_ForbiddenError()
     {
         // IsAdmin returns false by default (NSubstitute default for bool)
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _createAdministratorCommandHandler.Handle(
-                new CreateAdministratorCommand("newadmin", "New Admin", "new@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None));
+        var result = await _createAdministratorCommandHandler.Handle(
+            new CreateAdministratorCommand("newadmin", "New Admin", "new@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
@@ -59,9 +62,11 @@ public class CreateAdministratorCommandHandlerTests
         existing.SetPasswordHash("$2a$11$hash");
         _administratorRepository.GetByUsernameAsync("takenuser", CancellationToken.None).Returns(existing);
 
-        await Should.ThrowAsync<DomainException>(
-            () => _createAdministratorCommandHandler.Handle(
-                new CreateAdministratorCommand("takenuser", "New Admin", "new@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None));
+        var result = await _createAdministratorCommandHandler.Handle(
+            new CreateAdministratorCommand("takenuser", "New Admin", "new@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 
     [Fact]
@@ -75,8 +80,10 @@ public class CreateAdministratorCommandHandlerTests
         existing.SetPasswordHash("$2a$11$hash");
         _administratorRepository.GetByEmailAsync("existing@barkfest.dev", CancellationToken.None).Returns(existing);
 
-        await Should.ThrowAsync<DomainException>(
-            () => _createAdministratorCommandHandler.Handle(
-                new CreateAdministratorCommand("newadmin", "New Admin", "existing@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None));
+        var result = await _createAdministratorCommandHandler.Handle(
+            new CreateAdministratorCommand("newadmin", "New Admin", "existing@barkfest.dev", "+15555550100", "securepass"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 }

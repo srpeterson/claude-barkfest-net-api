@@ -23,6 +23,9 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
         builder.Property(o => o.DisplayName)
             .HasMaxLength(Owner.DisplayNameMaxLength);
 
+        builder.Property(o => o.DisplayNameNormalized)
+            .HasMaxLength(Owner.DisplayNameMaxLength);
+
         builder.Property(o => o.FirstName)
             .HasMaxLength(Owner.FirstNameMaxLength)
             .IsRequired();
@@ -61,6 +64,13 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
 
         builder.HasIndex(o => o.Email)
             .IsUnique();
+
+        // Display name is optional, so the uniqueness constraint is a filtered unique index
+        // that ignores NULLs - any number of owners may have no display name, but a set one
+        // must be unique under its normalized (space-stripped, lowercased) form.
+        builder.HasIndex(o => o.DisplayNameNormalized)
+            .IsUnique()
+            .HasFilter("[DisplayNameNormalized] IS NOT NULL");
 
         builder.OwnsOne(o => o.ProfileImage, pi =>
         {

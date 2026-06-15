@@ -1,31 +1,32 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.DTOs;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Queries.GetPetsByOwnerId;
 
-public record GetPetsByOwnerIdQuery(Guid OwnerId) : IRequest<IEnumerable<PetDto>>;
+public record GetPetsByOwnerIdQuery(Guid OwnerId) : IRequest<Result<IEnumerable<PetDto>, Error>>;
 
 public class GetPetsByOwnerIdQueryHandler(
     IPetRepository petRepository,
     IOwnerRepository ownerRepository,
     ICurrentUserService currentUserService)
-    : IRequestHandler<GetPetsByOwnerIdQuery, IEnumerable<PetDto>>
+    : IRequestHandler<GetPetsByOwnerIdQuery, Result<IEnumerable<PetDto>, Error>>
 {
-    public async Task<IEnumerable<PetDto>> Handle(GetPetsByOwnerIdQuery request, CancellationToken cancellationToken)
+    public async Task<Result<IEnumerable<PetDto>, Error>> Handle(GetPetsByOwnerIdQuery request, CancellationToken cancellationToken)
     {
         var owner = await ownerRepository.GetByIdAsync(request.OwnerId, cancellationToken);
 
         if (owner is null || (!owner.IsActive && !currentUserService.IsAdmin))
-            throw new NotFoundException(nameof(Owner), request.OwnerId);
+            return new NotFoundError(nameof(Owner), request.OwnerId);
 
         if (!owner.IsVisible && !currentUserService.IsAdmin && currentUserService.OwnerId != owner.Id)
-            throw new NotFoundException(nameof(Owner), request.OwnerId);
+            return new NotFoundError(nameof(Owner), request.OwnerId);
 
         var pets = await petRepository.GetByOwnerIdAsync(request.OwnerId, cancellationToken);
-        return pets.ToDtoList();
+        return Result.Success<IEnumerable<PetDto>, Error>(pets.ToDtoList());
     }
 }

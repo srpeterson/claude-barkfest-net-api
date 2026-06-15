@@ -21,8 +21,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
             // IsVisible = false means the owner has chosen to hide their pets from the gallery.
             // Admin views use separate endpoints and never go through this repository,
             // so they are unaffected by these filters.
-            .Where(pi => pi.Pet.Owner.IsActive && pi.Pet.Owner.IsVisible)
-            .AsQueryable();
+            .Where(pi => pi.Pet.Owner.IsActive && pi.Pet.Owner.IsVisible);
 
         if (petType is not null)
             baseQuery = baseQuery.Where(pi => pi.Pet.PetType == petType);
@@ -33,8 +32,12 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         var totalCount = await baseQuery.CountAsync(cancellationToken);
 
         var images = await baseQuery
+            // ThenBy PetImage.Id (a unique Guid v7) gives a total, deterministic order so
+            // Skip/Take paging never duplicates or drops a row when CreatedAt values tie.
+            // No AsSplitQuery: every Include here is to-one (PetImage -> Pet -> Owner), so a
+            // single JOIN is optimal - splitting would add round-trips for no cartesian benefit.
             .OrderByDescending(pi => pi.Pet.CreatedAt)
-            .AsSplitQuery()
+            .ThenByDescending(pi => pi.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -59,9 +62,7 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         pi.Pet.DateOfBirth,
         pi.Pet.Age,
         pi.Pet.PetType.Name,
-        pi.Pet.PetType == PetType.Dog
-            ? DogBreed.FromValue(pi.Pet.BreedValue).Name
-            : CatBreed.FromValue(pi.Pet.BreedValue).Name,
+        pi.Pet.BreedName,
         pi.Pet.Likes,
         pi.Pet.OwnerId);
 }

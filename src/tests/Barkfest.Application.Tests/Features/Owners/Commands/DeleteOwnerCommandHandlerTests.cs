@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.DeleteOwner;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -35,25 +34,29 @@ public class DeleteOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _deleteOwnerCommandHandler.Handle(new DeleteOwnerCommand(ownerId), CancellationToken.None));
+        var result = await _deleteOwnerCommandHandler.Handle(new DeleteOwnerCommand(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsNotCurrentUser_Throws_ForbiddenException()
+    public async Task Handle_When_OwnerIsNotCurrentUser_Returns_ForbiddenError()
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _deleteOwnerCommandHandler.Handle(new DeleteOwnerCommand(ownerId), CancellationToken.None));
+        var result = await _deleteOwnerCommandHandler.Handle(new DeleteOwnerCommand(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]

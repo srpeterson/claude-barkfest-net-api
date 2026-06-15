@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Administrators.Commands.UpdateAdministratorPassword;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -40,22 +39,26 @@ public class UpdateAdministratorPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotAdmin_Returns_ForbiddenError()
     {
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _updateAdministratorPasswordCommandHandler.Handle(
-                new UpdateAdministratorPasswordCommand(Guid.NewGuid(), "newpassword"), CancellationToken.None));
+        var result = await _updateAdministratorPasswordCommandHandler.Handle(
+            new UpdateAdministratorPasswordCommand(Guid.NewGuid(), "newpassword"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
-    public async Task Handle_When_AdministratorNotFound_Throws_NotFoundException()
+    public async Task Handle_When_AdministratorNotFound_Returns_NotFoundError()
     {
         var id = Guid.NewGuid();
         _currentUserService.IsAdmin.Returns(true);
         _administratorRepository.GetByIdAsync(id, CancellationToken.None).Returns((Administrator?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _updateAdministratorPasswordCommandHandler.Handle(
-                new UpdateAdministratorPasswordCommand(id, "newpassword"), CancellationToken.None));
+        var result = await _updateAdministratorPasswordCommandHandler.Handle(
+            new UpdateAdministratorPasswordCommand(id, "newpassword"), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

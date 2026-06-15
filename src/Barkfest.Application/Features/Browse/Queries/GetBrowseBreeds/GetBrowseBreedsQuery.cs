@@ -14,9 +14,9 @@ public class GetBrowseBreedsQueryHandler : IRequestHandler<GetBrowseBreedsQuery,
         if (!PetType.TryFromValue(request.PetTypeValue, out var petType))
             return Task.FromResult<IReadOnlyList<BreedOptionDto>>([]);
 
-        IReadOnlyList<BreedOptionDto> breeds = petType == PetType.Dog
-            ? DogBreed.List.OrderBy(b => b.Value).Select(b => new BreedOptionDto(b.Name, b.Value)).ToList()
-            : CatBreed.List.OrderBy(b => b.Value).Select(b => new BreedOptionDto(b.Name, b.Value)).ToList();
+        IReadOnlyList<BreedOptionDto> breeds = Breed.ListFor(petType)
+            .Select(b => new BreedOptionDto(b.Name, b.Value))
+            .ToList();
 
         return Task.FromResult(breeds);
     }

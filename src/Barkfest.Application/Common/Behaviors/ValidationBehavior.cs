@@ -1,3 +1,4 @@
+using Barkfest.Domain.Errors;
 using FluentValidation;
 using MediatR;
 
@@ -20,9 +21,23 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
             .Where(f => f != null)
             .ToList();
 
-        if (failures.Count != 0)
-            throw new ValidationException(failures);
+        if (failures.Count == 0)
+            return await next(cancellationToken);
 
-        return await next(cancellationToken);
+        // Result-returning handlers get a failed Result<T, Error> so validation flows
+        // through the railway. Handlers not yet migrated to Result still throw
+        // ValidationException (handled by middleware) - this legacy branch is removed
+        // once the migration sweep is complete and every handler returns Result.
+        if (ResultFailureFactory.IsResult<TResponse>())
+        {
+            var validationError = new ValidationError(
+                failures
+                    .GroupBy(f => f.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(f => f.ErrorMessage).ToArray()));
+
+            return ResultFailureFactory.Create<TResponse>(validationError);
+        }
+
+        throw new ValidationException(failures);
     }
 }

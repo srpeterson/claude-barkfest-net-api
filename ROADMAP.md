@@ -171,6 +171,17 @@ Backend is fully built and tested. This phase adds the frontend UI only.
 - `PATCH /v1/admin/owners/{id}/active` — exists and tested
 - Pet/image management endpoints — need to be built
 
+### Add pagination to the admin list endpoints
+`GET /v1/owners` and `GET /v1/admin/admins` currently return the **entire** table as a flat
+list with no paging (`GetAllOwnersQuery` / `GetAllAdministratorsQuery` → `GetAllAsync`). This
+is fine at current scale but degrades as the owner/admin count grows. Do this as part of the
+admin UI work, not piecemeal, because it is a breaking change spanning backend + frontend:
+- Change the response shape from `OwnerDto[]` / `AdministratorDto[]` to `PagedResult<T>`
+  (the type already exists — see `Barkfest.Application/Common/Models/PagedResult.cs` and how
+  `BrowseRepository` uses it), with `page` / `pageSize` query parameters.
+- Update the admin owner/admin list screens to send page params and render paging controls.
+- Add a stable secondary sort (e.g. by `CreatedAt` then `Id`) so pages don't shuffle.
+
 ### Note on BrowseRepository
 `BrowseRepository` filters by `IsActive && IsVisible` for the public gallery. Admin queries bypass this filter — admins must be able to see all owners and pets regardless of visibility or active state.
 
@@ -312,8 +323,22 @@ The integration point is already in place. To activate:
 5. Swap the registration in `Infrastructure/DependencyInjection.cs`:
    replace `NoOpContentModerationService` with `AzureContentModerationService`
 
-No handler changes are required — the interface is already called at every upload
-site.
+The interface is already called at every upload site. Two implementation notes
+for when the real moderator lands:
+
+- **Stream contract.** A real moderator must read the image bytes, which consumes
+  the upload `Stream`'s cursor. The same stream is then handed to the blob upload,
+  which would read zero bytes and silently write a 0-byte blob. Before activating,
+  change `IContentModerationService.IsImageSafeAsync` to take the image as
+  `ReadOnlyMemory<byte>` (or `byte[]`) instead of `Stream`, buffer each upload once
+  in the handler, and wrap the buffer in a fresh `MemoryStream` for the blob upload.
+  This removes the cursor-ordering hazard at the type level. Applies to **both**
+  upload handlers: `AddPetImagesCommandHandler` and `UploadOwnerProfileImageCommandHandler`.
+- **Moderation ordering.** Today `AddPetImagesCommandHandler` moderates then uploads
+  per-image inside the loop, so a later image failing moderation leaves earlier images
+  already in blob storage (the partial-success result model handles this). Once
+  moderation calls cost money/latency, reconsider moderating all images up front
+  before uploading any.
 
 ### Relationship to Report Abuse
 Image Moderation is proactive — catches inappropriate content at upload time. Report Abuse is reactive — the community flags content that slipped through. The two are complementary and together form a complete content moderation strategy.
@@ -432,6 +457,28 @@ When user feedback indicates the 8-hour timeout is disruptive, or before the app
 
 **Frontend:**
 - `api.ts` intercepts `401`, attempts a silent `POST /v1/auth/refresh`, retries the original request; on refresh failure falls back to current sign-out + login modal
+
+---
+
+## Result Railway — Remaining Follow-ups
+
+**Priority:** Low
+
+**Status:** Core migration complete (branch `enhancement/code-refactor`) — error handling moved from exceptions to `Result<T, Error>` (CSharpFunctionalExtensions) across all fallible handlers. The items below were deliberately deferred.
+
+### Context (done)
+All fallible handlers return `Result<T, Error>`; a closed `Error` DU lives in `Barkfest.Domain/Errors`; `DomainResult.Try` bridges the still-throwing domain (Depth A); `ResultExtensions` translates results to HTTP; `ValidationBehavior` is dual-mode; `ExceptionHandlingMiddleware` is now a backstop. See CLAUDE.md → **Error Handling**. Infallible queries (`CheckUsernameQuery`, `CheckDisplayNameQuery`, Browse) intentionally stay plain (don't wrap what can't fail).
+
+### Deferred follow-ups
+
+**1. Depth B — exception-free domain (optional purity upgrade)**
+Convert entity smart constructors / setters (`Owner.Create`, `SetEmail`, etc.) from throwing `DomainException` to returning `Result`, then delete `DomainResult.Try` and `DomainException`. This makes the domain functionally pure end-to-end (the *Domain Modeling Made Functional* end-state). High churn — every setter signature plus the ~193 domain tests — but localized, because `DomainResult.Try` is the only coupling. Tackle as a dedicated effort only if the "exception-free domain" story is explicitly wanted; Depth A already captured all the robustness/performance value.
+
+**2. Orphan-blob sweeper (robustness backstop for the #6 ordering fix)**
+The blob/DB ordering fix fails toward orphaned (reclaimable) blobs and uses best-effort compensation, which can still leak a blob if the process dies mid-operation. Add a periodic reconciliation job: list blobs under `pets/{petId}/` and `owners/{ownerId}/`, compare against DB `BlobName`s, and delete unreferenced blobs older than a grace window. Safe by construction — the railway guarantees blobs are only ever *extra*, never *missing*.
+
+**3. Optional `ConflictError` (409) for uniqueness violations**
+Duplicate username/email currently surface as `DomainRuleError` → 400 (behavior-preserving). If 409 is preferred, add a `ConflictError` case to the `Error` DU, map it in `ResultExtensions` (+ its exhaustiveness test), and switch the duplicate checks in Register / UpdateOwner / CreateAdministrator. This is a deliberate external behavior change, hence deferred.
 
 ---
 
@@ -632,6 +679,81 @@ contains.
 - Fall back to the current static images if the fetch fails or returns fewer than 4 results
 - `staleTime` can be short (60s) — the mosaic is decorative, not data-critical
 - The 2×2 grid layout and `tall` height variants stay the same; just swap the `src`
+
+---
+
+## Profile Image Access Control (currently unlisted, not private)
+
+**Priority:** Low
+
+**Status:** Not started — profile images are served anonymously
+
+### What
+Today `GET /v1/images/owner-profile-images/{blobName}` is `[AllowAnonymous]` with no auth
+check. Profile images are therefore **unlisted, not private**: the GUID-based blob name is
+unguessable, but anyone who obtains the URL (referrer header, shared link, logged request,
+the JSON response that exposes the blob name) can fetch the image with no token. This is a
+normal MVP choice for avatars, but it is not enforced privacy.
+
+### Why this note exists
+So future "private profile image" work does not start from the false assumption that the
+retrieval endpoint already enforces access control. It does not. Real privacy means adding a
+JWT check to `ImagesController.GetImage` for the `owner-profile-images` container (return 403
+unless the caller is authorized to view that owner's image).
+
+### Related — caching
+The image endpoint serves pet images with `Cache-Control: public, ...` and profile images
+with `private, ...` precisely because profile images are unlisted — `private` keeps them out
+of shared caches/CDNs. If real access control is added, the per-user browser cache remains
+fine (per unguessable URL), but confirm the auth check runs on every fetch regardless of
+cache state. See `ImagesController.CacheControlFor`.
+
+---
+
+## Order Landing Page by Pet ModifiedAt
+
+**Priority:** High
+
+**Status:** Not started
+
+### What
+Add a `Pet.ModifiedAt` timestamp and order the public landing/browse gallery by it
+(most-recently-modified first) instead of `CreatedAt`. A pet resurfaces to the top of the
+gallery when its owner meaningfully updates it.
+
+### Why
+`CreatedAt` ordering means a pet sinks permanently as newer pets are added, even after its
+owner refreshes it with new photos or details. Ordering by `ModifiedAt` keeps actively
+maintained pets visible and rewards owners for keeping listings fresh.
+
+### Behaviour decisions (confirmed)
+- **What bumps `ModifiedAt`:** editing pet details (name, description, breed, date of birth,
+  pet type) **and** image changes (add, remove, re-feature). 
+- **What does NOT:** likes. Likes use atomic `ExecuteUpdateAsync` that bypasses the change
+  tracker by design, so they naturally never touch `ModifiedAt` — the landing page is "recently
+  updated", not "recently liked".
+- **Maintenance:** automatic. `AppDbContext.SaveChanges`/`SaveChangesAsync` stamps
+  `ModifiedAt = DateTime.UtcNow` on every `Pet` entry in `Modified` state. This lines up exactly
+  with the rules above: every current Pet mutation (UpdatePet, AddPetImages, RemovePetImage,
+  BatchDeletePetImages, SetFeaturedImage) marks the Pet `Modified` via `context.Pets.Update(pet)`,
+  while likes do not. **Watch-out:** if a future handler ever marks a Pet `Modified` for a reason
+  that should *not* resurface it, this auto-stamp would still fire — revisit then.
+- **Scope:** public browse/landing only (`BrowseRepository`). Owner's "My Pets" and other pet
+  listings keep their current ordering.
+
+### Approach (high level)
+- Add `Pet.ModifiedAt` (initialise to `CreatedAt` in the entity so a brand-new pet sorts by
+  its creation time until first modified).
+- Override `AppDbContext.SaveChanges`/`SaveChangesAsync` to stamp `ModifiedAt` on `Modified`
+  `Pet` entries. New (`Added`) pets keep the constructor value (= `CreatedAt`).
+- EF config: map `ModifiedAt`; add an index to back the browse sort.
+- Migration: add the `ModifiedAt` column; backfill existing rows `ModifiedAt = CreatedAt`.
+- `BrowseRepository`: change `OrderByDescending(pi => pi.Pet.CreatedAt)` to
+  `OrderByDescending(pi => pi.Pet.ModifiedAt)`, keeping the `ThenByDescending(pi => pi.Id)`
+  tiebreaker added for stable pagination.
+- Tests: retarget the BrowseRepository ordering/tied-timestamp tests from `CreatedAt` to
+  `ModifiedAt`; add coverage that an edit and an image change each bump `ModifiedAt` and
+  resurface the pet, and that a like does not.
 
 ---
 

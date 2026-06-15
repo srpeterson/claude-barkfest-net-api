@@ -1,9 +1,8 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.UpdatePet;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Enums;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -44,18 +43,21 @@ public class UpdatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
 
         var command = new UpdatePetCommand(petId, "Luna", null, null, PetType.Cat.Value, CatBreed.Siamese.Value);
 
-        await Should.ThrowAsync<NotFoundException>(() => _updatePetCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _updatePetCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
@@ -64,6 +66,9 @@ public class UpdatePetCommandHandlerTests
 
         var command = new UpdatePetCommand(petId, "Luna", null, null, PetType.Cat.Value, CatBreed.Siamese.Value);
 
-        await Should.ThrowAsync<ForbiddenException>(() => _updatePetCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _updatePetCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

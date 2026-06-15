@@ -1,7 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Queries.GetOwnerById;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -27,23 +27,26 @@ public class GetOwnerByIdQueryHandlerTests
 
         var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
 
-        result.FirstName.ShouldBe("John");
-        result.LastName.ShouldBe("Doe");
-        result.Email.ShouldBe("john@example.com");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.FirstName.ShouldBe("John");
+        result.Value.LastName.ShouldBe("Doe");
+        result.Value.Email.ShouldBe("john@example.com");
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None));
+        var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsInactive_Throws_NotFoundException()
+    public async Task Handle_When_OwnerIsInactive_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
@@ -51,8 +54,10 @@ public class GetOwnerByIdQueryHandlerTests
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
         // IsAdmin returns false by default (NSubstitute default for bool)
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None));
+        var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -66,20 +71,23 @@ public class GetOwnerByIdQueryHandlerTests
 
         var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
 
-        result.FirstName.ShouldBe("John");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.FirstName.ShouldBe("John");
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsInvisible_Throws_NotFoundException()
+    public async Task Handle_When_OwnerIsInvisible_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetIsVisible(false);
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
-        // IsAdmin returns false and OwnerId returns Guid.Empty by default (NSubstitute)
+        // IsAdmin returns false and OwnerId returns null by default (NSubstitute)
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None));
+        var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
@@ -93,7 +101,8 @@ public class GetOwnerByIdQueryHandlerTests
 
         var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
 
-        result.FirstName.ShouldBe("Jane");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.FirstName.ShouldBe("Jane");
     }
 
     [Fact]
@@ -107,6 +116,7 @@ public class GetOwnerByIdQueryHandlerTests
 
         var result = await _getOwnerByIdQueryHandler.Handle(new GetOwnerByIdQuery(ownerId), CancellationToken.None);
 
-        result.FirstName.ShouldBe("Jane");
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.FirstName.ShouldBe("Jane");
     }
 }

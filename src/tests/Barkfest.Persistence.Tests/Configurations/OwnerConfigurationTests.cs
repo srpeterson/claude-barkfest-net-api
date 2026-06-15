@@ -62,6 +62,35 @@ public class OwnerConfigurationTests
               .ShouldBeTrue();
     }
 
+    [Fact]
+    public void DisplayNameNormalized_HasCorrectMaxLength()
+    {
+        _owner.FindProperty(nameof(Owner.DisplayNameNormalized))!
+              .GetMaxLength()
+              .ShouldBe(Owner.DisplayNameMaxLength);
+    }
+
+    [Fact]
+    public void DisplayNameNormalized_IsNullable()
+    {
+        _owner.FindProperty(nameof(Owner.DisplayNameNormalized))!
+              .IsNullable
+              .ShouldBeTrue();
+    }
+
+    [Fact]
+    public void DisplayNameNormalized_HasFilteredUniqueIndex()
+    {
+        var index = _owner.GetIndexes()
+            .SingleOrDefault(i =>
+                i.Properties.Count == 1 &&
+                i.Properties[0].Name == nameof(Owner.DisplayNameNormalized));
+
+        index.ShouldNotBeNull();
+        index!.IsUnique.ShouldBeTrue();
+        index.GetFilter().ShouldBe("[DisplayNameNormalized] IS NOT NULL");
+    }
+
     // -----------------------------------------------------------------------
     // Username
     // -----------------------------------------------------------------------

@@ -208,6 +208,16 @@ public class PetTests
             .Message.ShouldBe("Invalid dog breed value.");
     }
 
+    [Fact]
+    public void BreedName_When_BreedSet_Returns_ResolvedName()
+    {
+        var pet = BuildPet();
+        pet.SetPetType(PetType.Dog);
+        pet.SetBreed(DogBreed.Beagle.Value);
+
+        pet.BreedName.ShouldBe(DogBreed.Beagle.Name);
+    }
+
     // -----------------------------------------------------------------------
     // SetFeaturedImage
     // -----------------------------------------------------------------------

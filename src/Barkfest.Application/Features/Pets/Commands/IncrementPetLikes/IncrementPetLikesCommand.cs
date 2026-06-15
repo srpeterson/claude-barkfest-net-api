@@ -1,29 +1,26 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
+using CSharpFunctionalExtensions;
 using MediatR;
 
 namespace Barkfest.Application.Features.Pets.Commands.IncrementPetLikes;
 
-public record IncrementPetLikesCommand(Guid PetId) : IRequest<int>;
+public record IncrementPetLikesCommand(Guid PetId) : IRequest<Result<int, Error>>;
 
-public class IncrementPetLikesCommandHandler(
-    IPetRepository petRepository,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<IncrementPetLikesCommand, int>
+public class IncrementPetLikesCommandHandler(IPetRepository petRepository)
+    : IRequestHandler<IncrementPetLikesCommand, Result<int, Error>>
 {
-    public async Task<int> Handle(IncrementPetLikesCommand request, CancellationToken cancellationToken)
+    public async Task<Result<int, Error>> Handle(IncrementPetLikesCommand request, CancellationToken cancellationToken)
     {
-        var pet = await petRepository.GetByIdAsync(request.PetId, cancellationToken);
+        // Atomic relative update in the repository — no entity load, no IUnitOfWork.
+        // The likes counters intentionally bypass the change tracker to avoid lost
+        // updates under concurrency (see CLAUDE.md).
+        var result = await petRepository.IncrementLikesAsync(request.PetId, cancellationToken);
 
-        if (pet is null)
-            throw new NotFoundException(nameof(Pet), request.PetId);
+        if (!result.PetExists)
+            return new NotFoundError(nameof(Pet), request.PetId);
 
-        pet.IncrementLikes();
-
-        await petRepository.UpdateAsync(pet, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return pet.Likes;
+        return result.Likes;
     }
 }

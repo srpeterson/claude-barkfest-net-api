@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Owners.Commands.SetOwnerVisibility;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -38,25 +37,29 @@ public class SetOwnerVisibilityCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotOwner_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotOwner_Returns_ForbiddenError()
     {
         var owner = new OwnerBuilder().Build();
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
-        // OwnerId returns Guid.Empty by default (NSubstitute default for Guid)
+        // OwnerId returns null by default (NSubstitute default for Guid?)
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _setOwnerVisibilityCommandHandler.Handle(
-                new SetOwnerVisibilityCommand(owner.Id, false), CancellationToken.None));
+        var result = await _setOwnerVisibilityCommandHandler.Handle(
+            new SetOwnerVisibilityCommand(owner.Id, false), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _setOwnerVisibilityCommandHandler.Handle(
-                new SetOwnerVisibilityCommand(ownerId, false), CancellationToken.None));
+        var result = await _setOwnerVisibilityCommandHandler.Handle(
+            new SetOwnerVisibilityCommand(ownerId, false), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

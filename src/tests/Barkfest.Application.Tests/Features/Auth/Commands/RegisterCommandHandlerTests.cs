@@ -1,7 +1,7 @@
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Auth.Commands.Register;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -30,7 +30,8 @@ public class RegisterCommandHandlerTests
 
         var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
 
-        result.ShouldNotBe(Guid.Empty);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBe(Guid.Empty);
     }
 
     [Fact]
@@ -59,7 +60,10 @@ public class RegisterCommandHandlerTests
 
         var command = new RegisterCommand("taken", "Bob", "Baker", "bob@example.com", null, "pass123");
 
-        await Should.ThrowAsync<DomainException>(() => _registerCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 
     [Fact]
@@ -71,6 +75,42 @@ public class RegisterCommandHandlerTests
 
         var command = new RegisterCommand("newuser", "Bob", "Baker", "taken@example.com", null, "pass123");
 
-        await Should.ThrowAsync<DomainException>(() => _registerCommandHandler.Handle(command, CancellationToken.None));
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
+    }
+
+    [Fact]
+    public async Task Handle_When_DisplayNameAlreadyTaken_Returns_DomainRuleError()
+    {
+        _ownerRepository.GetByUsernameAsync("newuser", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.GetByEmailAsync("new@example.com", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(false);
+
+        var command = new RegisterCommand(
+            "newuser", "Alice", "Adams", "new@example.com", null, "pass123", "Cool Pet Dad");
+
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
+        await _ownerRepository.DidNotReceive().AddAsync(Arg.Any<Owner>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_When_DisplayNameAvailable_Returns_ValidGuid()
+    {
+        _ownerRepository.GetByUsernameAsync("newuser", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.GetByEmailAsync("new@example.com", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(true);
+        _passwordHasher.Hash("pass123").Returns("hashed-pass");
+
+        var command = new RegisterCommand(
+            "newuser", "Alice", "Adams", "new@example.com", null, "pass123", "Cool Pet Dad");
+
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
     }
 }

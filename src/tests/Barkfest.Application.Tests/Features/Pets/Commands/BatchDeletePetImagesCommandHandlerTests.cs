@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.BatchDeletePetImages;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -23,27 +22,31 @@ public class BatchDeletePetImagesCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         _petRepository.GetByIdAsync(Arg.Any<Guid>(), CancellationToken.None).Returns((Pet?)null);
 
-        await Should.ThrowAsync<NotFoundException>(() =>
-            _batchDeletePetImagesCommandHandler.Handle(
-                new BatchDeletePetImagesCommand(Guid.NewGuid(), [Guid.NewGuid()]),
-                CancellationToken.None));
+        var result = await _batchDeletePetImagesCommandHandler.Handle(
+            new BatchDeletePetImagesCommand(Guid.NewGuid(), [Guid.NewGuid()]),
+            CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var pet = new PetBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _petRepository.GetByIdAsync(pet.Id, CancellationToken.None).Returns(pet);
 
-        await Should.ThrowAsync<ForbiddenException>(() =>
-            _batchDeletePetImagesCommandHandler.Handle(
-                new BatchDeletePetImagesCommand(pet.Id, [Guid.NewGuid()]),
-                CancellationToken.None));
+        var result = await _batchDeletePetImagesCommandHandler.Handle(
+            new BatchDeletePetImagesCommand(pet.Id, [Guid.NewGuid()]),
+            CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 
     [Fact]
@@ -72,7 +75,7 @@ public class BatchDeletePetImagesCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_AnyImageNotFound_Throws_DomainException()
+    public async Task Handle_When_AnyImageNotFound_Returns_DomainRuleError()
     {
         var pet = new PetBuilder().Build();
         var image = new PetImageBuilder().Build();
@@ -80,9 +83,11 @@ public class BatchDeletePetImagesCommandHandlerTests
         _currentUserService.OwnerId.Returns((Guid?)pet.OwnerId);
         _petRepository.GetByIdAsync(pet.Id, CancellationToken.None).Returns(pet);
 
-        await Should.ThrowAsync<DomainException>(() =>
-            _batchDeletePetImagesCommandHandler.Handle(
-                new BatchDeletePetImagesCommand(pet.Id, [image.Id, Guid.NewGuid()]),
-                CancellationToken.None));
+        var result = await _batchDeletePetImagesCommandHandler.Handle(
+            new BatchDeletePetImagesCommand(pet.Id, [image.Id, Guid.NewGuid()]),
+            CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
     }
 }

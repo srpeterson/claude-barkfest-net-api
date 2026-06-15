@@ -3,6 +3,7 @@ using Barkfest.Application.Features.Administrators.Commands.DeleteAdministrator;
 using Barkfest.Application.Features.Administrators.Commands.SetOwnerActive;
 using Barkfest.Application.Features.Administrators.Commands.UpdateAdministratorPassword;
 using Barkfest.Application.Features.Administrators.Queries.GetAllAdministrators;
+using Barkfest.API.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,42 +18,42 @@ public class AdminController(IMediator mediator) : ControllerBase
     [HttpGet("admins")]
     public async Task<IActionResult> GetAllAdministrators(CancellationToken cancellationToken)
     {
-        var administrators = await mediator.Send(new GetAllAdministratorsQuery(), cancellationToken);
-        return Ok(administrators);
+        var result = await mediator.Send(new GetAllAdministratorsQuery(), cancellationToken);
+        return result.ToActionResult();
     }
 
     [HttpPost("admins")]
     public async Task<IActionResult> CreateAdmin([FromBody] CreateAdministratorCommand command, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(command, cancellationToken);
-        return Created($"/v1/admin/admins/{id}", null);
+        var result = await mediator.Send(command, cancellationToken);
+        return result.ToActionResult(id => Created($"/v1/admin/admins/{id}", null));
     }
 
-    [HttpPatch("admins/{id:guid}/password")]
+    [HttpPatch("admins/{administratorId:guid}/password")]
     public async Task<IActionResult> UpdateAdministratorPassword(
-        Guid id,
+        Guid administratorId,
         [FromBody] UpdateAdministratorPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        await mediator.Send(new UpdateAdministratorPasswordCommand(id, request.NewPassword), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new UpdateAdministratorPasswordCommand(administratorId, request.NewPassword), cancellationToken);
+        return result.ToNoContentResult();
     }
 
-    [HttpDelete("admins/{id:guid}")]
-    public async Task<IActionResult> DeleteAdministrator(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("admins/{administratorId:guid}")]
+    public async Task<IActionResult> DeleteAdministrator(Guid administratorId, CancellationToken cancellationToken)
     {
-        await mediator.Send(new DeleteAdministratorCommand(id), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new DeleteAdministratorCommand(administratorId), cancellationToken);
+        return result.ToNoContentResult();
     }
 
-    [HttpPatch("owners/{id:guid}/active")]
+    [HttpPatch("owners/{ownerId:guid}/active")]
     public async Task<IActionResult> SetOwnerActive(
-        Guid id,
+        Guid ownerId,
         [FromBody] SetOwnerActiveRequest request,
         CancellationToken cancellationToken)
     {
-        await mediator.Send(new SetOwnerActiveCommand(id, request.IsActive), cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new SetOwnerActiveCommand(ownerId, request.IsActive), cancellationToken);
+        return result.ToNoContentResult();
     }
 }
 

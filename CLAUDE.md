@@ -75,7 +75,7 @@ This is one of the most important rules in this file. The choice between `class`
 | Domain Entities (`Owner`, `Pet`, `PetImage`) | `class` | Mutable state, identity-based equality |
 | Value Objects (`ProfileImage`) | `sealed record` | Immutable, structural equality, no boilerplate |
 | DTOs (`OwnerDto`, `PetDto`, `PetImageDto`, `ProfileImageDto`) | `record` | Immutable data carriers |
-| MediatR Commands (`CreateOwnerCommand` etc.) | `record` | Immutable, concise syntax |
+| MediatR Commands (`CreatePetCommand` etc.) | `record` | Immutable, concise syntax |
 | MediatR Queries (`GetOwnerByIdQuery` etc.) | `record` | Immutable, concise syntax |
 | Handlers, Validators, Repositories, Services | `class` | Behaviour, dependencies, mutable state |
 | EF Core Configurations, DbContext | `class` | Infrastructure concerns |
@@ -106,15 +106,16 @@ public record OwnerDto(
     ProfileImageDto? ProfileImage,
     DateTime CreatedAt);
 
-// Command - record
-public record CreateOwnerCommand(
-    string FirstName,
-    string LastName,
-    string Email,
-    string? PhoneNumber) : IRequest<Guid>;
+// Command - record (handlers return Result<T, Error> - see Error Handling)
+public record CreatePetCommand(
+    string Name,
+    string? Description,
+    DateOnly? DateOfBirth,
+    int PetTypeValue,
+    int BreedValue) : IRequest<Result<Guid, Error>>;
 
-// Query - record
-public record GetOwnerByIdQuery(Guid Id) : IRequest<OwnerDto>;
+// Query - record (fallible query returns Result; id param named after the entity)
+public record GetOwnerByIdQuery(Guid OwnerId) : IRequest<Result<OwnerDto, Error>>;
 
 // Entity - class with static Create() factory
 public class Owner
@@ -240,9 +241,15 @@ public static class OwnerMappings
 - Commands and queries implement `IRequest<TResponse>`
 - Handlers implement `IRequestHandler<TRequest, TResponse>`
 - Pipeline behaviours: `ValidationBehavior` (runs first), `LoggingBehavior`
-- Commands that return nothing use `IRequest` (not `IRequest<Unit>`)
-- Commands that create a resource return `IRequest<Guid>` (the new entity Id)
-- **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreateOwnerCommand.cs`, `LoginCommand.cs`, etc.
+- **Fallible handlers return `Result<T, Error>`** (CSharpFunctionalExtensions) - see Error Handling.
+  A command that creates a resource returns `IRequest<Result<Guid, Error>>`; a command with no
+  payload returns `IRequest<Result<Unit, Error>>` (MediatR's `Unit`); a query returns
+  `IRequest<Result<TDto, Error>>`.
+- **Infallible queries stay plain** - a query that cannot fail (no not-found / forbidden / validation
+  path; invalid input yields an empty result) returns its value directly, not `Result`. Examples:
+  `CheckUsernameQuery`, `CheckDisplayNameQuery`, and the Browse queries. Don't wrap
+  what can't fail.
+- **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreatePetCommand.cs`, `LoginCommand.cs`, etc.
 
 ---
 
@@ -251,15 +258,21 @@ public static class OwnerMappings
 **No manual validation in handlers.** All validation uses FluentValidation
 `AbstractValidator<T>` and is executed automatically by `ValidationBehavior`.
 
+`ValidationBehavior` is **dual-mode**: when the request's `TResponse` is a `Result<T, Error>`, a
+validation failure short-circuits into a failed `Result` carrying a `ValidationError` (built via the
+cached-reflection `ResultFailureFactory`), so validation flows through the railway. For any
+non-`Result` request it falls back to throwing `ValidationException` (handled by middleware). The
+fallback exists only for the infallible plain-return queries; it would be removed if those ever
+adopted `Result`.
+
 ```csharp
-public class CreateOwnerCommandValidator : AbstractValidator<CreateOwnerCommand>
+public class CreatePetCommandValidator : AbstractValidator<CreatePetCommand>
 {
-    public CreateOwnerCommandValidator()
+    public CreatePetCommandValidator()
     {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .MaximumLength(AccountConstraints.EmailMaxLength)
-            .Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").WithMessage("Email must be a valid email address.");
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Name is required.")
+            .MaximumLength(Pet.NameMaxLength);
     }
 }
 ```
@@ -311,7 +324,7 @@ validators, tests, EF Core configuration.
 
 ### Owner
 - `Username` - required, max `AccountConstraints.UsernameMaxLength` chars, trimmed, case-sensitive, unique
-- `DisplayName` - optional, max `Owner.DisplayNameMaxLength` (25) chars, trimmed if provided; shown on pet cards as the public owner attribution; null when not set - no fallback
+- `DisplayName` - optional, max `Owner.DisplayNameMaxLength` (25) chars, trimmed if provided; shown on pet cards as the public owner attribution; null when not set - no fallback. **Unique** when set: case-insensitive and space-insensitive (`"Sir Barks"` collides with `"sirbarks"`). Enforced two ways - the Register/UpdateOwner handlers return a `DomainRuleError` ("That display name is already taken.") via `IsDisplayNameAvailableAsync`, and a filtered unique index on the persisted `Owner.DisplayNameNormalized` column (spaces stripped, lowercased - see `Owner.Normalize`) is the database backstop. `DisplayNameNormalized` is maintained by `SetDisplayName` and must never be set directly.
 - `FirstName` - required, max `Owner.FirstNameMaxLength` chars, trimmed
 - `LastName` - required, max `Owner.LastNameMaxLength` chars, trimmed
 - `Email` - required, valid email format, max `AccountConstraints.EmailMaxLength` chars, lowercased and trimmed, unique (contact only - not used for login)
@@ -328,9 +341,9 @@ validators, tests, EF Core configuration.
 - `DateOfBirth` - optional `DateOnly`, cannot be in the future
 - `Age` - computed from `DateOfBirth` at runtime, **never stored in the database**
 - `PetType` - required SmartEnum; only `Dog` (1) and `Cat` (2) are valid values
-- `Breed` - stored as `BreedValue` (int) directly on `Pet`; must match `PetType`: Dog → `DogBreed` SmartEnum, Cat → `CatBreed` SmartEnum; `DogBreed.Other` and `CatBreed.Other` are valid values within each species
+- `Breed` - stored as `BreedValue` (int) directly on `Pet`; must match `PetType`: Dog → `DogBreed` SmartEnum, Cat → `CatBreed` SmartEnum; `DogBreed.Other` and `CatBreed.Other` are valid values within each species. **The `PetType` → breed-enum fork lives in exactly one place: the `Breed` static helper (`Barkfest.Domain/Enums/Breed.cs`) with `IsValid` / `NameFor` / `ListFor`.** `Pet.SetBreed` validates via `Breed.IsValid`, `Pet.BreedName` resolves via `Breed.NameFor`, and breed listing uses `Breed.ListFor`. Never re-implement the `petType == Dog ? DogBreed : CatBreed` fork at a call site - always go through `Breed`.
 - `Images` - maximum `Pet.MaxImages` (6) images total; any one can be designated `IsFeaturedImage = true`; only one may be featured at a time; the UI enforces a minimum of 1 image at creation - the API does not enforce this at the endpoint level
-- `Likes` - integer, default `0`, never negative; incremented via `POST /v1/pets/{id}/likes`, decremented via `DELETE /v1/pets/{id}/likes`; both endpoints are public (`[AllowAnonymous]`); decrement silently floors at zero - no exception; the API is intentionally dumb (no uniqueness enforcement); the UI owns liked state via localStorage
+- `Likes` - integer, default `0`, never negative; incremented via `POST /v1/pets/{id}/likes`, decremented via `DELETE /v1/pets/{id}/likes`; both endpoints are public (`[AllowAnonymous]`); decrement silently floors at zero - no exception; the API is intentionally dumb (no uniqueness enforcement); the UI owns liked state via localStorage. **Implementation exception:** the like counters use atomic relative SQL updates (`IPetRepository.IncrementLikesAsync` / `DecrementLikesAsync` via EF Core `ExecuteUpdateAsync`) and intentionally bypass the change tracker and `IUnitOfWork`. This is the one deliberate exception to the "every handler saves via `IUnitOfWork`" convention - a read-modify-write loses updates under concurrent likes. The returned count is advisory (the stored value is always correct)
 
 ### Images (applies to all image uploads across the entire application)
 - Allowed content types: `image/jpeg`, `image/jpg`, `image/png`
@@ -350,12 +363,12 @@ validators, tests, EF Core configuration.
 - Login uses `Username` + password
 - Any administrator can create new administrators (username + name + email + phoneNumber + password)
 - Any administrator can update another administrator's password
-- Any administrator can delete another administrator but **never themselves** (self-delete throws `ForbiddenException`)
+- Any administrator can delete another administrator but **never themselves** (self-delete returns `ForbiddenError` → 403)
 - Administrator accounts are fully separate from Owner accounts - different tables, different JWT claims, different identity
 
 ### Authorization
-- `GET /v1/owners` - lists all owners; admin JWT required (throws `ForbiddenException` for non-admins)
-- `GET /v1/admin/admins` - lists all administrators; admin JWT required (throws `ForbiddenException` for non-admins)
+- `GET /v1/owners` - lists all owners; admin JWT required (returns `ForbiddenError` → 403 for non-admins)
+- `GET /v1/admin/admins` - lists all administrators; admin JWT required (returns `ForbiddenError` → 403 for non-admins)
 - `GET /v1/pets/{id}` - public (`[AllowAnonymous]`); used by the public Pet Details page
 - `POST /v1/pets/{id}/likes` and `DELETE /v1/pets/{id}/likes` - public (`[AllowAnonymous]`)
 - `GET /v1/browse/*` - public (`[AllowAnonymous]`)
@@ -453,18 +466,51 @@ Use Serilog. Configured in `Startup/ServiceRegistration.cs` via `builder.Host.Us
 
 ---
 
-## Exception Handling
+## Error Handling
 
-`ExceptionHandlingMiddleware` in `Barkfest.API/Middleware/` handles all exceptions:
+**Expected failures flow as `Result<T, Error>` (the railway), not exceptions.** Fallible handlers
+return `Result<T, Error>`; controllers translate the result to HTTP at the edge. Exceptions are
+reserved for the genuinely exceptional (infrastructure failures, escaped invariant violations → 500).
 
-| Exception | HTTP Response | Location |
+### The `Error` DU (`Barkfest.Domain/Errors/Error.cs`)
+
+A closed hierarchy - `abstract record Error` with sealed cases. It is just types (zero dependencies),
+so `Domain` stays dependency-free. The cases mirror the old middleware mapping 1:1:
+
+| `Error` case | HTTP | Meaning |
 |---|---|---|
-| `NotFoundException` | 404 Not Found | `Barkfest.Application/Common/Exceptions/` |
-| `DomainException` | 400 Bad Request | `Barkfest.Domain/Exceptions/` |
-| `ForbiddenException` | 403 Forbidden | `Barkfest.Domain/Exceptions/` |
-| Unhandled | 500 Internal Server Error | - |
+| `NotFoundError(Entity, Key, Field?)` | 404 | Aggregate not found (`Field` for non-PK lookups, e.g. "username") |
+| `ValidationError(Failures)` | 400 | FluentValidation failures (property → messages) |
+| `ForbiddenError(Message?)` | 403 | Authorization / business-rule denial |
+| `DomainRuleError(Message)` | 400 | A domain invariant violation, lifted from `DomainException` |
 
-Never add try/catch blocks in handlers or controllers - let middleware handle it.
+### How it fits together
+
+- **Handlers** return failures by implicit conversion: `return new NotFoundError(nameof(Pet), id);`
+  and successes as the value: `return pet.ToDto();` (or `Unit.Value` for no-payload commands).
+- **The domain still throws `DomainException`** (Depth A - entities are unchanged). The single
+  sanctioned bridge is `DomainResult.Try(...)` in `Barkfest.Application/Common/DomainResult.cs`, which
+  catches `DomainException` → `DomainRuleError` and lets anything else propagate. **This is the only
+  try/catch that *translates* an exception into a `Result`** (besides the middleware). Wrap entity
+  construction/mutation in it.
+- **Compensation try/catch is a narrow, sanctioned exception.** A handler that performs a
+  non-transactional side effect *before* the DB commit (e.g. uploading a blob to Azure Storage) may
+  wrap the `SaveChangesAsync` in a try/catch *solely* to undo that side effect on failure - then it
+  **must rethrow** (it does not convert the exception into a `Result`; the 500 still flows to the
+  middleware). The image-upload handlers (`AddPetImagesCommandHandler`,
+  `UploadOwnerProfileImageCommandHandler`) delete the orphaned blob and rethrow. This is the only
+  permitted hand-written try/catch in a handler; it compensates, never translates.
+- **Controllers** translate via `ResultExtensions` (`Barkfest.API/Extensions/`):
+  `result.ToActionResult()` (200), `result.ToActionResult(onSuccess)` (e.g. 201 Created),
+  `result.ToNoContentResult()` (204). Failures map by `Error` case to the same `ProblemDetails`
+  responses as before. The mapping has a `_ => throw` arm guarded by an exhaustiveness test.
+- **`ExceptionHandlingMiddleware`** is now a **backstop only**: `DomainException` (escape past the
+  bridge), `ValidationException` (the behavior's legacy non-`Result` path), and unhandled → 500.
+
+Never add try/catch blocks in handlers or controllers to handle *expected* failures - return a
+`Result` failure, and let `DomainResult.Try` / the middleware own the exception edges. The sole
+exception is the compensation pattern above: undoing a pre-commit side effect on failure, then
+rethrowing.
 
 ---
 
@@ -520,8 +566,8 @@ builder classes are available without an explicit `using` in every test file.
   // Good - build a collection with specific names
   var pets = new[]
   {
-      new PetBuilder().WithOwnerId(ownerId).WithName("Max").Build(),
-      new PetBuilder().WithOwnerId(ownerId).WithName("Daisy").Build()
+      new PetBuilder().WithOwner(owner).WithName("Max").Build(),
+      new PetBuilder().WithOwner(owner).WithName("Daisy").Build()
   };
   ```
 - Exception: `Domain.Tests` setter tests that need a bare entity (no defaults applied)
@@ -547,12 +593,12 @@ any other generic placeholder.
 
 ```csharp
 // Correct - name reflects the concrete type
-private readonly CreateOwnerCommandHandler _createOwnerCommandHandler;
-private readonly CreateOwnerCommandValidator _createOwnerCommandValidator;
-private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
+private readonly CreatePetCommandHandler _createPetCommandHandler;
+private readonly CreatePetCommandValidator _createPetCommandValidator;
+private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
 
 // Wrong - generic placeholder conveys nothing
-private readonly CreateOwnerCommandHandler _sut;
+private readonly CreatePetCommandHandler _sut;
 ```
 
 The field name must match the class name in camelCase with a leading underscore,
@@ -569,8 +615,20 @@ await repo.Received(1).GetByIdAsync(id);
 ```csharp
 result.ShouldNotBeNull();
 result.Name.ShouldBe("Buddy");
-await act.ShouldThrowAsync<NotFoundException>();
+
+// Result-returning handlers - assert on the railway, not a thrown exception:
+result.IsSuccess.ShouldBeTrue();
+result.Value.Name.ShouldBe("Buddy");
+result.IsFailure.ShouldBeTrue();
+result.Error.ShouldBeOfType<NotFoundError>();
+
+// Domain entities still throw - assert the exception directly:
+await act.ShouldThrowAsync<DomainException>();
 ```
+
+Handler error-path tests follow `..._Returns_[ErrorCase]` (e.g. `Handle_When_PetNotFound_Returns_NotFoundError`),
+not `..._Throws_...`. The `..._Throws_[ExceptionType]` form remains only for domain-entity tests, which
+still throw `DomainException`.
 
 ---
 
@@ -586,7 +644,8 @@ await act.ShouldThrowAsync<NotFoundException>();
 | Hardcoded max lengths in tests | Domain constants (`Owner.FirstNameMaxLength` etc.) |
 | Hardcoded image limits in tests | `Pet.MaxImages` |
 | Data annotations for EF config | `IEntityTypeConfiguration<T>` |
-| Try/catch in handlers or controllers | `ExceptionHandlingMiddleware` |
+| Throwing for expected failures in handlers | Return `Result<T, Error>` (the railway) |
+| Try/catch in handlers or controllers (to handle expected failures) | `DomainResult.Try` (the one bridge) + `ExceptionHandlingMiddleware` backstop; compensation-then-rethrow is the one exception |
 | `dotnet ef database update` | `MigrateAsync()` at startup |
 | User Secrets | Aspire connection string injection |
 

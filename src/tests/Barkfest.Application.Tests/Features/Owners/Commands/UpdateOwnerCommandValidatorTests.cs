@@ -25,14 +25,14 @@ public class UpdateOwnerCommandValidatorTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Validate_When_IdIsEmpty_Fails_ForId()
+    public void Validate_When_OwnerIdIsEmpty_Fails_ForOwnerId()
     {
         var command = new UpdateOwnerCommand(Guid.Empty, "Alice", "Smith", "alice@example.com", null);
 
         var result = _updateOwnerCommandValidator.Validate(command);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.Id));
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(command.OwnerId));
     }
 
     // -----------------------------------------------------------------------

@@ -1,8 +1,7 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Application.Features.Pets.Commands.DeletePet;
 using Barkfest.Domain.Entities;
-using Barkfest.Domain.Exceptions;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -55,24 +54,28 @@ public class DeletePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _deletePetCommandHandler.Handle(new DeletePetCommand(petId), CancellationToken.None));
+        var result = await _deletePetCommandHandler.Handle(new DeletePetCommand(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
 
-        await Should.ThrowAsync<ForbiddenException>(
-            () => _deletePetCommandHandler.Handle(new DeletePetCommand(petId), CancellationToken.None));
+        var result = await _deletePetCommandHandler.Handle(new DeletePetCommand(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<ForbiddenError>();
     }
 }

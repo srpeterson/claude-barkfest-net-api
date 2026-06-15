@@ -3,6 +3,7 @@ using Barkfest.Application.Features.Auth.Commands.Login;
 using Barkfest.Application.Features.Auth.Commands.Register;
 using Barkfest.Application.Features.Auth.Queries.CheckDisplayName;
 using Barkfest.Application.Features.Auth.Queries.CheckUsername;
+using Barkfest.API.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,22 +18,22 @@ public class AuthController(IMediator mediator) : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterCommand command, CancellationToken cancellationToken)
     {
-        var id = await mediator.Send(command, cancellationToken);
-        return Created($"/v1/owners/{id}", null);
+        var result = await mediator.Send(command, cancellationToken);
+        return result.ToActionResult(id => Created($"/v1/owners/{id}", null));
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
-        return Ok(new { result.AccountId, result.AccessToken, result.ExpiresAt });
+        return result.ToActionResult(token => Ok(new { token.AccountId, token.AccessToken, token.ExpiresAt }));
     }
 
     [HttpPost("admin/login")]
     public async Task<IActionResult> AdminLogin([FromBody] AdminLoginCommand command, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
-        return Ok(new { result.AccountId, result.AccessToken, result.ExpiresAt });
+        return result.ToActionResult(token => Ok(new { token.AccountId, token.AccessToken, token.ExpiresAt }));
     }
 
     [HttpGet("check-display-name")]

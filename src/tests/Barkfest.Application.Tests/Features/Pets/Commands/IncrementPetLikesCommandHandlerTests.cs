@@ -1,6 +1,5 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Application.Features.Pets.Commands.IncrementPetLikes;
-using Barkfest.Domain.Entities;
+using Barkfest.Domain.Errors;
 using Barkfest.Domain.Interfaces;
 using NSubstitute;
 
@@ -9,38 +8,39 @@ namespace Barkfest.Application.Tests.Features.Pets.Commands;
 public class IncrementPetLikesCommandHandlerTests
 {
     private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IncrementPetLikesCommandHandler _incrementPetLikesCommandHandler;
 
     public IncrementPetLikesCommandHandlerTests()
     {
-        _incrementPetLikesCommandHandler = new IncrementPetLikesCommandHandler(
-            _petRepository, _unitOfWork);
+        _incrementPetLikesCommandHandler = new IncrementPetLikesCommandHandler(_petRepository);
     }
 
     [Fact]
     public async Task Handle_When_PetExists_Returns_IncrementedLikes()
     {
         var petId = Guid.NewGuid();
-        var pet = new PetBuilder().Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
+        _petRepository.IncrementLikesAsync(petId, CancellationToken.None)
+            .Returns(new LikeUpdateResult(PetExists: true, Likes: 5));
 
         var result = await _incrementPetLikesCommandHandler.Handle(
             new IncrementPetLikesCommand(petId), CancellationToken.None);
 
-        result.ShouldBe(1);
-        await _petRepository.Received(1).UpdateAsync(pet, CancellationToken.None);
-        await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBe(5);
+        await _petRepository.Received(1).IncrementLikesAsync(petId, CancellationToken.None);
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
+        _petRepository.IncrementLikesAsync(petId, CancellationToken.None)
+            .Returns(new LikeUpdateResult(PetExists: false, Likes: 0));
 
-        await Should.ThrowAsync<NotFoundException>(
-            () => _incrementPetLikesCommandHandler.Handle(
-                new IncrementPetLikesCommand(petId), CancellationToken.None));
+        var result = await _incrementPetLikesCommandHandler.Handle(
+            new IncrementPetLikesCommand(petId), CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<NotFoundError>();
     }
 }

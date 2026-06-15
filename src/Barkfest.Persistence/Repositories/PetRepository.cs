@@ -6,10 +6,19 @@ namespace Barkfest.Persistence.Repositories;
 
 public class PetRepository(AppDbContext context) : IPetRepository
 {
-    public async Task<Pet?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+    public async Task<Pet?> GetByIdAsync(Guid petId, CancellationToken cancellationToken = default) =>
         await context.Pets
             .Include(p => p.Images)
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Id == petId, cancellationToken);
+
+    public async Task<Pet?> GetByIdWithOwnerAsync(Guid petId, CancellationToken cancellationToken = default) =>
+        // AsNoTracking: read-only path. Also sidesteps the change tracker entirely, so loading
+        // Owner here cannot interfere with the UpdateAsync graph-Update logic used elsewhere.
+        await context.Pets
+            .AsNoTracking()
+            .Include(p => p.Images)
+            .Include(p => p.Owner)
+            .FirstOrDefaultAsync(p => p.Id == petId, cancellationToken);
 
     public async Task<IEnumerable<Pet>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await context.Pets
@@ -69,10 +78,53 @@ public class PetRepository(AppDbContext context) : IPetRepository
         return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid petId, CancellationToken cancellationToken = default)
     {
-        var pet = await context.Pets.FindAsync([id], cancellationToken);
+        var pet = await context.Pets.FindAsync([petId], cancellationToken);
         if (pet is not null)
             context.Pets.Remove(pet);
+    }
+
+    public async Task<LikeUpdateResult> IncrementLikesAsync(Guid petId, CancellationToken cancellationToken = default)
+    {
+        // Single atomic statement: UPDATE Pets SET Likes = Likes + 1 WHERE PetId = @petId.
+        // The database performs the increment under its own row lock, so concurrent
+        // likes serialise correctly and never lose an update. Runs immediately and
+        // bypasses the change tracker / IUnitOfWork by design.
+        var rowsAffected = await context.Pets
+            .Where(p => p.Id == petId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Likes, p => p.Likes + 1), cancellationToken);
+
+        return await BuildResultAsync(petId, rowsAffected, cancellationToken);
+    }
+
+    public async Task<LikeUpdateResult> DecrementLikesAsync(Guid petId, CancellationToken cancellationToken = default)
+    {
+        // Atomic decrement that floors at zero via a server-side CASE expression,
+        // mirroring Pet.DecrementLikes(). Same concurrency guarantees as the increment.
+        var rowsAffected = await context.Pets
+            .Where(p => p.Id == petId)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(p => p.Likes, p => p.Likes > 0 ? p.Likes - 1 : 0),
+                cancellationToken);
+
+        return await BuildResultAsync(petId, rowsAffected, cancellationToken);
+    }
+
+    // rowsAffected == 0 means no pet matched the id. Otherwise read back the new count.
+    // The read-back is advisory: the stored value is always correct, but it may reflect
+    // other concurrent likes, which is acceptable for a public display counter (the UI
+    // owns liked state via localStorage).
+    private async Task<LikeUpdateResult> BuildResultAsync(Guid petId, int rowsAffected, CancellationToken cancellationToken)
+    {
+        if (rowsAffected == 0)
+            return new LikeUpdateResult(PetExists: false, Likes: 0);
+
+        var likes = await context.Pets
+            .Where(p => p.Id == petId)
+            .Select(p => p.Likes)
+            .FirstAsync(cancellationToken);
+
+        return new LikeUpdateResult(PetExists: true, likes);
     }
 }

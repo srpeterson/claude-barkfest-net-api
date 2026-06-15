@@ -1,4 +1,6 @@
 using Barkfest.Application.Common.Behaviors;
+using Barkfest.Domain.Errors;
+using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
 
@@ -14,6 +16,17 @@ public class TestRequestAlwaysFailValidator : AbstractValidator<TestRequest>
 {
     public TestRequestAlwaysFailValidator(string message = "Error.") =>
         RuleFor(x => x.Value).Must(_ => false).WithMessage(message);
+}
+
+// Result-returning request to exercise the railway branch of the behavior.
+public record TestResultRequest(string Value) : IRequest<Result<string, Error>>;
+
+public class TestResultRequestAlwaysPassValidator : AbstractValidator<TestResultRequest> { }
+
+public class TestResultRequestAlwaysFailValidator : AbstractValidator<TestResultRequest>
+{
+    public TestResultRequestAlwaysFailValidator() =>
+        RuleFor(x => x.Value).Must(_ => false).WithMessage("Bad value.");
 }
 
 public class ValidationBehaviorTests
@@ -119,5 +132,52 @@ public class ValidationBehaviorTests
 
         ex.Errors.ShouldContain(e => e.ErrorMessage == "Error one.");
         ex.Errors.ShouldContain(e => e.ErrorMessage == "Error two.");
+    }
+
+    // -----------------------------------------------------------------------
+    // Result-returning handlers: validation flows through the railway
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Handle_When_ResultResponseAndValidatorFails_Returns_FailedResultWithValidationError()
+    {
+        RequestHandlerDelegate<Result<string, Error>> next =
+            _ => Task.FromResult(Result.Success<string, Error>("ok"));
+        var sut = new ValidationBehavior<TestResultRequest, Result<string, Error>>(
+            [new TestResultRequestAlwaysFailValidator()]);
+
+        var result = await sut.Handle(new TestResultRequest(""), next, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        var validationError = result.Error.ShouldBeOfType<ValidationError>();
+        validationError.Failures.ShouldContainKey(nameof(TestResultRequest.Value));
+    }
+
+    [Fact]
+    public async Task Handle_When_ResultResponseAndValidatorFails_DoesNotCall_Next()
+    {
+        var called = false;
+        RequestHandlerDelegate<Result<string, Error>> next =
+            _ => { called = true; return Task.FromResult(Result.Success<string, Error>("ok")); };
+        var sut = new ValidationBehavior<TestResultRequest, Result<string, Error>>(
+            [new TestResultRequestAlwaysFailValidator()]);
+
+        await sut.Handle(new TestResultRequest(""), next, CancellationToken.None);
+
+        called.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_When_ResultResponseAndValidatorPasses_Returns_NextResult()
+    {
+        RequestHandlerDelegate<Result<string, Error>> next =
+            _ => Task.FromResult(Result.Success<string, Error>("passed"));
+        var sut = new ValidationBehavior<TestResultRequest, Result<string, Error>>(
+            [new TestResultRequestAlwaysPassValidator()]);
+
+        var result = await sut.Handle(new TestResultRequest("hi"), next, CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBe("passed");
     }
 }
