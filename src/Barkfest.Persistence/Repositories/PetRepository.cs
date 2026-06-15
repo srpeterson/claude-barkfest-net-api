@@ -11,6 +11,15 @@ public class PetRepository(AppDbContext context) : IPetRepository
             .Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == petId, cancellationToken);
 
+    public async Task<Pet?> GetByIdWithOwnerAsync(Guid petId, CancellationToken cancellationToken = default) =>
+        // AsNoTracking: read-only path. Also sidesteps the change tracker entirely, so loading
+        // Owner here cannot interfere with the UpdateAsync graph-Update logic used elsewhere.
+        await context.Pets
+            .AsNoTracking()
+            .Include(p => p.Images)
+            .Include(p => p.Owner)
+            .FirstOrDefaultAsync(p => p.Id == petId, cancellationToken);
+
     public async Task<IEnumerable<Pet>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await context.Pets
             .Include(p => p.Images)

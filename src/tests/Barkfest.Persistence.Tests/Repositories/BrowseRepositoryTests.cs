@@ -120,6 +120,47 @@ public class BrowseRepositoryTests(DatabaseFixture fixture)
         result.HasMore.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task GetBrowseImagesAsync_When_PetsShareCreatedAt_Paginates_Deterministically()
+    {
+        var owner = await SeedOwnerAsync();
+        var sharedTimestamp = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+        // Force identical Pet.CreatedAt so the primary sort key ties for all three pets.
+        // The ThenByDescending(pi => pi.Id) tiebreaker is what makes the order total.
+        foreach (var name in new[] { "PetA", "PetB", "PetC" })
+        {
+            var pet = BuildPetWithFeaturedImage(owner.Id, name);
+            _context.Pets.Add(pet);
+            _context.Entry(pet).Property(nameof(Pet.CreatedAt)).CurrentValue = sharedTimestamp;
+        }
+        await _context.SaveChangesAsync();
+
+        // The full result order is stable across calls (deterministic). We compare DB-produced
+        // orderings against each other rather than re-sorting in .NET, because SQL Server's
+        // uniqueidentifier ordering differs from .NET's Guid comparison.
+        var firstCall = await _browseRepository.GetBrowseImagesAsync(
+            null, null, page: 1, pageSize: 10, CancellationToken.None);
+        var secondCall = await _browseRepository.GetBrowseImagesAsync(
+            null, null, page: 1, pageSize: 10, CancellationToken.None);
+
+        var ids = firstCall.Items.Select(i => i.ImageId).ToList();
+        ids.Count.ShouldBe(3);
+        secondCall.Items.Select(i => i.ImageId).ShouldBe(ids);
+
+        // Paging through in two pages yields every row exactly once (no overlap, no gap) and
+        // in the same total order as the single-query result.
+        var page1 = await _browseRepository.GetBrowseImagesAsync(
+            null, null, page: 1, pageSize: 2, CancellationToken.None);
+        var page2 = await _browseRepository.GetBrowseImagesAsync(
+            null, null, page: 2, pageSize: 2, CancellationToken.None);
+
+        var pagedIds = page1.Items.Concat(page2.Items).Select(i => i.ImageId).ToList();
+        pagedIds.Count.ShouldBe(3);
+        pagedIds.Distinct().Count().ShouldBe(3);
+        pagedIds.ShouldBe(ids);
+    }
+
     // -----------------------------------------------------------------------
     // Pet type filter
     // -----------------------------------------------------------------------

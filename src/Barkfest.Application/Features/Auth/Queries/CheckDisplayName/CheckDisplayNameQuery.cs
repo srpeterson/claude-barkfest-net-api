@@ -1,3 +1,4 @@
+using Barkfest.Domain.Entities;
 using Barkfest.Domain.Interfaces;
 using MediatR;
 
@@ -13,7 +14,7 @@ public class CheckDisplayNameQueryHandler(IOwnerRepository ownerRepository)
         if (string.IsNullOrWhiteSpace(request.Value))
             return true;
 
-        var normalized = request.Value.Replace(" ", "").ToLowerInvariant();
-        return await ownerRepository.IsDisplayNameAvailableAsync(normalized, cancellationToken);
+        var normalized = Owner.Normalize(request.Value);
+        return await ownerRepository.IsDisplayNameAvailableAsync(normalized, cancellationToken: cancellationToken);
     }
 }

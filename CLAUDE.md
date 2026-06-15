@@ -247,7 +247,7 @@ public static class OwnerMappings
   `IRequest<Result<TDto, Error>>`.
 - **Infallible queries stay plain** - a query that cannot fail (no not-found / forbidden / validation
   path; invalid input yields an empty result) returns its value directly, not `Result`. Examples:
-  `GetAllPetsQuery`, `CheckUsernameQuery`, `CheckDisplayNameQuery`, and the Browse queries. Don't wrap
+  `CheckUsernameQuery`, `CheckDisplayNameQuery`, and the Browse queries. Don't wrap
   what can't fail.
 - **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreatePetCommand.cs`, `LoginCommand.cs`, etc.
 
@@ -324,7 +324,7 @@ validators, tests, EF Core configuration.
 
 ### Owner
 - `Username` - required, max `AccountConstraints.UsernameMaxLength` chars, trimmed, case-sensitive, unique
-- `DisplayName` - optional, max `Owner.DisplayNameMaxLength` (25) chars, trimmed if provided; shown on pet cards as the public owner attribution; null when not set - no fallback
+- `DisplayName` - optional, max `Owner.DisplayNameMaxLength` (25) chars, trimmed if provided; shown on pet cards as the public owner attribution; null when not set - no fallback. **Unique** when set: case-insensitive and space-insensitive (`"Sir Barks"` collides with `"sirbarks"`). Enforced two ways - the Register/UpdateOwner handlers return a `DomainRuleError` ("That display name is already taken.") via `IsDisplayNameAvailableAsync`, and a filtered unique index on the persisted `Owner.DisplayNameNormalized` column (spaces stripped, lowercased - see `Owner.Normalize`) is the database backstop. `DisplayNameNormalized` is maintained by `SetDisplayName` and must never be set directly.
 - `FirstName` - required, max `Owner.FirstNameMaxLength` chars, trimmed
 - `LastName` - required, max `Owner.LastNameMaxLength` chars, trimmed
 - `Email` - required, valid email format, max `AccountConstraints.EmailMaxLength` chars, lowercased and trimmed, unique (contact only - not used for login)
@@ -341,7 +341,7 @@ validators, tests, EF Core configuration.
 - `DateOfBirth` - optional `DateOnly`, cannot be in the future
 - `Age` - computed from `DateOfBirth` at runtime, **never stored in the database**
 - `PetType` - required SmartEnum; only `Dog` (1) and `Cat` (2) are valid values
-- `Breed` - stored as `BreedValue` (int) directly on `Pet`; must match `PetType`: Dog → `DogBreed` SmartEnum, Cat → `CatBreed` SmartEnum; `DogBreed.Other` and `CatBreed.Other` are valid values within each species
+- `Breed` - stored as `BreedValue` (int) directly on `Pet`; must match `PetType`: Dog → `DogBreed` SmartEnum, Cat → `CatBreed` SmartEnum; `DogBreed.Other` and `CatBreed.Other` are valid values within each species. **The `PetType` → breed-enum fork lives in exactly one place: the `Breed` static helper (`Barkfest.Domain/Enums/Breed.cs`) with `IsValid` / `NameFor` / `ListFor`.** `Pet.SetBreed` validates via `Breed.IsValid`, `Pet.BreedName` resolves via `Breed.NameFor`, and breed listing uses `Breed.ListFor`. Never re-implement the `petType == Dog ? DogBreed : CatBreed` fork at a call site - always go through `Breed`.
 - `Images` - maximum `Pet.MaxImages` (6) images total; any one can be designated `IsFeaturedImage = true`; only one may be featured at a time; the UI enforces a minimum of 1 image at creation - the API does not enforce this at the endpoint level
 - `Likes` - integer, default `0`, never negative; incremented via `POST /v1/pets/{id}/likes`, decremented via `DELETE /v1/pets/{id}/likes`; both endpoints are public (`[AllowAnonymous]`); decrement silently floors at zero - no exception; the API is intentionally dumb (no uniqueness enforcement); the UI owns liked state via localStorage. **Implementation exception:** the like counters use atomic relative SQL updates (`IPetRepository.IncrementLikesAsync` / `DecrementLikesAsync` via EF Core `ExecuteUpdateAsync`) and intentionally bypass the change tracker and `IUnitOfWork`. This is the one deliberate exception to the "every handler saves via `IUnitOfWork`" convention - a read-modify-write loses updates under concurrent likes. The returned count is advisory (the stored value is always correct)
 
@@ -491,7 +491,15 @@ so `Domain` stays dependency-free. The cases mirror the old middleware mapping 1
 - **The domain still throws `DomainException`** (Depth A - entities are unchanged). The single
   sanctioned bridge is `DomainResult.Try(...)` in `Barkfest.Application/Common/DomainResult.cs`, which
   catches `DomainException` → `DomainRuleError` and lets anything else propagate. **This is the only
-  try/catch in the application** (besides the middleware). Wrap entity construction/mutation in it.
+  try/catch that *translates* an exception into a `Result`** (besides the middleware). Wrap entity
+  construction/mutation in it.
+- **Compensation try/catch is a narrow, sanctioned exception.** A handler that performs a
+  non-transactional side effect *before* the DB commit (e.g. uploading a blob to Azure Storage) may
+  wrap the `SaveChangesAsync` in a try/catch *solely* to undo that side effect on failure - then it
+  **must rethrow** (it does not convert the exception into a `Result`; the 500 still flows to the
+  middleware). The image-upload handlers (`AddPetImagesCommandHandler`,
+  `UploadOwnerProfileImageCommandHandler`) delete the orphaned blob and rethrow. This is the only
+  permitted hand-written try/catch in a handler; it compensates, never translates.
 - **Controllers** translate via `ResultExtensions` (`Barkfest.API/Extensions/`):
   `result.ToActionResult()` (200), `result.ToActionResult(onSuccess)` (e.g. 201 Created),
   `result.ToNoContentResult()` (204). Failures map by `Error` case to the same `ProblemDetails`
@@ -499,8 +507,10 @@ so `Domain` stays dependency-free. The cases mirror the old middleware mapping 1
 - **`ExceptionHandlingMiddleware`** is now a **backstop only**: `DomainException` (escape past the
   bridge), `ValidationException` (the behavior's legacy non-`Result` path), and unhandled → 500.
 
-Never add try/catch blocks in handlers or controllers - return a `Result` failure, and let
-`DomainResult.Try` / the middleware own the exception edges.
+Never add try/catch blocks in handlers or controllers to handle *expected* failures - return a
+`Result` failure, and let `DomainResult.Try` / the middleware own the exception edges. The sole
+exception is the compensation pattern above: undoing a pre-commit side effect on failure, then
+rethrowing.
 
 ---
 
@@ -556,8 +566,8 @@ builder classes are available without an explicit `using` in every test file.
   // Good - build a collection with specific names
   var pets = new[]
   {
-      new PetBuilder().WithOwnerId(ownerId).WithName("Max").Build(),
-      new PetBuilder().WithOwnerId(ownerId).WithName("Daisy").Build()
+      new PetBuilder().WithOwner(owner).WithName("Max").Build(),
+      new PetBuilder().WithOwner(owner).WithName("Daisy").Build()
   };
   ```
 - Exception: `Domain.Tests` setter tests that need a bare entity (no defaults applied)
@@ -635,7 +645,7 @@ still throw `DomainException`.
 | Hardcoded image limits in tests | `Pet.MaxImages` |
 | Data annotations for EF config | `IEntityTypeConfiguration<T>` |
 | Throwing for expected failures in handlers | Return `Result<T, Error>` (the railway) |
-| Try/catch in handlers or controllers | `DomainResult.Try` (the one bridge) + `ExceptionHandlingMiddleware` backstop |
+| Try/catch in handlers or controllers (to handle expected failures) | `DomainResult.Try` (the one bridge) + `ExceptionHandlingMiddleware` backstop; compensation-then-rethrow is the one exception |
 | `dotnet ef database update` | `MigrateAsync()` at startup |
 | User Secrets | Aspire connection string injection |
 

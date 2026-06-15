@@ -34,6 +34,13 @@ public class UpdateOwnerCommandHandler(IOwnerRepository ownerRepository, IUnitOf
         if (existingByEmail is not null && existingByEmail.Id != request.OwnerId)
             return new DomainRuleError("An account with this email address already exists.");
 
+        if (!string.IsNullOrWhiteSpace(request.DisplayName))
+        {
+            var normalizedDisplayName = Owner.Normalize(request.DisplayName);
+            if (!await ownerRepository.IsDisplayNameAvailableAsync(normalizedDisplayName, request.OwnerId, cancellationToken))
+                return new DomainRuleError("That display name is already taken.");
+        }
+
         var mutation = DomainResult.Try(() =>
         {
             owner.SetFirstName(request.FirstName);

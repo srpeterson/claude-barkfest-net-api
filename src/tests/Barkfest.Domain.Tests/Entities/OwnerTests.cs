@@ -63,6 +63,30 @@ public class OwnerTests
             .Message.ShouldContain(Owner.DisplayNameMaxLength.ToString());
     }
 
+    [Theory]
+    [InlineData("Cool Pet Dad")]
+    [InlineData("cool pet dad")]
+    [InlineData("COOLPETDAD")]
+    public void SetDisplayName_When_Provided_Sets_NormalizedFormStrippedAndLowercased(string input)
+    {
+        var owner = new Owner();
+
+        owner.SetDisplayName(input);
+
+        owner.DisplayNameNormalized.ShouldBe("coolpetdad");
+    }
+
+    [Fact]
+    public void SetDisplayName_When_Null_Clears_DisplayNameNormalized()
+    {
+        var owner = new Owner();
+        owner.SetDisplayName("FurParent");
+
+        owner.SetDisplayName(null);
+
+        owner.DisplayNameNormalized.ShouldBeNull();
+    }
+
     // -----------------------------------------------------------------------
     // SetUsername
     // -----------------------------------------------------------------------

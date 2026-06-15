@@ -1,3 +1,4 @@
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Errors;
@@ -16,7 +17,7 @@ public class DeletePetCommandHandler(
     ICurrentUserService currentUserService)
     : IRequestHandler<DeletePetCommand, Result<Unit, Error>>
 {
-    private const string ContainerName = "pet-images";
+    private const string ContainerName = BlobContainers.PetImages;
 
     public async Task<Result<Unit, Error>> Handle(DeletePetCommand request, CancellationToken cancellationToken)
     {

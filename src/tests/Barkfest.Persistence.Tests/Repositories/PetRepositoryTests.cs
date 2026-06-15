@@ -133,6 +133,34 @@ public class PetRepositoryTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task GetByIdWithOwnerAsync_When_PetExists_Returns_PetWithOwnerAndImages()
+    {
+        var (owner, _) = await SeedOwner();
+        var pet = BuildPet(owner.Id, "Daisy", PetType.Dog);
+        var image = new PetImage();
+        image.SetImage("pets/abc/gallery/photo.jpg", "image/jpeg");
+        image.SetDisplayOrder(0);
+        pet.AddImage(image);
+        await _petRepository.AddAsync(pet);
+        await _context.SaveChangesAsync();
+
+        var result = await _petRepository.GetByIdWithOwnerAsync(pet.Id);
+
+        result.ShouldNotBeNull();
+        result.Owner.ShouldNotBeNull();
+        result.Owner.Id.ShouldBe(owner.Id);
+        result.Images.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task GetByIdWithOwnerAsync_When_PetNotFound_Returns_Null()
+    {
+        var result = await _petRepository.GetByIdWithOwnerAsync(Guid.NewGuid());
+
+        result.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task IncrementLikesAsync_When_PetExists_Returns_NewCount()
     {
         var (owner, _) = await SeedOwner();

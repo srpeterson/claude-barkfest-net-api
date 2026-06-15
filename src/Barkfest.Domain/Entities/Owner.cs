@@ -12,6 +12,10 @@ public class Owner
     public Guid Id { get; private set; } = Guid.CreateVersion7();
     public string Username { get; private set; } = string.Empty;
     public string? DisplayName { get; private set; }
+    // Normalized form of DisplayName (spaces stripped, lowercased) used to enforce
+    // case-insensitive, space-insensitive uniqueness via a filtered unique index.
+    // Always kept in lockstep with DisplayName by SetDisplayName - never set directly.
+    public string? DisplayNameNormalized { get; private set; }
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
@@ -45,6 +49,7 @@ public class Owner
         if (string.IsNullOrWhiteSpace(displayName))
         {
             DisplayName = null;
+            DisplayNameNormalized = null;
             return;
         }
 
@@ -52,7 +57,13 @@ public class Owner
             throw new DomainException($"Display name cannot exceed {DisplayNameMaxLength} characters.");
 
         DisplayName = displayName.Trim();
+        DisplayNameNormalized = Normalize(DisplayName);
     }
+
+    // The single source of truth for display-name normalization. Must match the value
+    // callers compute before IsDisplayNameAvailableAsync (see CheckDisplayNameQuery).
+    public static string Normalize(string displayName) =>
+        displayName.Replace(" ", string.Empty).ToLowerInvariant();
 
     public void SetFirstName(string firstName)
     {

@@ -1,3 +1,4 @@
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Errors;
@@ -21,7 +22,7 @@ public class UploadOwnerProfileImageCommandHandler(
     IContentModerationService contentModerationService)
     : IRequestHandler<UploadOwnerProfileImageCommand, Result<Unit, Error>>
 {
-    private const string ContainerName = "owner-profile-images";
+    private const string ContainerName = BlobContainers.OwnerProfileImages;
 
     public async Task<Result<Unit, Error>> Handle(UploadOwnerProfileImageCommand request, CancellationToken cancellationToken)
     {

@@ -32,6 +32,13 @@ public class RegisterCommandHandler(
         if (existingByEmail is not null)
             return new DomainRuleError("An account with this email address already exists.");
 
+        if (!string.IsNullOrWhiteSpace(request.DisplayName))
+        {
+            var normalized = Owner.Normalize(request.DisplayName);
+            if (!await ownerRepository.IsDisplayNameAvailableAsync(normalized, cancellationToken: cancellationToken))
+                return new DomainRuleError("That display name is already taken.");
+        }
+
         var creation = DomainResult.Try(() =>
         {
             var owner = Owner.Create(

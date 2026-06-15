@@ -80,4 +80,37 @@ public class RegisterCommandHandlerTests
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainRuleError>();
     }
+
+    [Fact]
+    public async Task Handle_When_DisplayNameAlreadyTaken_Returns_DomainRuleError()
+    {
+        _ownerRepository.GetByUsernameAsync("newuser", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.GetByEmailAsync("new@example.com", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(false);
+
+        var command = new RegisterCommand(
+            "newuser", "Alice", "Adams", "new@example.com", null, "pass123", "Cool Pet Dad");
+
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
+        await _ownerRepository.DidNotReceive().AddAsync(Arg.Any<Owner>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_When_DisplayNameAvailable_Returns_ValidGuid()
+    {
+        _ownerRepository.GetByUsernameAsync("newuser", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.GetByEmailAsync("new@example.com", CancellationToken.None).Returns((Owner?)null);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(true);
+        _passwordHasher.Hash("pass123").Returns("hashed-pass");
+
+        var command = new RegisterCommand(
+            "newuser", "Alice", "Adams", "new@example.com", null, "pass123", "Cool Pet Dad");
+
+        var result = await _registerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+    }
 }

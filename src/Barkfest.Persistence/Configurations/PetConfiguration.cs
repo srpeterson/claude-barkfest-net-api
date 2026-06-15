@@ -41,6 +41,7 @@ public class PetConfiguration : IEntityTypeConfiguration<Pet>
 
         builder.Ignore(p => p.Age);
         builder.Ignore(p => p.FeaturedImage);
+        builder.Ignore(p => p.BreedName);
 
         builder.HasOne(p => p.Owner)
             .WithMany(o => o.Pets)

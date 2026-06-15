@@ -19,7 +19,7 @@ public class BatchDeletePetImagesCommandHandler(
     ICurrentUserService currentUserService)
     : IRequestHandler<BatchDeletePetImagesCommand, Result<Unit, Error>>
 {
-    private const string ContainerName = "pet-images";
+    private const string ContainerName = BlobContainers.PetImages;
 
     public async Task<Result<Unit, Error>> Handle(BatchDeletePetImagesCommand request, CancellationToken cancellationToken)
     {

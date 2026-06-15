@@ -12,18 +12,18 @@ public record GetPetByIdQuery(Guid PetId) : IRequest<Result<PetDto, Error>>;
 
 public class GetPetByIdQueryHandler(
     IPetRepository petRepository,
-    IOwnerRepository ownerRepository,
     ICurrentUserService currentUserService)
     : IRequestHandler<GetPetByIdQuery, Result<PetDto, Error>>
 {
     public async Task<Result<PetDto, Error>> Handle(GetPetByIdQuery request, CancellationToken cancellationToken)
     {
-        var pet = await petRepository.GetByIdAsync(request.PetId, cancellationToken);
+        // Single query loads the pet with its Images and Owner (see GetByIdWithOwnerAsync).
+        var pet = await petRepository.GetByIdWithOwnerAsync(request.PetId, cancellationToken);
 
         if (pet is null)
             return new NotFoundError(nameof(Pet), request.PetId);
 
-        var owner = await ownerRepository.GetByIdAsync(pet.OwnerId, cancellationToken);
+        var owner = pet.Owner;
 
         // A hidden/suspended owner's pet is reported as not found to non-privileged callers,
         // matching the previous behaviour (404 rather than 403, to avoid leaking existence).

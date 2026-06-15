@@ -26,8 +26,8 @@ public class GetPetsByOwnerIdQueryHandlerTests
         var owner = new OwnerBuilder().Build();
         var pets = new[]
         {
-            new PetBuilder().WithOwnerId(owner.Id).WithName("Max").Build(),
-            new PetBuilder().WithOwnerId(owner.Id).WithName("Daisy").Build()
+            new PetBuilder().WithOwner(owner).WithName("Max").Build(),
+            new PetBuilder().WithOwner(owner).WithName("Daisy").Build()
         };
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         _petRepository.GetByOwnerIdAsync(owner.Id, CancellationToken.None).Returns(pets);
@@ -75,7 +75,7 @@ public class GetPetsByOwnerIdQueryHandlerTests
     {
         var owner = new OwnerBuilder().Build();
         owner.SetIsActive(false);
-        var pets = new[] { new PetBuilder().WithOwnerId(owner.Id).Build() };
+        var pets = new[] { new PetBuilder().WithOwner(owner).Build() };
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         _petRepository.GetByOwnerIdAsync(owner.Id, CancellationToken.None).Returns(pets);
         _currentUserService.IsAdmin.Returns(true);
@@ -120,7 +120,7 @@ public class GetPetsByOwnerIdQueryHandlerTests
     {
         var owner = new OwnerBuilder().Build();
         owner.SetIsVisible(false);
-        var pets = new[] { new PetBuilder().WithOwnerId(owner.Id).Build() };
+        var pets = new[] { new PetBuilder().WithOwner(owner).Build() };
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         _petRepository.GetByOwnerIdAsync(owner.Id, CancellationToken.None).Returns(pets);
         _currentUserService.OwnerId.Returns((Guid?)owner.Id);
@@ -137,7 +137,7 @@ public class GetPetsByOwnerIdQueryHandlerTests
     {
         var owner = new OwnerBuilder().Build();
         owner.SetIsVisible(false);
-        var pets = new[] { new PetBuilder().WithOwnerId(owner.Id).Build() };
+        var pets = new[] { new PetBuilder().WithOwner(owner).Build() };
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
         _petRepository.GetByOwnerIdAsync(owner.Id, CancellationToken.None).Returns(pets);
         _currentUserService.IsAdmin.Returns(true);

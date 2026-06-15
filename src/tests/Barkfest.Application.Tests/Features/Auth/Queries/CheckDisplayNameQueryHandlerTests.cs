@@ -21,7 +21,7 @@ public class CheckDisplayNameQueryHandlerTests
     [Fact]
     public async Task Handle_When_DisplayNameIsAvailable_Returns_True()
     {
-        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", CancellationToken.None).Returns(true);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(true);
 
         var result = await _checkDisplayNameQueryHandler.Handle(
             new CheckDisplayNameQuery("Cool Pet Dad"), CancellationToken.None);
@@ -32,7 +32,7 @@ public class CheckDisplayNameQueryHandlerTests
     [Fact]
     public async Task Handle_When_DisplayNameIsNotAvailable_Returns_False()
     {
-        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", CancellationToken.None).Returns(false);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(false);
 
         var result = await _checkDisplayNameQueryHandler.Handle(
             new CheckDisplayNameQuery("Cool Pet Dad"), CancellationToken.None);
@@ -52,12 +52,12 @@ public class CheckDisplayNameQueryHandlerTests
     [InlineData("coolpetdad")]
     public async Task Handle_When_DisplayNameVariants_Passes_SameNormalizedValue(string input)
     {
-        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", CancellationToken.None).Returns(true);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(true);
 
         await _checkDisplayNameQueryHandler.Handle(
             new CheckDisplayNameQuery(input), CancellationToken.None);
 
-        await _ownerRepository.Received(1).IsDisplayNameAvailableAsync("coolpetdad", CancellationToken.None);
+        await _ownerRepository.Received(1).IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None);
     }
 
     // -----------------------------------------------------------------------
@@ -73,6 +73,6 @@ public class CheckDisplayNameQueryHandlerTests
             new CheckDisplayNameQuery(value), CancellationToken.None);
 
         result.ShouldBeTrue();
-        await _ownerRepository.DidNotReceive().IsDisplayNameAvailableAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _ownerRepository.DidNotReceive().IsDisplayNameAvailableAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 }

@@ -275,7 +275,7 @@ public class AuthControllerTests(BarkfestApiFactory factory)
 
         // Strip spaces and uppercase — the endpoint normalizes to lowercase before comparing,
         // so sending uppercase verifies case-insensitivity end-to-end.
-        var normalized = displayName.Replace(" ", "").ToUpper();
+        var normalized = displayName.Replace(" ", string.Empty).ToUpper();
         var response = await _client.GetAsync($"/v1/auth/check-display-name?value={Uri.EscapeDataString(normalized)}");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);

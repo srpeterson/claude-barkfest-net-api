@@ -10,13 +10,12 @@ namespace Barkfest.Application.Tests.Features.Pets.Queries;
 public class GetPetByIdQueryHandlerTests
 {
     private readonly IPetRepository _petRepository = Substitute.For<IPetRepository>();
-    private readonly IOwnerRepository _ownerRepository = Substitute.For<IOwnerRepository>();
     private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
     private readonly GetPetByIdQueryHandler _getPetByIdQueryHandler;
 
     public GetPetByIdQueryHandlerTests()
     {
-        _getPetByIdQueryHandler = new GetPetByIdQueryHandler(_petRepository, _ownerRepository, _currentUserService);
+        _getPetByIdQueryHandler = new GetPetByIdQueryHandler(_petRepository, _currentUserService);
     }
 
     [Fact]
@@ -24,9 +23,8 @@ public class GetPetByIdQueryHandlerTests
     {
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
-        var pet = new PetBuilder().WithOwnerId(owner.Id).Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
-        _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
+        var pet = new PetBuilder().WithOwner(owner).Build();
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns(pet);
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
 
@@ -39,7 +37,7 @@ public class GetPetByIdQueryHandlerTests
     public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns((Pet?)null);
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
 
@@ -53,9 +51,8 @@ public class GetPetByIdQueryHandlerTests
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetIsActive(false);
-        var pet = new PetBuilder().WithOwnerId(owner.Id).Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
-        _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
+        var pet = new PetBuilder().WithOwner(owner).Build();
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns(pet);
         // IsAdmin returns false by default (NSubstitute default for bool)
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
@@ -70,9 +67,8 @@ public class GetPetByIdQueryHandlerTests
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetIsActive(false);
-        var pet = new PetBuilder().WithOwnerId(owner.Id).WithName("Rex").Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
-        _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
+        var pet = new PetBuilder().WithOwner(owner).WithName("Rex").Build();
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns(pet);
         _currentUserService.IsAdmin.Returns(true);
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
@@ -87,9 +83,8 @@ public class GetPetByIdQueryHandlerTests
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetIsVisible(false);
-        var pet = new PetBuilder().WithOwnerId(owner.Id).Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
-        _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
+        var pet = new PetBuilder().WithOwner(owner).Build();
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns(pet);
         // IsAdmin returns false and OwnerId returns null by default (NSubstitute)
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
@@ -104,9 +99,8 @@ public class GetPetByIdQueryHandlerTests
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetIsVisible(false);
-        var pet = new PetBuilder().WithOwnerId(owner.Id).WithName("Luna").Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
-        _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
+        var pet = new PetBuilder().WithOwner(owner).WithName("Luna").Build();
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns(pet);
         _currentUserService.OwnerId.Returns((Guid?)owner.Id);
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);
@@ -121,9 +115,8 @@ public class GetPetByIdQueryHandlerTests
         var petId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();
         owner.SetIsVisible(false);
-        var pet = new PetBuilder().WithOwnerId(owner.Id).WithName("Luna").Build();
-        _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns(pet);
-        _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
+        var pet = new PetBuilder().WithOwner(owner).WithName("Luna").Build();
+        _petRepository.GetByIdWithOwnerAsync(petId, CancellationToken.None).Returns(pet);
         _currentUserService.IsAdmin.Returns(true);
 
         var result = await _getPetByIdQueryHandler.Handle(new GetPetByIdQuery(petId), CancellationToken.None);

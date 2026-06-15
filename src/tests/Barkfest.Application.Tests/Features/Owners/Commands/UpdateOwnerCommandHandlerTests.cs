@@ -66,4 +66,40 @@ public class UpdateOwnerCommandHandlerTests
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<ForbiddenError>();
     }
+
+    [Fact]
+    public async Task Handle_When_DisplayNameTakenByAnotherOwner_Returns_DomainRuleError()
+    {
+        var ownerId = Guid.NewGuid();
+        var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
+        // Availability check excludes self (ownerId); another owner holds the name.
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", ownerId, CancellationToken.None).Returns(false);
+
+        var command = new UpdateOwnerCommand(ownerId, "John", "Doe", "john@example.com", null, "Cool Pet Dad");
+
+        var result = await _updateOwnerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeOfType<DomainRuleError>();
+        await _ownerRepository.DidNotReceive().UpdateAsync(Arg.Any<Owner>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_When_DisplayNameAvailable_Updates_AndSaves()
+    {
+        var ownerId = Guid.NewGuid();
+        var owner = new OwnerBuilder().Build();
+        _currentUserService.OwnerId.Returns((Guid?)owner.Id);
+        _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns(owner);
+        _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", ownerId, CancellationToken.None).Returns(true);
+
+        var command = new UpdateOwnerCommand(ownerId, "John", "Doe", "john@example.com", null, "Cool Pet Dad");
+
+        var result = await _updateOwnerCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
+    }
 }

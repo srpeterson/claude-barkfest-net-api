@@ -1,3 +1,4 @@
+using Barkfest.Application.Common;
 using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Entities;
 using Barkfest.Domain.Errors;
@@ -25,7 +26,7 @@ public class AddPetImagesCommandHandler(
     IContentModerationService contentModerationService)
     : IRequestHandler<AddPetImagesCommand, Result<AddPetImagesResult, Error>>
 {
-    private const string ContainerName = "pet-images";
+    private const string ContainerName = BlobContainers.PetImages;
 
     public async Task<Result<AddPetImagesResult, Error>> Handle(AddPetImagesCommand request, CancellationToken cancellationToken)
     {

@@ -13,6 +13,7 @@ Barkfest is a pet management API allowing owners to register themselves and show
 
 ### Owner Management
 - Register an owner with username, first name, last name, email, optional phone number, and optional display name
+- Display name, when provided, must be unique across owners (case-insensitive and space-insensitive); registration or profile update is rejected with a 400 if the display name is already taken
 - Update owner details
 - Delete an owner (cascades to all their pets)
 - Upload and remove an owner profile image (one image per owner)
