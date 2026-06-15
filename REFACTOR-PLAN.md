@@ -118,12 +118,15 @@ and both test files). `CLAUDE.md` examples that referenced it were repointed to 
 
 ---
 
-## Phase 4 — Docs
+## Phase 4 — Docs ✅
 
-- [ ] CLAUDE.md: rewrite error-handling section (Result contract, `Error` DU, translation layer,
-      the single `DomainResult.Try` adapter, middleware's reduced role); update the Exception Handling
-      table and "What NOT to use".
-- [ ] README / SPEC: only if behavior changed (it shouldn't — note "no external change").
+- [x] CLAUDE.md: rewrote the Exception Handling section into an **Error Handling** section (Result
+      contract, `Error` DU table, `DomainResult.Try`, `ResultExtensions` translation, dual-mode
+      `ValidationBehavior`, middleware-as-backstop); updated the MediatR section (Result return types +
+      "infallible queries stay plain"), the Validation section, the Command/Query type-convention
+      examples, the Shouldly examples + test-naming note, the "What NOT To Use" table, and the
+      authorization/business-rule lines that referenced the deleted exceptions.
+- [x] README / SPEC: **no change** — external HTTP behavior is unchanged (same status codes/bodies).
 
 **Commit:** "Update CLAUDE.md for Result-based error handling"
 

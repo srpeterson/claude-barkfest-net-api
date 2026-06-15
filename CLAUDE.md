@@ -114,8 +114,8 @@ public record CreatePetCommand(
     int PetTypeValue,
     int BreedValue) : IRequest<Result<Guid, Error>>;
 
-// Query - record
-public record GetOwnerByIdQuery(Guid Id) : IRequest<OwnerDto>;
+// Query - record (fallible query returns Result; id param named after the entity)
+public record GetOwnerByIdQuery(Guid OwnerId) : IRequest<Result<OwnerDto, Error>>;
 
 // Entity - class with static Create() factory
 public class Owner
@@ -241,8 +241,14 @@ public static class OwnerMappings
 - Commands and queries implement `IRequest<TResponse>`
 - Handlers implement `IRequestHandler<TRequest, TResponse>`
 - Pipeline behaviours: `ValidationBehavior` (runs first), `LoggingBehavior`
-- Commands that return nothing use `IRequest` (not `IRequest<Unit>`)
-- Commands that create a resource return `IRequest<Guid>` (the new entity Id)
+- **Fallible handlers return `Result<T, Error>`** (CSharpFunctionalExtensions) - see Error Handling.
+  A command that creates a resource returns `IRequest<Result<Guid, Error>>`; a command with no
+  payload returns `IRequest<Result<Unit, Error>>` (MediatR's `Unit`); a query returns
+  `IRequest<Result<TDto, Error>>`.
+- **Infallible queries stay plain** - a query that cannot fail (no not-found / forbidden / validation
+  path; invalid input yields an empty result) returns its value directly, not `Result`. Examples:
+  `GetAllPetsQuery`, `CheckUsernameQuery`, `CheckDisplayNameQuery`, and the Browse queries. Don't wrap
+  what can't fail.
 - **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreatePetCommand.cs`, `LoginCommand.cs`, etc.
 
 ---
@@ -251,6 +257,13 @@ public static class OwnerMappings
 
 **No manual validation in handlers.** All validation uses FluentValidation
 `AbstractValidator<T>` and is executed automatically by `ValidationBehavior`.
+
+`ValidationBehavior` is **dual-mode**: when the request's `TResponse` is a `Result<T, Error>`, a
+validation failure short-circuits into a failed `Result` carrying a `ValidationError` (built via the
+cached-reflection `ResultFailureFactory`), so validation flows through the railway. For any
+non-`Result` request it falls back to throwing `ValidationException` (handled by middleware). The
+fallback exists only for the infallible plain-return queries; it would be removed if those ever
+adopted `Result`.
 
 ```csharp
 public class CreatePetCommandValidator : AbstractValidator<CreatePetCommand>
@@ -350,12 +363,12 @@ validators, tests, EF Core configuration.
 - Login uses `Username` + password
 - Any administrator can create new administrators (username + name + email + phoneNumber + password)
 - Any administrator can update another administrator's password
-- Any administrator can delete another administrator but **never themselves** (self-delete throws `ForbiddenException`)
+- Any administrator can delete another administrator but **never themselves** (self-delete returns `ForbiddenError` → 403)
 - Administrator accounts are fully separate from Owner accounts - different tables, different JWT claims, different identity
 
 ### Authorization
-- `GET /v1/owners` - lists all owners; admin JWT required (throws `ForbiddenException` for non-admins)
-- `GET /v1/admin/admins` - lists all administrators; admin JWT required (throws `ForbiddenException` for non-admins)
+- `GET /v1/owners` - lists all owners; admin JWT required (returns `ForbiddenError` → 403 for non-admins)
+- `GET /v1/admin/admins` - lists all administrators; admin JWT required (returns `ForbiddenError` → 403 for non-admins)
 - `GET /v1/pets/{id}` - public (`[AllowAnonymous]`); used by the public Pet Details page
 - `POST /v1/pets/{id}/likes` and `DELETE /v1/pets/{id}/likes` - public (`[AllowAnonymous]`)
 - `GET /v1/browse/*` - public (`[AllowAnonymous]`)
@@ -453,18 +466,41 @@ Use Serilog. Configured in `Startup/ServiceRegistration.cs` via `builder.Host.Us
 
 ---
 
-## Exception Handling
+## Error Handling
 
-`ExceptionHandlingMiddleware` in `Barkfest.API/Middleware/` handles all exceptions:
+**Expected failures flow as `Result<T, Error>` (the railway), not exceptions.** Fallible handlers
+return `Result<T, Error>`; controllers translate the result to HTTP at the edge. Exceptions are
+reserved for the genuinely exceptional (infrastructure failures, escaped invariant violations → 500).
 
-| Exception | HTTP Response | Location |
+### The `Error` DU (`Barkfest.Domain/Errors/Error.cs`)
+
+A closed hierarchy - `abstract record Error` with sealed cases. It is just types (zero dependencies),
+so `Domain` stays dependency-free. The cases mirror the old middleware mapping 1:1:
+
+| `Error` case | HTTP | Meaning |
 |---|---|---|
-| `NotFoundException` | 404 Not Found | `Barkfest.Application/Common/Exceptions/` |
-| `DomainException` | 400 Bad Request | `Barkfest.Domain/Exceptions/` |
-| `ForbiddenException` | 403 Forbidden | `Barkfest.Domain/Exceptions/` |
-| Unhandled | 500 Internal Server Error | - |
+| `NotFoundError(Entity, Key, Field?)` | 404 | Aggregate not found (`Field` for non-PK lookups, e.g. "username") |
+| `ValidationError(Failures)` | 400 | FluentValidation failures (property → messages) |
+| `ForbiddenError(Message?)` | 403 | Authorization / business-rule denial |
+| `DomainRuleError(Message)` | 400 | A domain invariant violation, lifted from `DomainException` |
 
-Never add try/catch blocks in handlers or controllers - let middleware handle it.
+### How it fits together
+
+- **Handlers** return failures by implicit conversion: `return new NotFoundError(nameof(Pet), id);`
+  and successes as the value: `return pet.ToDto();` (or `Unit.Value` for no-payload commands).
+- **The domain still throws `DomainException`** (Depth A - entities are unchanged). The single
+  sanctioned bridge is `DomainResult.Try(...)` in `Barkfest.Application/Common/DomainResult.cs`, which
+  catches `DomainException` → `DomainRuleError` and lets anything else propagate. **This is the only
+  try/catch in the application** (besides the middleware). Wrap entity construction/mutation in it.
+- **Controllers** translate via `ResultExtensions` (`Barkfest.API/Extensions/`):
+  `result.ToActionResult()` (200), `result.ToActionResult(onSuccess)` (e.g. 201 Created),
+  `result.ToNoContentResult()` (204). Failures map by `Error` case to the same `ProblemDetails`
+  responses as before. The mapping has a `_ => throw` arm guarded by an exhaustiveness test.
+- **`ExceptionHandlingMiddleware`** is now a **backstop only**: `DomainException` (escape past the
+  bridge), `ValidationException` (the behavior's legacy non-`Result` path), and unhandled → 500.
+
+Never add try/catch blocks in handlers or controllers - return a `Result` failure, and let
+`DomainResult.Try` / the middleware own the exception edges.
 
 ---
 
@@ -569,8 +605,20 @@ await repo.Received(1).GetByIdAsync(id);
 ```csharp
 result.ShouldNotBeNull();
 result.Name.ShouldBe("Buddy");
-await act.ShouldThrowAsync<NotFoundException>();
+
+// Result-returning handlers - assert on the railway, not a thrown exception:
+result.IsSuccess.ShouldBeTrue();
+result.Value.Name.ShouldBe("Buddy");
+result.IsFailure.ShouldBeTrue();
+result.Error.ShouldBeOfType<NotFoundError>();
+
+// Domain entities still throw - assert the exception directly:
+await act.ShouldThrowAsync<DomainException>();
 ```
+
+Handler error-path tests follow `..._Returns_[ErrorCase]` (e.g. `Handle_When_PetNotFound_Returns_NotFoundError`),
+not `..._Throws_...`. The `..._Throws_[ExceptionType]` form remains only for domain-entity tests, which
+still throw `DomainException`.
 
 ---
 
@@ -586,7 +634,8 @@ await act.ShouldThrowAsync<NotFoundException>();
 | Hardcoded max lengths in tests | Domain constants (`Owner.FirstNameMaxLength` etc.) |
 | Hardcoded image limits in tests | `Pet.MaxImages` |
 | Data annotations for EF config | `IEntityTypeConfiguration<T>` |
-| Try/catch in handlers or controllers | `ExceptionHandlingMiddleware` |
+| Throwing for expected failures in handlers | Return `Result<T, Error>` (the railway) |
+| Try/catch in handlers or controllers | `DomainResult.Try` (the one bridge) + `ExceptionHandlingMiddleware` backstop |
 | `dotnet ef database update` | `MigrateAsync()` at startup |
 | User Secrets | Aspire connection string injection |
 
