@@ -2,10 +2,6 @@ import { forwardRef, type SelectHTMLAttributes } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface NativeSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  wrapperClassName?: string
-}
-
 /**
  * A styled native <select> element.
  *
@@ -14,10 +10,10 @@ interface NativeSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
  * Swap for @base-ui/react Select when you need multi-select or custom option
  * rendering.
  */
-const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
-  ({ className, wrapperClassName, children, ...props }, ref) => {
+const NativeSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
+  ({ className, children, ...props }, ref) => {
     return (
-      <div className={cn('relative', wrapperClassName)}>
+      <div className="relative">
         <select
           ref={ref}
           className={cn(

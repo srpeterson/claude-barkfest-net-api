@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { X, Search, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getBrowseBreeds, getBrowsePetTypes } from '@/lib/api'
+import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
 import { getPetTypeLabel } from '@/config/petTypes'
 
 interface FilterProps {
@@ -23,30 +22,12 @@ export function MobileFilterSheet({ filterProps, onClose }: MobileFilterSheetPro
   const [pendingBreed, setPendingBreed] = useState(filterProps.breedValue)
   const [breedSearch, setBreedSearch]   = useState('')
 
-  const { data: petTypes = [] } = useQuery({
-    queryKey: ['browse', 'pet-types'],
-    queryFn: getBrowsePetTypes,
-    staleTime: Infinity,
-  })
-
-  const { data: breeds = [] } = useQuery({
-    queryKey: ['browse', 'breeds', pendingType],
-    queryFn: () => getBrowseBreeds(pendingType),
-    enabled: !!pendingType,
-    staleTime: Infinity,
-  })
+  const { data: petTypes = [] } = usePetTypeOptions()
+  const { data: breeds = [] } = useBreedOptions(pendingType)
 
   const filteredBreeds = [
     { name: 'All Breeds', value: 0 } as const,
-    ...breeds
-      .filter(b => b.name.toLowerCase().includes(breedSearch.toLowerCase()))
-      .sort((a, b) => {
-        if (a.name === 'Other') return 1
-        if (b.name === 'Other') return -1
-        if (a.name === 'Mixed') return 1
-        if (b.name === 'Mixed') return -1
-        return a.name.localeCompare(b.name)
-      }),
+    ...breeds.filter(b => b.name.toLowerCase().includes(breedSearch.toLowerCase())),
   ]
 
   function getButtonLabel() {

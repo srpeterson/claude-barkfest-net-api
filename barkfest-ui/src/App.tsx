@@ -1,11 +1,9 @@
 import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import { PetsPage }          from '@/features/pets/PetsPage'
 import { PetDetailPage }     from '@/features/pets/PetDetailPage'
 import { ManagePetsPage }    from '@/features/pets/ManagePetsPage'
 import { LoginPage }         from '@/features/auth/LoginPage'
 import { RegisterPage }      from '@/features/auth/RegisterPage'
-import { ShellLayout }       from '@/layouts/ShellLayout'
 import { ProtectedRoute }    from '@/components/ProtectedRoute'
 import { LoginDialog }       from '@/components/LoginDialog'
 import { HomePage }          from '@/pages/HomePage'
@@ -40,9 +38,6 @@ export function App() {
         {/* Protected pages — redirect to / if not authenticated */}
         <Route element={<ProtectedRoute />}>
           <Route path="manage" element={<ManagePetsPage />} />
-          <Route element={<ShellLayout />}>
-            <Route path="pets" element={<PetsPage />} />
-          </Route>
         </Route>
       </Routes>
 

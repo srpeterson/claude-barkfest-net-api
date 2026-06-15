@@ -2,21 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
-import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiError, changePassword, logout } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter'
+import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
+import { inputBaseCls } from '@/lib/formStyles'
+import { LIMITS } from '@/config/constraints'
 
-const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
-const STRENGTH_BG     = ['bg-[#e5484d]', 'bg-[#f76b15]', 'bg-[#d4a017]', 'bg-accent', 'bg-accent']
-const STRENGTH_TEXT   = ['text-[#e5484d]', 'text-[#f76b15]', 'text-[#d4a017]', 'text-accent', 'text-accent']
-
-const inputCls = [
-  'w-full h-11 rounded-xl border-[1.5px] border-border',
-  'bg-background text-foreground pl-3 pr-11 text-sm',
-  'outline-none box-border transition',
-  'focus:border-primary focus:ring-2 focus:ring-primary/30',
-].join(' ')
+const inputCls = `${inputBaseCls} h-11 bg-background pl-3 pr-11`
 
 interface ChangePasswordDialogProps {
   onClose: () => void
@@ -43,7 +37,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
   const allFilled   = current !== '' && next !== '' && confirm !== ''
   const canSubmit   = allFilled && !pwSameAsOld && !pwMismatch && !isLoading
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit || !accountId) return
     setError(null)
@@ -123,31 +117,14 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
                 id="cp-new"
                 type={showNew ? 'text' : 'password'}
                 autoComplete="new-password"
-                minLength={8} maxLength={72}
+                minLength={LIMITS.passwordMin} maxLength={LIMITS.passwordMax}
                 value={next}
                 onChange={e => setNext(e.target.value)}
                 className={inputCls}
               />
               <EyeBtn show={showNew} onToggle={() => setShowNew(v => !v)} />
             </div>
-            {next && (
-              <div className="mt-1.5">
-                <div className="flex gap-[3px] mb-[3px]">
-                  {[0, 1, 2, 3].map(i => (
-                    <div
-                      key={i}
-                      className={cn(
-                        'flex-1 h-[3px] rounded-sm transition-colors',
-                        i < strength.score ? STRENGTH_BG[strength.score] : 'bg-border'
-                      )}
-                    />
-                  ))}
-                </div>
-                <p className={cn('text-[11px] font-semibold', STRENGTH_TEXT[strength.score])}>
-                  {STRENGTH_LABELS[strength.score]}
-                </p>
-              </div>
-            )}
+            {next && <PasswordStrengthMeter score={strength.score} />}
             {pwSameAsOld && (
               <p className="text-xs text-destructive mt-1">New password must be different from your current password.</p>
             )}
@@ -212,38 +189,7 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
         </form>
       </div>
 
-      {forgotOpen && (
-        <div
-          className="animate-backdrop-in fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={() => setForgotOpen(false)}
-        >
-          <div
-            className="animate-dialog-appear w-full max-w-[360px] bg-card rounded-[20px] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.18)] relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <BarkfestMark size={22} />
-              <span className="font-heading text-[17px] font-bold">Barkfest</span>
-            </div>
-            <h3 className="font-heading text-xl font-bold mb-2">Forgot your password?</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-1.5">
-              Woof! Automated reset is on its way. Until then, shoot us an email and we'll get your paws back on the keys. Don't forget to include your username:
-            </p>
-            <a
-              href="mailto:srpeterson@outlook.com"
-              className="text-sm font-semibold text-primary no-underline inline-block mb-[22px]"
-            >
-              srpeterson@outlook.com
-            </a>
-            <button
-              onClick={() => setForgotOpen(false)}
-              className="block w-full h-[42px] rounded-[10px] border-[1.5px] border-border bg-transparent text-muted-foreground text-sm font-medium cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {forgotOpen && <ForgotPasswordModal onClose={() => setForgotOpen(false)} />}
     </div>
   )
 }

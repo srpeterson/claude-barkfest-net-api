@@ -5,8 +5,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { logout, getBrowseBreeds, getBrowsePetTypes, getOwnerById, getOwnerPets } from '@/lib/api'
+import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
+import { logout, getOwnerById, getOwnerPets } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { invalidateBrowse } from '@/lib/browseCache'
+import { queryKeys } from '@/lib/queryKeys'
 import { getPetTypeLabel, MAX_PETS_PER_OWNER } from '@/config/petTypes'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { AddPetDialog } from '@/components/AddPetDialog'
@@ -56,7 +59,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   // Keep the profile image and display name in sync with the server so changes
   // on another device (or another tab) are picked up when the user returns.
   const { data: ownerMeta } = useQuery({
-    queryKey: ['owner', accountId, 'meta'],
+    queryKey: queryKeys.ownerMeta(accountId!),
     queryFn: async () => {
       const owner = await getOwnerById(accountId!)
       return {
@@ -78,7 +81,7 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   const queryClient = useQueryClient()
 
   const { data: ownerPets, isLoading: isLoadingPets } = useQuery({
-    queryKey: ['owner', 'pets', accountId],
+    queryKey: queryKeys.ownerPets(accountId!),
     queryFn: () => getOwnerPets(accountId!),
     enabled: isAuthenticated && accountType === 'owner' && !!accountId,
     staleTime: 30 * 1000,
@@ -90,21 +93,9 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   const [sheetOpen, setSheetOpen] = useState(false)
   const hasActiveFilters = !!filterProps && (filterProps.petTypeValue !== 0 || filterProps.breedValue !== 0)
 
-  // Queries for the desktop pill label
-  const { data: petTypes = [] } = useQuery({
-    queryKey: ['browse', 'pet-types'],
-    queryFn: getBrowsePetTypes,
-    enabled: !!filterProps,
-    staleTime: Infinity,
-  })
-
-  // Fetch breeds for the active type so the mobile pill label resolves correctly
-  const { data: activeBreeds = [] } = useQuery({
-    queryKey: ['browse', 'breeds', filterProps?.petTypeValue ?? 0],
-    queryFn: () => getBrowseBreeds(filterProps!.petTypeValue),
-    enabled: !!filterProps && !!filterProps.petTypeValue,
-    staleTime: Infinity,
-  })
+  // Queries for the desktop/mobile filter pill labels — deferred until a filter is active
+  const { data: petTypes = [] } = usePetTypeOptions(!!filterProps)
+  const { data: activeBreeds = [] } = useBreedOptions(filterProps?.petTypeValue ?? 0)
 
   function getMobileFilterLabel() {
     if (!filterProps || !filterProps.petTypeValue) return 'All Pets'
@@ -116,9 +107,8 @@ export function Navbar({ filterProps, maxWidth = 'max-w-[72rem]' }: NavbarProps)
   }
 
   function handlePetAdded() {
-    queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-    queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
-    queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
+    invalidateBrowse(queryClient)
+    queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
   }
 
   async function handleSignOut() {

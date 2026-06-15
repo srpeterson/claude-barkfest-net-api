@@ -1,5 +1,5 @@
 import type { BrowseImageDto, PagedResult } from '@/types/browse'
-import type { AddPetImagesResult, CreatePetRequest } from '@/types/pet'
+import type { AddPetImagesResult, CreatePetRequest, UpdatePetRequest } from '@/types/pet'
 import type { OwnerDto, UpdateOwnerRequest } from '@/types/owner'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -29,6 +29,21 @@ export class ApiError extends Error {
   }
 }
 
+/** Throw a typed ApiError for a non-OK response, mapping ProblemDetails → message. */
+async function throwApiError(response: Response): Promise<never> {
+  if (response.status === 401) {
+    unauthorizedHandler?.()
+    throw new ApiError('Unauthorized', 401)
+  }
+  const text = await response.text()
+  let message = text || `HTTP ${response.status}`
+  try {
+    const problem = JSON.parse(text)
+    message = problem.detail || problem.title || message
+  } catch { /* non-JSON body — keep raw text / status */ }
+  throw new ApiError(message, response.status)
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -45,19 +60,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers,
   })
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      unauthorizedHandler?.()
-      throw new ApiError('Unauthorized', 401)
-    }
-    const text = await response.text()
-    let message = text || `HTTP ${response.status}`
-    try {
-      const problem = JSON.parse(text)
-      message = problem.detail || problem.title || message
-    } catch { /* use raw text */ }
-    throw new ApiError(message, response.status)
-  }
+  if (!response.ok) await throwApiError(response)
 
   const text = await response.text()
   if (!text) return undefined as T
@@ -184,19 +187,7 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
     body,
   })
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      unauthorizedHandler?.()
-      throw new ApiError('Unauthorized', 401)
-    }
-    const text = await response.text()
-    let message = `HTTP ${response.status}`
-    try {
-      const problem = JSON.parse(text)
-      message = problem.detail || problem.title || message
-    } catch { /* use status code fallback */ }
-    throw new ApiError(message, response.status)
-  }
+  if (!response.ok) await throwApiError(response)
 
   const text = await response.text()
   if (!text) return undefined as T
@@ -219,19 +210,7 @@ export async function createPet(data: CreatePetRequest): Promise<string> {
     body: JSON.stringify(data),
   })
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      unauthorizedHandler?.()
-      throw new ApiError('Unauthorized', 401)
-    }
-    const text = await response.text()
-    let message = `HTTP ${response.status}`
-    try {
-      const problem = JSON.parse(text)
-      message = problem.detail || problem.title || message
-    } catch { /* use status code fallback */ }
-    throw new ApiError(message, response.status)
-  }
+  if (!response.ok) await throwApiError(response)
 
   const location = response.headers.get('Location')
   if (!location) throw new Error('No Location header in response')
@@ -303,14 +282,6 @@ export interface PetDto {
 
 export function getPetDetail(petId: string): Promise<PetDto> {
   return request<PetDto>(`/v1/pets/${petId}`)
-}
-
-export interface UpdatePetRequest {
-  name: string
-  petTypeValue: number
-  breedValue: number
-  dateOfBirth?: string
-  description?: string
 }
 
 export function updatePet(petId: string, data: UpdatePetRequest): Promise<void> {

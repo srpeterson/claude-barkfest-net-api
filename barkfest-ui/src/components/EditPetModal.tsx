@@ -2,30 +2,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ChevronRight, Loader2, Star, X } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
-import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { BarkfestMark } from '@/components/BarkfestMark'
 import { DropZone } from '@/components/ui/DropZone'
 import { PetTypeBreedFormFields } from '@/components/PetTypeBreedFormFields'
+import { useBreedOptions, usePetTypeOptions } from '@/hooks/usePetOptions'
+import { useObjectUrls } from '@/hooks/useObjectUrls'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { IMAGE_ACCEPT, MAX_IMAGE_SIZE_BYTES, MAX_PET_IMAGES } from '@/lib/imageUpload'
+import { inputBaseCls } from '@/lib/formStyles'
+import { LIMITS } from '@/config/constraints'
 import {
   addPetImages,
-  getBrowseBreeds,
-  getBrowsePetTypes,
   removePetImage,
   setFeaturedImage,
   updatePet,
 } from '@/lib/api'
 import type { PetDto } from '@/lib/api'
 
-const MAX_IMAGES = 6
-
-const inputCls = [
-  'w-full h-11 rounded-xl border-[1.5px] border-border',
-  'bg-background text-foreground px-3.5 text-sm',
-  'outline-none box-border transition',
-  'focus:border-primary focus:ring-2 focus:ring-primary/30',
-].join(' ')
+const inputCls = `${inputBaseCls} h-11 bg-background px-3.5`
 
 interface EditPetModalProps {
   pet: PetDto
@@ -44,11 +39,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
   const [description, setDescription]       = useState(pet.description ?? '')
 
   // Resolve initial pet type value from the browse API — avoids hardcoding SmartEnum integers
-  const { data: petTypes = [] } = useQuery({
-    queryKey: ['browse', 'pet-types'],
-    queryFn: getBrowsePetTypes,
-    staleTime: Infinity,
-  })
+  const { data: petTypes = [] } = usePetTypeOptions()
   const resolvedPetTypeValue = petTypes.find(pt => pt.name === pet.petType)?.value ?? 0
 
   // Set petTypeValue once the browse API resolves the name → value mapping
@@ -61,12 +52,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
   }, [resolvedPetTypeValue])
 
   // Resolve initial breed value from name once the breed list loads
-  const { data: initialBreeds = [] } = useQuery({
-    queryKey: ['browse', 'breeds', resolvedPetTypeValue],
-    queryFn: () => getBrowseBreeds(resolvedPetTypeValue),
-    enabled: !!resolvedPetTypeValue,
-    staleTime: Infinity,
-  })
+  const { data: initialBreeds = [] } = useBreedOptions(resolvedPetTypeValue)
   const resolvedBreedValue = initialBreeds.find(b => b.name === pet.breed)?.value ?? 0
   const breedValue = userBreedValue ?? resolvedBreedValue
 
@@ -79,33 +65,28 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
 
   type NewImg = { file: File; previewUrl: string }
   const [newImages, setNewImages] = useState<NewImg[]>([])
-  const createdUrls = useRef<string[]>([])
-
-  useEffect(() => {
-    return () => { createdUrls.current.forEach(url => URL.revokeObjectURL(url)) }
-  }, [])
+  const objectUrls = useObjectUrls()
 
   const onDrop = useCallback((accepted: File[]) => {
-    const remaining = MAX_IMAGES - existingVisible.length - newImages.length
-    const toAdd = accepted.slice(0, remaining).map(f => {
-      const url = URL.createObjectURL(f)
-      createdUrls.current.push(url)
-      return { file: f, previewUrl: url }
-    })
+    const remaining = MAX_PET_IMAGES - existingVisible.length - newImages.length
+    const toAdd = accepted.slice(0, remaining).map(f => ({
+      file: f,
+      previewUrl: objectUrls.create(f),
+    }))
     setNewImages(prev => [...prev, ...toAdd])
-  }, [existingVisible.length, newImages.length])
+  }, [existingVisible.length, newImages.length, objectUrls])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
+    accept: IMAGE_ACCEPT,
+    maxSize: MAX_IMAGE_SIZE_BYTES,
     multiple: true,
-    disabled: existingVisible.length + newImages.length >= MAX_IMAGES,
+    disabled: existingVisible.length + newImages.length >= MAX_PET_IMAGES,
   })
 
   function removeNew(index: number) {
     const removed = newImages[index]
-    URL.revokeObjectURL(removed.previewUrl)
-    createdUrls.current = createdUrls.current.filter(u => u !== removed.previewUrl)
+    objectUrls.revoke(removed.previewUrl)
     setNewImages(prev => prev.filter((_, i) => i !== index))
     if (featuredKey === removed.previewUrl) setFeaturedKey(null)
   }
@@ -124,7 +105,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
   }, [removedIds, featuredKey, pet.images])
 
   const totalImages = existingVisible.length + newImages.length
-  const slotsLeft   = MAX_IMAGES - totalImages
+  const slotsLeft   = MAX_PET_IMAGES - totalImages
 
   // ── Submission ────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -220,7 +201,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                maxLength={75}
+                maxLength={LIMITS.petName}
                 autoFocus
                 className={inputCls}
               />
@@ -252,7 +233,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Tell us about this pet…"
-                maxLength={300}
+                maxLength={LIMITS.petDescription}
                 className={cn(inputCls, 'h-20 py-2.5 resize-none')}
               />
             </div>
@@ -272,7 +253,7 @@ export function EditPetModal({ pet, onClose, onSuccess }: EditPetModalProps) {
 
             {/* Add more drop target */}
             <p className="text-[13px] text-muted-foreground">
-              Add up to {MAX_IMAGES} photos of {name.trim() || pet.name}.
+              Add up to {MAX_PET_IMAGES} photos of {name.trim() || pet.name}.
             </p>
             <DropZone
               getRootProps={getRootProps}

@@ -1,10 +1,12 @@
-import { forwardRef, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getOwnerPets, setOwnerVisibility } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { invalidateBrowse } from '@/lib/browseCache'
+import { queryKeys } from '@/lib/queryKeys'
 import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -80,7 +82,7 @@ export function ManagePetsPage() {
   const selectAllRef = useRef<HTMLInputElement>(null)
 
   const { data: ownerData } = useQuery({
-    queryKey: ['owner', accountId],
+    queryKey: queryKeys.owner(accountId!),
     queryFn: () => getOwnerById(accountId!),
     enabled: !!accountId,
   })
@@ -88,16 +90,20 @@ export function ManagePetsPage() {
   const isVisible = optimisticIsVisible ?? (ownerData?.isVisible ?? true)
 
   const { data: rawPets = [], isLoading } = useQuery({
-    queryKey: ['owner', 'pets', accountId],
+    queryKey: queryKeys.ownerPets(accountId!),
     queryFn: () => getOwnerPets(accountId!),
     enabled: !!accountId,
   })
 
   const pets = rawPets.slice().sort((a, b) => a.name.localeCompare(b.name))
 
-  if (selectAllRef.current) {
-    selectAllRef.current.indeterminate = selected.size > 0 && selected.size < pets.length
-  }
+  // Drive the select-all checkbox's indeterminate state after render —
+  // mutating the DOM node during render is a side effect React forbids.
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selected.size > 0 && selected.size < pets.length
+    }
+  }, [selected, pets.length])
 
   const allSelected = pets.length > 0 && selected.size === pets.length
 
@@ -118,9 +124,8 @@ export function ManagePetsPage() {
     setIsDeleting(true)
     try {
       await deletePet(petId)
-      queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
+      invalidateBrowse(queryClient)
     } finally {
       setIsDeleting(false)
       setDeleteTarget(null)
@@ -132,9 +137,8 @@ export function ManagePetsPage() {
     try {
       await Promise.all([...selected].map(id => deletePet(id)))
       setSelected(new Set())
-      queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
+      invalidateBrowse(queryClient)
     } finally {
       setIsDeleting(false)
       setBulkDeleteOpen(false)
@@ -142,9 +146,8 @@ export function ManagePetsPage() {
   }
 
   function handlePetAdded() {
-    queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
-    queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-    queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+    queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
+    invalidateBrowse(queryClient)
   }
 
   async function handleVisibilityChange(newIsVisible: boolean) {
@@ -153,9 +156,8 @@ export function ManagePetsPage() {
     setVisibilityError(null)
     try {
       await setOwnerVisibility(accountId!, newIsVisible)
-      queryClient.invalidateQueries({ queryKey: ['owner', accountId] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.owner(accountId!) })
+      invalidateBrowse(queryClient)
     } catch {
       setOptimisticIsVisible(previous)
       setVisibilityError('Failed to update visibility. Please try again.')
@@ -369,9 +371,8 @@ export function ManagePetsPage() {
           pet={editPet}
           onClose={() => setEditPet(null)}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
-            queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-            queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
+            invalidateBrowse(queryClient)
             setEditPet(null)
           }}
         />

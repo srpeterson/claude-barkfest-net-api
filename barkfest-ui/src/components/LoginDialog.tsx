@@ -3,6 +3,7 @@ import { Eye, EyeOff, Loader2, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { adminLogin, getOwnerById, login, setAuthToken } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
+import { LIMITS } from '@/config/constraints'
 
 export function LoginDialog() {
   const { dialog } = useAuth()
@@ -86,7 +87,7 @@ function LoginDialogInner() {
               placeholder="Your username"
               required
               autoFocus
-              maxLength={25}
+              maxLength={LIMITS.username}
               className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 placeholder:text-muted-foreground"
             />
           </div>
@@ -102,7 +103,7 @@ function LoginDialogInner() {
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
-                maxLength={50}
+                maxLength={LIMITS.passwordMax}
                 className="w-full h-11 rounded-xl border border-input bg-background px-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
               <button

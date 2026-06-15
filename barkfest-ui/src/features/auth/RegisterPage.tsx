@@ -2,16 +2,13 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { Link, useNavigate } from 'react-router-dom'
 import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 import zxcvbn from 'zxcvbn'
-import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { checkDisplayName, checkUsername, login, register } from '@/lib/api'
 import { BarkfestMark } from '@/components/BarkfestMark'
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const STRENGTH_LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong']
-const STRENGTH_BG     = ['bg-[#e5484d]', 'bg-[#f76b15]', 'bg-[#d4a017]', 'bg-accent', 'bg-accent']
-const STRENGTH_TEXT   = ['text-[#e5484d]', 'text-[#f76b15]', 'text-[#d4a017]', 'text-accent', 'text-accent']
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter'
+import { inputBaseCls } from '@/lib/formStyles'
+import { isValidEmail } from '@/lib/email'
+import { LIMITS } from '@/config/constraints'
 
 const PET_IMAGES = [
   'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=120&h=120&fit=crop&auto=format',
@@ -21,12 +18,7 @@ const PET_IMAGES = [
   'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=120&h=120&fit=crop&auto=format',
 ]
 
-const inputCls = [
-  'w-full h-[46px] rounded-xl border-[1.5px] border-border',
-  'bg-card text-foreground px-3.5 text-sm',
-  'outline-none box-border transition',
-  'focus:border-primary focus:ring-2 focus:ring-primary/30',
-].join(' ')
+const inputCls = `${inputBaseCls} h-[46px] bg-card px-3.5`
 
 type UnStatus = 'idle' | 'checking' | 'available' | 'taken'
 type DnStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -58,7 +50,7 @@ export function RegisterPage() {
   const debounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const strength   = zxcvbn(form.password)
-  const emailBad   = form.email.trim() !== '' && !EMAIL_REGEX.test(form.email.trim())
+  const emailBad   = form.email.trim() !== '' && !isValidEmail(form.email)
   const unTooShort = form.username.trim().length > 0 && form.username.trim().length < 5
   const dnStripped = form.displayName.replace(/\s/g, '')
   const dnTooShort = dnStripped.length > 0 && dnStripped.length < 4
@@ -120,7 +112,7 @@ export function RegisterPage() {
 
   useEffect(() => { checkDN(form.displayName) }, [form.displayName, checkDN])
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit) return
     setError(null)
@@ -247,7 +239,7 @@ export function RegisterPage() {
                 </label>
                 <input
                   id="r-fn" name="firstName" type="text"
-                  autoComplete="given-name" maxLength={50} autoFocus
+                  autoComplete="given-name" maxLength={LIMITS.firstName} autoFocus
                   placeholder="Jane"
                   value={form.firstName} onChange={handleChange}
                   className={inputCls}
@@ -259,7 +251,7 @@ export function RegisterPage() {
                 </label>
                 <input
                   id="r-ln" name="lastName" type="text"
-                  autoComplete="family-name" maxLength={100}
+                  autoComplete="family-name" maxLength={LIMITS.lastName}
                   placeholder="Doe"
                   value={form.lastName} onChange={handleChange}
                   className={inputCls}
@@ -274,7 +266,7 @@ export function RegisterPage() {
               </label>
               <input
                 id="r-em" name="email" type="email"
-                autoComplete="email" maxLength={75}
+                autoComplete="email" maxLength={LIMITS.email}
                 placeholder="you@example.com"
                 value={form.email} onChange={handleChange}
                 className={inputCls}
@@ -289,7 +281,7 @@ export function RegisterPage() {
               </label>
               <input
                 id="r-un" name="username" type="text"
-                autoComplete="username" maxLength={25}
+                autoComplete="username" maxLength={LIMITS.username}
                 placeholder="Pick a username"
                 value={form.username} onChange={handleChange}
                 className={inputCls}
@@ -321,7 +313,7 @@ export function RegisterPage() {
               </p>
               <input
                 id="r-dn" name="displayName" type="text"
-                autoComplete="nickname" maxLength={25}
+                autoComplete="nickname" maxLength={LIMITS.displayName}
                 placeholder="e.g. Cool Pet Dad"
                 value={form.displayName} onChange={handleChange}
                 className={inputCls}
@@ -352,7 +344,7 @@ export function RegisterPage() {
                 <input
                   id="r-pw" name="password"
                   type={showPw ? 'text' : 'password'}
-                  autoComplete="new-password" minLength={8} maxLength={72}
+                  autoComplete="new-password" minLength={LIMITS.passwordMin} maxLength={LIMITS.passwordMax}
                   value={form.password} onChange={handleChange}
                   className={inputCls + ' pr-11'}
                 />
@@ -365,24 +357,7 @@ export function RegisterPage() {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {form.password && (
-                <div className="mt-2">
-                  <div className="flex gap-1 mb-[3px]">
-                    {[0, 1, 2, 3].map(i => (
-                      <div
-                        key={i}
-                        className={cn(
-                          'flex-1 h-[3px] rounded-sm transition-colors',
-                          i < strength.score ? STRENGTH_BG[strength.score] : 'bg-border'
-                        )}
-                      />
-                    ))}
-                  </div>
-                  <p className={cn('text-[11px] font-semibold m-0', STRENGTH_TEXT[strength.score])}>
-                    {STRENGTH_LABELS[strength.score]}
-                  </p>
-                </div>
-              )}
+              {form.password && <PasswordStrengthMeter score={strength.score} />}
               {pwWeak && (
                 <p className="text-xs text-destructive mt-1">Try a longer or less predictable password.</p>
               )}
@@ -397,7 +372,7 @@ export function RegisterPage() {
                 <input
                   id="r-cpw" name="confirmPassword"
                   type={showPw ? 'text' : 'password'}
-                  autoComplete="new-password" maxLength={72}
+                  autoComplete="new-password" maxLength={LIMITS.passwordMax}
                   value={form.confirmPassword} onChange={handleChange}
                   className={inputCls + ' pr-11'}
                 />
@@ -442,13 +417,6 @@ export function RegisterPage() {
           </form>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 680px) {
-          .brand-panel { display: none !important; }
-          .mobile-auth-header { display: flex !important; }
-        }
-      `}</style>
     </div>
   )
 }

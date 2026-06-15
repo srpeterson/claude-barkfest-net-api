@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 import { deletePet, getOwnerById, getPetDetail, likePet, unlikePet } from '@/lib/api'
 import type { PetDto } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { invalidateBrowse } from '@/lib/browseCache'
+import { queryKeys } from '@/lib/queryKeys'
 import { formatAge } from '@/lib/formatAge'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/Navbar'
@@ -33,7 +35,7 @@ export function PetDetailPage() {
   const [isDeleting, setIsDeleting]       = useState(false)
 
   const { data: pet, isLoading, isError } = useQuery({
-    queryKey: ['pet', petId],
+    queryKey: queryKeys.pet(petId!),
     queryFn: () => getPetDetail(petId!),
     enabled: !!petId,
     retry: false,
@@ -41,13 +43,12 @@ export function PetDetailPage() {
 
   useEffect(() => {
     if (isError) {
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      invalidateBrowse(queryClient)
     }
   }, [isError, queryClient])
 
   const { data: owner } = useQuery({
-    queryKey: ['owner', pet?.ownerId],
+    queryKey: queryKeys.owner(pet?.ownerId as string),
     queryFn: () => getOwnerById(pet!.ownerId),
     enabled: !!pet?.ownerId && isAuthenticated,
   })
@@ -91,11 +92,10 @@ export function PetDetailPage() {
     try {
       if (next) await likePet(pet.petId)
       else await unlikePet(pet.petId)
-      queryClient.setQueryData<PetDto>(['pet', petId], old =>
+      queryClient.setQueryData<PetDto>(queryKeys.pet(petId!), old =>
         old ? { ...old, likes: newCount } : old
       )
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+      invalidateBrowse(queryClient)
     } catch {
       setLiked(!next)
       setLikeCount(prev)
@@ -107,9 +107,8 @@ export function PetDetailPage() {
     setIsDeleting(true)
     try {
       await deletePet(pet.petId)
-      queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-      queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
-      queryClient.invalidateQueries({ queryKey: ['owner', 'pets', accountId] })
+      invalidateBrowse(queryClient)
+      queryClient.invalidateQueries({ queryKey: queryKeys.ownerPets(accountId!) })
       navigate('/')
     } catch {
       setIsDeleting(false)
@@ -437,9 +436,8 @@ export function PetDetailPage() {
           pet={pet}
           onClose={() => setEditOpen(false)}
           onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['pet', petId] })
-            queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
-            queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.pet(petId!) })
+            invalidateBrowse(queryClient)
             setEditOpen(false)
           }}
         />
@@ -472,17 +470,6 @@ export function PetDetailPage() {
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes kenburns {
-          0%   { transform: scale(1.16) translate(0, 0); }
-          100% { transform: scale(1.34) translate(-2.5%, -2%); }
-        }
-        @media (prefers-reduced-motion: no-preference) {
-          .kenburns { animation: kenburns 14s ease-in-out infinite alternate; }
-        }
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
     </div>
   )
 }

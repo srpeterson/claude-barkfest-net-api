@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getBrowseImages } from '@/lib/api'
 import { getBlobImageUrl } from '@/lib/imageUrl'
+import { queryKeys } from '@/lib/queryKeys'
 
 const STRIP_SIZE = 5
 
@@ -11,7 +12,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ petTypeValue, breedValue }: HeroSectionProps) {
   const { data } = useQuery({
-    queryKey: ['browse', 'hero-strip', petTypeValue, breedValue],
+    queryKey: queryKeys.browseHeroStripList(petTypeValue, breedValue),
     queryFn: () => getBrowseImages({
       page: 1,
       pageSize: STRIP_SIZE,
