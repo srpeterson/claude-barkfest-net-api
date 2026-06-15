@@ -15,4 +15,5 @@ public record BrowseImageDto(
     string PetType,
     string? Breed,
     int Likes,
-    Guid OwnerId);
+    Guid OwnerId,
+    string? OwnerProfileImageBlobName = null);

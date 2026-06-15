@@ -203,6 +203,7 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
       })
 
       // 2. Handle profile image changes
+      let profileImageChanged = false
       if (newImageFile) {
         await uploadOwnerProfileImage(accountId, newImageFile)
         // Re-fetch to get the server-assigned blob name
@@ -210,16 +211,24 @@ export function UpdateOwnerProfileDialog({ onClose }: UpdateOwnerProfileDialogPr
         const newBlobName = updated.profileImage?.blobName ?? null
         setProfileImage(newBlobName)
         queryClient.setQueryData(['owner', accountId, 'profile-image'], newBlobName)
+        profileImageChanged = true
       } else if (imageCleared && existingBlobName) {
         await removeOwnerProfileImage(accountId)
         setProfileImage(null)
         queryClient.setQueryData(['owner', accountId, 'profile-image'], null)
+        profileImageChanged = true
       }
       // No image change — context unchanged
 
-      // Only invalidate browse cache if the display name changed — it's the
-      // only owner field visible on pet tiles.
-      if (displayNameChanged) {
+      // Invalidate the full owner object so every view that reads it (e.g. the
+      // attribution icon on the Pet Details page, keyed ['owner', ownerId])
+      // picks up the new profile image and details. The navbar avatar updates
+      // via its own ['owner', accountId, 'profile-image'] override above.
+      queryClient.invalidateQueries({ queryKey: ['owner', accountId] })
+
+      // Invalidate browse cache when a field visible on pet tiles changed — the
+      // display name and the owner's profile image (shown next to the name).
+      if (displayNameChanged || profileImageChanged) {
         queryClient.invalidateQueries({ queryKey: ['browse', 'images'] })
         queryClient.invalidateQueries({ queryKey: ['browse', 'hero-strip'] })
       }

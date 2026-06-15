@@ -64,5 +64,6 @@ public class BrowseRepository(AppDbContext context) : IBrowseRepository
         pi.Pet.PetType.Name,
         pi.Pet.BreedName,
         pi.Pet.Likes,
-        pi.Pet.OwnerId);
+        pi.Pet.OwnerId,
+        pi.Pet.Owner.ProfileImage?.BlobName);
 }
