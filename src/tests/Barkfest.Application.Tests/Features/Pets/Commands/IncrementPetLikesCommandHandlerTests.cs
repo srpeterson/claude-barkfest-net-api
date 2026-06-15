@@ -31,7 +31,7 @@ public class IncrementPetLikesCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         _petRepository.IncrementLikesAsync(petId, CancellationToken.None)

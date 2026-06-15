@@ -1,10 +1,14 @@
-using Barkfest.Application.Common.Exceptions;
 using Barkfest.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Barkfest.API.Middleware;
 
+// Backstop only. Expected failures (not found, forbidden, validation, domain-rule
+// violations) flow through the Result railway and are translated by ResultExtensions.
+// This middleware handles what the railway does not: a DomainException that escapes the
+// DomainResult.Try bridge, ValidationException from the behavior's legacy (non-Result)
+// path, and any otherwise-unhandled exception (500).
 public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
@@ -12,16 +16,6 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         try
         {
             await next(context);
-        }
-        catch (NotFoundException ex)
-        {
-            logger.LogWarning(ex, "Resource not found");
-            await WriteProblem(context, StatusCodes.Status404NotFound, "Not Found", ex.Message);
-        }
-        catch (ForbiddenException ex)
-        {
-            logger.LogWarning(ex, "Forbidden access attempt");
-            await WriteProblem(context, StatusCodes.Status403Forbidden, "Forbidden", ex.Message);
         }
         catch (DomainException ex)
         {

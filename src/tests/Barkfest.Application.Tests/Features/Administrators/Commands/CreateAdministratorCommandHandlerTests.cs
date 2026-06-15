@@ -41,7 +41,7 @@ public class CreateAdministratorCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotAdmin_Returns_ForbiddenError()
     {
         // IsAdmin returns false by default (NSubstitute default for bool)
 

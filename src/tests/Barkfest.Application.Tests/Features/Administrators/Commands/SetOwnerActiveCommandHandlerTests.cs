@@ -38,7 +38,7 @@ public class SetOwnerActiveCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotAdmin_Returns_ForbiddenError()
     {
         var ownerId = Guid.NewGuid();
         // IsAdmin returns false by default (NSubstitute default for bool)

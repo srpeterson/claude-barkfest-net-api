@@ -39,7 +39,7 @@ public class UpdateAdministratorPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotAdmin_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotAdmin_Returns_ForbiddenError()
     {
         var result = await _updateAdministratorPasswordCommandHandler.Handle(
             new UpdateAdministratorPasswordCommand(Guid.NewGuid(), "newpassword"), CancellationToken.None);

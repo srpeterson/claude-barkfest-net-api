@@ -39,7 +39,7 @@ public class DeleteAdministratorCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_AdminDeletesSelf_Throws_ForbiddenException()
+    public async Task Handle_When_AdminDeletesSelf_Returns_ForbiddenError()
     {
         var adminId = Guid.NewGuid();
         _currentUserService.IsAdmin.Returns(true);

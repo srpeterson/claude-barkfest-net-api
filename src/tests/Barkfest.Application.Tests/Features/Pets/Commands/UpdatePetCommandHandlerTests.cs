@@ -43,7 +43,7 @@ public class UpdatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         _petRepository.GetByIdAsync(petId, CancellationToken.None).Returns((Pet?)null);
@@ -57,7 +57,7 @@ public class UpdatePetCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetBelongsToAnotherOwner_Throws_ForbiddenException()
+    public async Task Handle_When_PetBelongsToAnotherOwner_Returns_ForbiddenError()
     {
         var petId = Guid.NewGuid();
         var pet = new PetBuilder().Build();

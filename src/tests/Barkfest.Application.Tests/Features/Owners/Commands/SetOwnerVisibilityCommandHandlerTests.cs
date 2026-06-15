@@ -37,7 +37,7 @@ public class SetOwnerVisibilityCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotOwner_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotOwner_Returns_ForbiddenError()
     {
         var owner = new OwnerBuilder().Build();
         _ownerRepository.GetByIdAsync(owner.Id, CancellationToken.None).Returns(owner);
@@ -51,7 +51,7 @@ public class SetOwnerVisibilityCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);

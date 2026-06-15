@@ -38,7 +38,7 @@ public class UpdateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _ownerRepository.GetByIdAsync(ownerId, CancellationToken.None).Returns((Owner?)null);
@@ -52,7 +52,7 @@ public class UpdateOwnerCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerIsNotCurrentUser_Throws_ForbiddenException()
+    public async Task Handle_When_OwnerIsNotCurrentUser_Returns_ForbiddenError()
     {
         var ownerId = Guid.NewGuid();
         var owner = new OwnerBuilder().Build();

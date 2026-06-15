@@ -39,7 +39,7 @@ public class ChangeOwnerPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CallerIsNotOwner_Throws_ForbiddenException()
+    public async Task Handle_When_CallerIsNotOwner_Returns_ForbiddenError()
     {
         var ownerId = Guid.NewGuid();
         _currentUserService.OwnerId.Returns((Guid?)Guid.NewGuid());
@@ -53,7 +53,7 @@ public class ChangeOwnerPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_OwnerNotFound_Throws_NotFoundException()
+    public async Task Handle_When_OwnerNotFound_Returns_NotFoundError()
     {
         var ownerId = Guid.NewGuid();
         _currentUserService.OwnerId.Returns((Guid?)ownerId);
@@ -68,7 +68,7 @@ public class ChangeOwnerPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_CurrentPasswordIsWrong_Throws_ForbiddenException()
+    public async Task Handle_When_CurrentPasswordIsWrong_Returns_ForbiddenError()
     {
         var owner = new OwnerBuilder().Build();
         _currentUserService.OwnerId.Returns((Guid?)owner.Id);

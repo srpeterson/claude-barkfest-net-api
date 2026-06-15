@@ -101,8 +101,14 @@ Note: orphan-blob sweeper remains a separate future task (compensation is best-e
 - [x] Administrators: CreateAdministrator, DeleteAdministrator, UpdateAdministratorPassword, SetOwnerActive,
       GetAllAdministrators → Result. Admin gate / self-delete → ForbiddenError; duplicates → DomainRuleError.
       Params `id`/`Id` → `administratorId`/`AdministratorId` (owner-active route → `ownerId`).
-- [ ] Browse queries
-- [ ] Remove dead arms of `ExceptionHandlingMiddleware` (leave only the 500 handler)
+- [x] Browse queries: **no change** — `GetBrowseImages`, `GetBrowseBreeds`, `GetBrowsePetTypes` are infallible
+      (invalid input yields an empty result, never an error), so they stay plain returns.
+- [x] Middleware: removed the dead `NotFoundError`/`ForbiddenError` arms (zero throw sites remain) and
+      **deleted** the now-unused `NotFoundException` and `ForbiddenException` classes. Kept the
+      `DomainException` arm (backstop for any escape past `DomainResult.Try`), the `ValidationException` arm
+      (behavior's legacy non-Result path), and the 500 catch-all.
+- [x] Test-naming cleanup: renamed 16 handler-test methods `..._Throws_{NotFound,Forbidden}Exception` →
+      `..._Returns_{NotFound,Forbidden}Error` to match the new return-based behavior (CLAUDE.md convention).
 
 Note: `CreateOwnerCommand` was dead code (unwired — no controller route; used `new Owner()` instead of
 the `Owner.Create()` factory; never set username/password) and has been **deleted** (command, validator,

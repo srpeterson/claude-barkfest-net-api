@@ -45,7 +45,7 @@ public class DecrementPetLikesCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_When_PetNotFound_Throws_NotFoundException()
+    public async Task Handle_When_PetNotFound_Returns_NotFoundError()
     {
         var petId = Guid.NewGuid();
         _petRepository.DecrementLikesAsync(petId, CancellationToken.None)
