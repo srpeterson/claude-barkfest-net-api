@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Eye, Loader2, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -97,9 +97,13 @@ export function ManagePetsPage() {
 
   const pets = rawPets.slice().sort((a, b) => a.name.localeCompare(b.name))
 
-  if (selectAllRef.current) {
-    selectAllRef.current.indeterminate = selected.size > 0 && selected.size < pets.length
-  }
+  // Drive the select-all checkbox's indeterminate state after render —
+  // mutating the DOM node during render is a side effect React forbids.
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selected.size > 0 && selected.size < pets.length
+    }
+  }, [selected, pets.length])
 
   const allSelected = pets.length > 0 && selected.size === pets.length
 
