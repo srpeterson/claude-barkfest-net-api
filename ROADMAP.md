@@ -435,6 +435,28 @@ When user feedback indicates the 8-hour timeout is disruptive, or before the app
 
 ---
 
+## Result Railway — Remaining Follow-ups
+
+**Priority:** Low
+
+**Status:** Core migration complete (branch `enhancement/code-refactor`) — error handling moved from exceptions to `Result<T, Error>` (CSharpFunctionalExtensions) across all fallible handlers. The items below were deliberately deferred.
+
+### Context (done)
+All fallible handlers return `Result<T, Error>`; a closed `Error` DU lives in `Barkfest.Domain/Errors`; `DomainResult.Try` bridges the still-throwing domain (Depth A); `ResultExtensions` translates results to HTTP; `ValidationBehavior` is dual-mode; `ExceptionHandlingMiddleware` is now a backstop. See CLAUDE.md → **Error Handling**. Infallible queries (`GetAllPetsQuery`, `CheckUsernameQuery`, `CheckDisplayNameQuery`, Browse) intentionally stay plain (don't wrap what can't fail).
+
+### Deferred follow-ups
+
+**1. Depth B — exception-free domain (optional purity upgrade)**
+Convert entity smart constructors / setters (`Owner.Create`, `SetEmail`, etc.) from throwing `DomainException` to returning `Result`, then delete `DomainResult.Try` and `DomainException`. This makes the domain functionally pure end-to-end (the *Domain Modeling Made Functional* end-state). High churn — every setter signature plus the ~193 domain tests — but localized, because `DomainResult.Try` is the only coupling. Tackle as a dedicated effort only if the "exception-free domain" story is explicitly wanted; Depth A already captured all the robustness/performance value.
+
+**2. Orphan-blob sweeper (robustness backstop for the #6 ordering fix)**
+The blob/DB ordering fix fails toward orphaned (reclaimable) blobs and uses best-effort compensation, which can still leak a blob if the process dies mid-operation. Add a periodic reconciliation job: list blobs under `pets/{petId}/` and `owners/{ownerId}/`, compare against DB `BlobName`s, and delete unreferenced blobs older than a grace window. Safe by construction — the railway guarantees blobs are only ever *extra*, never *missing*.
+
+**3. Optional `ConflictError` (409) for uniqueness violations**
+Duplicate username/email currently surface as `DomainRuleError` → 400 (behavior-preserving). If 409 is preferred, add a `ConflictError` case to the `Error` DU, map it in `ResultExtensions` (+ its exhaustiveness test), and switch the duplicate checks in Register / UpdateOwner / CreateAdministrator. This is a deliberate external behavior change, hence deferred.
+
+---
+
 ## UI Component Tests — React Testing Library Setup
 
 **Priority:** Low
