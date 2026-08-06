@@ -35,7 +35,7 @@ public class CreateAdministratorCommandHandlerTests
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldNotBe(Guid.Empty);
         await _administratorRepository.Received(1).AddAsync(
-            Arg.Is<Administrator>(a => a.Username == "newadmin" && a.Name == "New Admin" && a.Email == "new@barkfest.dev"),
+            Arg.Is<Administrator>(a => a!.Username == "newadmin" && a.Name == "New Admin" && a.Email == "new@barkfest.dev"),
             CancellationToken.None);
         await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
     }

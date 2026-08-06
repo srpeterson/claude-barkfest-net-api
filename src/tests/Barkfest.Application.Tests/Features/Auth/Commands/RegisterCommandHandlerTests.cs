@@ -47,7 +47,7 @@ public class RegisterCommandHandlerTests
 
         _passwordHasher.Received(1).Hash("mypassword");
         await _ownerRepository.Received(1).AddAsync(
-            Arg.Is<Owner>(o => o.Username == "aliceadams" && o.Email == "alice@example.com"),
+            Arg.Is<Owner>(o => o!.Username == "aliceadams" && o.Email == "alice@example.com"),
             CancellationToken.None);
         await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
     }

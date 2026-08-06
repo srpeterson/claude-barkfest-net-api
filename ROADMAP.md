@@ -539,7 +539,7 @@ or connect directly to the database. A password-protected Scalar avoids both.
 
 **Priority:** Low
 
-**Status:** Blocked — pinned to 2.7.4 (latest 2.x)
+**Status:** Blocked — pinned to latest 2.x (2.11.0)
 
 ### What
 Upgrade `Microsoft.OpenApi` from 2.x to 3.x once `Microsoft.AspNetCore.OpenApi`
@@ -550,9 +550,49 @@ ships a compatible version.
 `Microsoft.AspNetCore.OpenApi` source generator (version 10.0.8) assigns to that
 property in auto-generated code (`OpenApiXmlCommentSupport.generated.cs`), causing
 a `CS0200` build error. A warning comment is in `Directory.Packages.props`.
+`Microsoft.OpenApi` 2.7.4 also carried a high-severity vulnerability
+(GHSA-v5pm-xwqc-g5wc / CVE-2026-49451, stack overflow on circular schema
+references); that's patched within the 2.x line starting at 2.7.5, so we moved
+to 2.11.0 (latest 2.x) to close the CVE without needing the blocked 3.x major.
 
 ### When to revisit
-Check when a new `Microsoft.AspNetCore.OpenApi` release notes mention compatibility with `Microsoft.OpenApi` 3.x. The most reliable signal is watching the GitHub issue tracker for `dotnet/aspnetcore` rather than checking release notes periodically. Once confirmed, remove the pin in `Directory.Packages.props` and run `dotnet build` + `dotnet test` to verify.
+[dotnet/aspnetcore#67505](https://github.com/dotnet/aspnetcore/issues/67505)
+confirms ASP.NET Core 11's `Microsoft.AspNetCore.OpenApi` will take a direct
+dependency on `Microsoft.OpenApi` 3.x — that's the fix, not a future 10.x
+patch. Track [dotnet/aspnetcore#64317](https://github.com/dotnet/aspnetcore/issues/64317)
+for confirmation it's resolved, then remove the pin in `Directory.Packages.props`
+and run `dotnet build` + `dotnet test` to verify.
+
+---
+
+## Upgrade MessagePack to 3.x
+
+**Priority:** Low
+
+**Status:** Blocked — pinned to latest 2.x (2.5.302)
+
+### What
+Upgrade `MessagePack` (referenced directly in `Barkfest.AppHost.csproj`) from
+2.x to 3.x.
+
+### Why blocked
+`MessagePack` isn't used directly by any Barkfest code — it's a transitive
+floor required by `StreamJsonRpc` (pulled in by `Aspire.Hosting.SqlServer`),
+which uses MessagePack internally for the AppHost↔Dashboard resource-reporting
+RPC channel. `StreamJsonRpc`'s nuspec declares `MessagePack >= 2.5.302` with no
+upper bound, and that dependency was authored before MessagePack 3.0 existed.
+NuGet happily resolves 3.x against that floor, and it compiles cleanly, but
+MessagePack 3.0 is a breaking major release (source-gen-first formatter
+model) — `StreamJsonRpc` 2.25.29 was compiled against the 2.x API surface, so
+compatibility isn't guaranteed at runtime even though nothing catches it at
+build time.
+
+### When to revisit
+Move this only when a future `Aspire.Hosting.SqlServer` release bumps its own
+`StreamJsonRpc`/`MessagePack` floor to 3.x — don't upgrade it independently.
+After an Aspire bump, run `dotnet run --project src/Barkfest.AppHost` and
+confirm the dashboard's Resources tab actually populates (not just that the
+build succeeds).
 
 ---
 

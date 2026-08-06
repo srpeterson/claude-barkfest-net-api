@@ -34,7 +34,7 @@ public class UpdatePetCommandHandlerTests
 
         await _petRepository.Received(1).UpdateAsync(
             Arg.Is<Pet>(p =>
-                p.Name == "Luna" &&
+                p!.Name == "Luna" &&
                 p.Description == "Updated desc" &&
                 p.PetType == PetType.Cat &&
                 p.BreedValue == CatBreed.Siamese.Value),

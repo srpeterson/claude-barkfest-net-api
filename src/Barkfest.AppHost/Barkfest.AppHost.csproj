@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.4.3">
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,11 +10,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.4.3" />
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.4.3" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.3" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.4.6" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.4.6" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.6" />
     <PackageReference Include="Azure.ResourceManager" Version="1.14.0" />
-    <PackageReference Include="MessagePack" Version="2.5.301" />
+    <!--
+      DO NOT upgrade MessagePack to 3.x. Not used directly by Barkfest code - it's a
+      transitive floor required by StreamJsonRpc (via Aspire.Hosting.SqlServer), which
+      uses it for the AppHost<->Dashboard resource-reporting RPC channel. StreamJsonRpc's
+      nuspec declares "MessagePack >= 2.5.302" with no upper bound, predating MessagePack
+      3.0. NuGet resolves 3.x against that floor and it compiles, but MessagePack 3.0 is a
+      breaking major release and StreamJsonRpc 2.25.29 was built against the 2.x API -
+      compatibility is not guaranteed at runtime even though the build succeeds. See
+      ROADMAP.md "Upgrade MessagePack to 3.x" for the full writeup and revisit criteria.
+    -->
+    <PackageReference Include="MessagePack" Version="2.5.302" />
   </ItemGroup>
 
   <ItemGroup>
