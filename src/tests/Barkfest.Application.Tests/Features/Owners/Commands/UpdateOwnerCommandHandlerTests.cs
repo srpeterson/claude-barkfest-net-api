@@ -32,7 +32,7 @@ public class UpdateOwnerCommandHandlerTests
         await _updateOwnerCommandHandler.Handle(command, CancellationToken.None);
 
         await _ownerRepository.Received(1).UpdateAsync(
-            Arg.Is<Owner>(o => o.FirstName == "Updated" && o.Email == "updated@example.com"),
+            Arg.Is<Owner>(o => o!.FirstName == "Updated" && o.Email == "updated@example.com"),
             CancellationToken.None);
         await _unitOfWork.Received(1).SaveChangesAsync(CancellationToken.None);
     }

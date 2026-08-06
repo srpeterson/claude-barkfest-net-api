@@ -56,7 +56,7 @@ public class UploadOwnerProfileImageCommandHandlerTests
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _blobStorageService.Received(1).UploadAsync(
             "owner-profile-images",
-            Arg.Is<string>(b => b.StartsWith($"owners/{ownerId}/")),
+            Arg.Is<string>(b => b!.StartsWith($"owners/{ownerId}/")),
             content,
             "image/jpeg",
             CancellationToken.None);
@@ -81,7 +81,7 @@ public class UploadOwnerProfileImageCommandHandlerTests
             "owner-profile-images", "owners/old/blob.jpg", CancellationToken.None);
         await _blobStorageService.Received(1).UploadAsync(
             "owner-profile-images",
-            Arg.Is<string>(b => b.StartsWith($"owners/{ownerId}/")),
+            Arg.Is<string>(b => b!.StartsWith($"owners/{ownerId}/")),
             content,
             "image/jpeg",
             CancellationToken.None);

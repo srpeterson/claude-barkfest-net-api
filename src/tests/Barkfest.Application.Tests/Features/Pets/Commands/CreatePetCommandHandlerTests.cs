@@ -50,7 +50,7 @@ public class CreatePetCommandHandlerTests
 
         await _petRepository.Received(1).AddAsync(
             Arg.Is<Pet>(p =>
-                p.Name == "Max" &&
+                p!.Name == "Max" &&
                 p.Description == "A good boy" &&
                 p.DateOfBirth == dob &&
                 p.OwnerId == owner.Id),
