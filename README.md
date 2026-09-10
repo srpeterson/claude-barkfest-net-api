@@ -49,17 +49,17 @@ The frontend is a React + TypeScript app built with Vite, located in the `barkfe
 
   **Step 2 — Install the repo's pinned version:**
 
-  The repo includes a `.config/dotnet-tools.json` manifest that pins the exact version required. Run this once from the **repo root**:
+  The repo includes a `dotnet-tools.json` manifest at the repo root that pins the exact version required. Run this once from the **repo root**:
   ```bash
   dotnet tool restore
   ```
-  This installs `dotnet ef 10.0.8` locally, scoped to this repo only. It will not affect any other projects on your machine.
+  This installs `dotnet ef 10.0.12` locally, scoped to this repo only. It will not affect any other projects on your machine.
 
   **Step 3 — Verify:**
   ```bash
   dotnet ef --version
   ```
-  You should see `10.0.8`. If `dotnet ef` is still not recognised, make sure `~/.dotnet/tools` is on your `PATH`.
+  You should see `10.0.12`. If `dotnet ef` is still not recognised, make sure `~/.dotnet/tools` is on your `PATH`.
 
   > **Will this affect other projects using an older version of `dotnet ef`?**
   > No. `dotnet tool restore` installs the tool locally inside this repo — it is completely isolated from any global install and from other projects. Each project manages its own local tool versions independently.
