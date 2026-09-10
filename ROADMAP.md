@@ -482,6 +482,26 @@ Duplicate username/email currently surface as `DomainRuleError` → 400 (behavio
 
 ---
 
+## Upgrade TypeScript to 7.x (native Go compiler / tsgo)
+
+**Priority:** Low
+
+**Status:** Blocked — pinned to `~6.0.3`
+
+### What
+Upgrade `typescript` in `barkfest-ui` from 6.0.3 to the 7.x line.
+
+### Why blocked
+TypeScript 7 is not an incremental release of the classic compiler — it's a full reimplementation in Go (`microsoft/typescript-go`, the `tsgo` binary), published under the same `typescript` npm package starting at 7.0.0. Two concrete blockers found by actually installing 7.0.2 in this repo:
+
+1. **`typescript-eslint` doesn't support it.** `typescript-eslint@8.70.0`'s own peer dependency range is `typescript: '>=4.8.4 <6.1.0'` — it explicitly excludes TS 7. The project's ESLint type-aware linting depends on `typescript-eslint`, and upstream has stated a stable programmatic Compiler API (needed for tools like `typescript-eslint`, `ts-morph`, custom transformers) isn't landing until TypeScript 7.1.
+2. **`tsconfig.app.json` uses a removed option.** TS 7 removed `baseUrl` entirely (`TS5102: Option 'baseUrl' has been removed`). This project's `@/*` path alias is configured via `baseUrl` + `paths` together — migrating requires rewriting to a `paths`-only form (e.g. `"paths": {"@/*": ["./src/*"]}` without `baseUrl`, or an equivalent Vite-relative form) and reverifying every aliased import still resolves.
+
+### When to revisit
+Once `typescript-eslint` ships a release supporting TS 7 (tracks the TypeScript team shipping a stable Compiler API in 7.1+). At that point: bump `typescript`, migrate `tsconfig.app.json`/`tsconfig.node.json` off `baseUrl`, run `pnpm build` + `pnpm lint` + `pnpm test`, and manually smoke-test path-aliased imports since `tsc -b`'s own module resolution behavior under `tsgo` hasn't been reviewed here yet either.
+
+---
+
 ## UI Component Tests — React Testing Library Setup
 
 **Priority:** Low
