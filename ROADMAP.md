@@ -500,6 +500,8 @@ TypeScript 7 is not an incremental release of the classic compiler — it's a fu
 ### When to revisit
 Once `typescript-eslint` ships a release supporting TS 7 (tracks the TypeScript team shipping a stable Compiler API in 7.1+). At that point: bump `typescript`, migrate `tsconfig.app.json`/`tsconfig.node.json` off `baseUrl`, run `pnpm build` + `pnpm lint` + `pnpm test`, and manually smoke-test path-aliased imports since `tsc -b`'s own module resolution behavior under `tsgo` hasn't been reviewed here yet either.
 
+Investigated as part of the npm dependency update in [#32](https://github.com/srpeterson/claude-barkfest-net-api/pull/32) — every other npm major/minor in that pass (`@types/node` 26, `vitest`/`@vitest/ui` 5, `jsdom` 30, `react-dropzone` 20) shipped successfully; this was the one held back.
+
 ---
 
 ## UI Component Tests — React Testing Library Setup
@@ -584,6 +586,10 @@ patch. Track [dotnet/aspnetcore#64317](https://github.com/dotnet/aspnetcore/issu
 for confirmation it's resolved, then remove the pin in `Directory.Packages.props`
 and run `dotnet build` + `dotnet test` to verify.
 
+Reconfirmed still blocked, and bumped within the 2.x line (2.11.0 → 2.12.2), as part
+of the NuGet dependency update in [#31](https://github.com/srpeterson/claude-barkfest-net-api/pull/31)
+— that PR also fixed a high-severity transitive SSH.NET CVE via a `Testcontainers` bump.
+
 ---
 
 ## Upgrade MessagePack to 3.x
@@ -617,6 +623,8 @@ build succeeds).
 
 Reconfirmed still blocked as of `Aspire.Hosting.SqlServer` 13.5.3 — its nuspec
 still declares `StreamJsonRpc 2.25.29`, unchanged from when this was first pinned.
+Checked as part of the same NuGet update in [#31](https://github.com/srpeterson/claude-barkfest-net-api/pull/31)
+that bumped `Aspire.Hosting.SqlServer` itself to 13.5.3.
 
 ---
 
