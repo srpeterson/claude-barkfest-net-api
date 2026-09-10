@@ -25,7 +25,7 @@ The frontend is a React + TypeScript app built with Vite, located in the `barkfe
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (Included with Visual Studio 2026)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop) - must be running before starting the app
 - [Git](https://git-scm.com/downloads) (v2.23 or later) - for cloning the repository and version control
-- [Node.js](https://nodejs.org/) (LTS, v20 or later) - required for the frontend (`barkfest-ui`)
+- [Node.js](https://nodejs.org/) (LTS, v22 or later) - required for the frontend (`barkfest-ui`); `@testing-library/jest-dom` requires Node 22+
 
   **Check if Node.js and npm are installed correctly:**
   ```bash

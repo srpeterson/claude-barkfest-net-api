@@ -6,6 +6,13 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "barkfest-ui", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "barkfest-aspire",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Barkfest.AppHost", "--launch-profile", "https"],
+      "port": 17113,
+      "url": "https://localhost:17113"
     }
   ]
 }
