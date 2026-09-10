@@ -539,7 +539,7 @@ or connect directly to the database. A password-protected Scalar avoids both.
 
 **Priority:** Low
 
-**Status:** Blocked — pinned to latest 2.x (2.11.0)
+**Status:** Blocked — pinned to latest 2.x (2.12.2)
 
 ### What
 Upgrade `Microsoft.OpenApi` from 2.x to 3.x once `Microsoft.AspNetCore.OpenApi`
@@ -547,13 +547,14 @@ ships a compatible version.
 
 ### Why blocked
 `Microsoft.OpenApi` 3.0 made `IOpenApiMediaType.Example` read-only. The
-`Microsoft.AspNetCore.OpenApi` source generator (version 10.0.8) assigns to that
-property in auto-generated code (`OpenApiXmlCommentSupport.generated.cs`), causing
-a `CS0200` build error. A warning comment is in `Directory.Packages.props`.
+`Microsoft.AspNetCore.OpenApi` source generator (reconfirmed still true as of
+version 10.0.12, whose nuspec declares `Microsoft.OpenApi [2.12.0, 3.0.0)`) assigns
+to that property in auto-generated code (`OpenApiXmlCommentSupport.generated.cs`),
+causing a `CS0200` build error. A warning comment is in `Directory.Packages.props`.
 `Microsoft.OpenApi` 2.7.4 also carried a high-severity vulnerability
 (GHSA-v5pm-xwqc-g5wc / CVE-2026-49451, stack overflow on circular schema
-references); that's patched within the 2.x line starting at 2.7.5, so we moved
-to 2.11.0 (latest 2.x) to close the CVE without needing the blocked 3.x major.
+references); that's patched within the 2.x line starting at 2.7.5, so we're on
+2.12.2 (latest 2.x) to close the CVE without needing the blocked 3.x major.
 
 ### When to revisit
 [dotnet/aspnetcore#67505](https://github.com/dotnet/aspnetcore/issues/67505)
@@ -593,6 +594,9 @@ Move this only when a future `Aspire.Hosting.SqlServer` release bumps its own
 After an Aspire bump, run `dotnet run --project src/Barkfest.AppHost` and
 confirm the dashboard's Resources tab actually populates (not just that the
 build succeeds).
+
+Reconfirmed still blocked as of `Aspire.Hosting.SqlServer` 13.5.3 — its nuspec
+still declares `StreamJsonRpc 2.25.29`, unchanged from when this was first pinned.
 
 ---
 
