@@ -11,6 +11,7 @@ The frontend is a React + TypeScript app built with Vite, located in the `barkfe
 
 | Document | Purpose |
 |---|---|
+| [CLAUDE.md](CLAUDE.md) | Conventions and rules |
 | [SPEC.md](SPEC.md) | Functional specification - what the application does |
 | [ROADMAP.md](ROADMAP.md) | Feature backlog - what's planned next |
 | [PLAN.md](PLAN.md) | Initial build plan - phases 1–12 (historical record) |
