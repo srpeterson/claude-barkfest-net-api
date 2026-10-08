@@ -201,6 +201,17 @@ configuration injection limitations in .NET 10's minimal hosting model.
 
 Never register services from one layer inside another layer's `DependencyInjection.cs`.
 
+### Configuration (Options pattern)
+
+Bind configuration sections to typed settings classes (`JwtSettings`, `AdminSeedSettings`,
+`CorsSettings`), each with a `SectionName` constant, and consume them via `IOptions<T>`. Never read
+`IConfiguration` / `builder.Configuration["Section:Key"]` directly in services, startup code, or the
+seed. Framework option types (e.g. `JwtBearerOptions`, `CorsOptions`) are configured with
+`AddOptions<T>().Configure<IOptions<TSettings>>(...)` so they read the bound settings lazily.
+Settings that must exist are validated with `.Validate(...).ValidateOnStart()`. The remaining direct
+`IConfiguration` reads are infrastructure plumbing: `ServiceDefaults` (OTEL / App Insights) and the
+connection-string / `AddPersistence` wiring.
+
 ### API Startup Folder
 
 `Barkfest.API/Startup/` contains three static classes that keep `Program.cs` minimal:
