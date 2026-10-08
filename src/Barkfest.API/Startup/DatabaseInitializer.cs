@@ -2,6 +2,7 @@ using Barkfest.Application.Common.Interfaces;
 using Barkfest.Domain.Interfaces;
 using Barkfest.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Barkfest.API.Startup;
 
@@ -17,21 +18,20 @@ public static class DatabaseInitializer
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
 
-        await SeedAdminAsync(scope.ServiceProvider, app.Configuration, app.Logger);
+        await SeedAdminAsync(scope.ServiceProvider, app.Logger);
     }
 
-    private static async Task SeedAdminAsync(IServiceProvider services, IConfiguration configuration, ILogger logger)
+    private static async Task SeedAdminAsync(IServiceProvider services, ILogger logger)
     {
-        var adminUsername = configuration["Admin:Username"];
-        var adminName = configuration["Admin:Name"];
-        var adminEmail = configuration["Admin:Email"];
-        var adminPhoneNumber = configuration["Admin:PhoneNumber"];
-        var adminPassword = configuration["Admin:Password"];
-
-        if (string.IsNullOrWhiteSpace(adminUsername) || string.IsNullOrWhiteSpace(adminName) ||
-            string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPhoneNumber) ||
-            string.IsNullOrWhiteSpace(adminPassword))
+        var settings = services.GetRequiredService<IOptions<AdminSeedSettings>>().Value;
+        if (!settings.IsComplete)
             return;
+
+        var adminUsername = settings.Username!;
+        var adminName = settings.Name!;
+        var adminEmail = settings.Email!;
+        var adminPhoneNumber = settings.PhoneNumber!;
+        var adminPassword = settings.Password!;
 
         var administratorRepository = services.GetRequiredService<IAdministratorRepository>();
         var passwordHasher = services.GetRequiredService<IPasswordHasher>();
