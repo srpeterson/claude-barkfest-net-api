@@ -6,6 +6,8 @@ using Barkfest.Infrastructure;
 using Barkfest.Infrastructure.Security;
 using Barkfest.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -22,19 +24,24 @@ public static class ServiceRegistration
 
         builder.Services.AddControllers();
 
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("BarkfestUI", policy =>
+        builder.Services.Configure<CorsSettings>(
+            builder.Configuration.GetSection(CorsSettings.SectionName));
+
+        builder.Services.AddCors();
+        builder.Services
+            .AddOptions<CorsOptions>()
+            .Configure<IOptions<CorsSettings>>((options, corsSettings) =>
             {
-                policy
-                    .WithOrigins(
-                        builder.Configuration["Cors:AllowedOrigin"] ?? "http://localhost:5173")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials()
-                    .WithExposedHeaders("Location");
+                options.AddPolicy("BarkfestUI", policy =>
+                {
+                    policy
+                        .WithOrigins(corsSettings.Value.AllowedOrigin)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .WithExposedHeaders("Location");
+                });
             });
-        });
 
         builder.Services.AddOpenApi(options =>
         {
@@ -73,7 +80,6 @@ public static class ServiceRegistration
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-        var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
         builder.Services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -81,7 +87,14 @@ public static class ServiceRegistration
                 // Prevent claim names from being remapped to WS-Federation URIs so that
                 // "sub" stays "sub" (not ClaimTypes.NameIdentifier) for CurrentUserService.
                 options.MapInboundClaims = false;
+            });
 
+        // JWT validation parameters come from the same JwtSettings options the token service uses.
+        builder.Services
+            .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IOptions<JwtSettings>>((options, jwtOptions) =>
+            {
+                var jwtSettings = jwtOptions.Value;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -94,6 +107,9 @@ public static class ServiceRegistration
                         Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
                 };
             });
+
+        builder.Services.Configure<AdminSeedSettings>(
+            builder.Configuration.GetSection(AdminSeedSettings.SectionName));
 
         return builder;
     }

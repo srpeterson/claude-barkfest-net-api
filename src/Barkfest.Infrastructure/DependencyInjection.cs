@@ -19,8 +19,10 @@ public static class DependencyInjection
         // TODO: Replace with AzureContentModerationService after Azure AI Content Safety is provisioned.
         builder.Services.AddSingleton<IContentModerationService, NoOpContentModerationService>();
 
-        builder.Services.Configure<JwtSettings>(
-            builder.Configuration.GetSection("Jwt"));
+        builder.Services.AddOptions<JwtSettings>()
+            .Bind(builder.Configuration.GetSection(JwtSettings.SectionName))
+            .Validate(s => !string.IsNullOrWhiteSpace(s.SecretKey), "Jwt:SecretKey must be configured.")
+            .ValidateOnStart();
 
         return builder;
     }
