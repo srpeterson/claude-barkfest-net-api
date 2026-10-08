@@ -93,45 +93,19 @@ public class ValidationBehaviorTests
     }
 
     // -----------------------------------------------------------------------
-    // Validation fails
+    // Non-Result response: cannot carry a validation failure
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task Handle_When_ValidatorFails_Throws_ValidationException()
-    {
-        var (next, _) = MakeNext();
-        var sut = new ValidationBehavior<TestRequest, string>([new TestRequestAlwaysFailValidator()]);
-
-        await Should.ThrowAsync<ValidationException>(
-            () => sut.Handle(new TestRequest(""), next, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task Handle_When_ValidatorFails_DoesNotCall_Next()
+    public async Task Handle_When_ResponseIsNotResultAndValidatorFails_Throws_InvalidOperationException()
     {
         var (next, callCount) = MakeNext();
         var sut = new ValidationBehavior<TestRequest, string>([new TestRequestAlwaysFailValidator()]);
 
-        try { await sut.Handle(new TestRequest(""), next, CancellationToken.None); }
-        catch (ValidationException) { }
-
-        callCount().ShouldBe(0);
-    }
-
-    [Fact]
-    public async Task Handle_When_MultipleValidatorsFail_Throws_ValidationExceptionContainingAllErrors()
-    {
-        var (next, _) = MakeNext();
-        var sut = new ValidationBehavior<TestRequest, string>([
-            new TestRequestAlwaysFailValidator("Error one."),
-            new TestRequestAlwaysFailValidator("Error two.")
-        ]);
-
-        var ex = await Should.ThrowAsync<ValidationException>(
+        await Should.ThrowAsync<InvalidOperationException>(
             () => sut.Handle(new TestRequest(""), next, CancellationToken.None));
 
-        ex.Errors.ShouldContain(e => e.ErrorMessage == "Error one.");
-        ex.Errors.ShouldContain(e => e.ErrorMessage == "Error two.");
+        callCount().ShouldBe(0);
     }
 
     // -----------------------------------------------------------------------

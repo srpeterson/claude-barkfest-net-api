@@ -23,8 +23,8 @@ public class CheckDisplayNameQueryHandlerTests
     {
         _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(true);
 
-        var result = await _checkDisplayNameQueryHandler.Handle(
-            new CheckDisplayNameQuery("Cool Pet Dad"), CancellationToken.None);
+        var result = (await _checkDisplayNameQueryHandler.Handle(
+            new CheckDisplayNameQuery("Cool Pet Dad"), CancellationToken.None)).Value;
 
         result.ShouldBeTrue();
     }
@@ -34,8 +34,8 @@ public class CheckDisplayNameQueryHandlerTests
     {
         _ownerRepository.IsDisplayNameAvailableAsync("coolpetdad", null, CancellationToken.None).Returns(false);
 
-        var result = await _checkDisplayNameQueryHandler.Handle(
-            new CheckDisplayNameQuery("Cool Pet Dad"), CancellationToken.None);
+        var result = (await _checkDisplayNameQueryHandler.Handle(
+            new CheckDisplayNameQuery("Cool Pet Dad"), CancellationToken.None)).Value;
 
         result.ShouldBeFalse();
     }
@@ -69,8 +69,8 @@ public class CheckDisplayNameQueryHandlerTests
     [InlineData("   ")]
     public async Task Handle_When_ValueIsEmptyOrWhitespace_Returns_True_WithoutQueryingRepository(string value)
     {
-        var result = await _checkDisplayNameQueryHandler.Handle(
-            new CheckDisplayNameQuery(value), CancellationToken.None);
+        var result = (await _checkDisplayNameQueryHandler.Handle(
+            new CheckDisplayNameQuery(value), CancellationToken.None)).Value;
 
         result.ShouldBeTrue();
         await _ownerRepository.DidNotReceive().IsDisplayNameAvailableAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());

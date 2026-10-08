@@ -467,7 +467,7 @@ When user feedback indicates the 8-hour timeout is disruptive, or before the app
 **Status:** Core migration complete (branch `enhancement/code-refactor`) — error handling moved from exceptions to `Result<T, Error>` (CSharpFunctionalExtensions) across all fallible handlers. The items below were deliberately deferred.
 
 ### Context (done)
-All fallible handlers return `Result<T, Error>`; a closed `Error` DU lives in `Barkfest.Domain/Errors`; `DomainResult.Try` bridges the still-throwing domain (Depth A); `ResultExtensions` translates results to HTTP; `ValidationBehavior` is dual-mode; `ExceptionHandlingMiddleware` is now a backstop. See CLAUDE.md → **Error Handling**. Infallible queries (`CheckUsernameQuery`, `CheckDisplayNameQuery`, Browse) intentionally stay plain (don't wrap what can't fail).
+All fallible handlers return `Result<T, Error>`; a closed `Error` DU lives in `Barkfest.Domain/Errors`; `DomainResult.Try` bridges the still-throwing domain (Depth A); `ResultExtensions` translates results to HTTP; `ValidationBehavior` turns validation failures into `Result` failures; `ExceptionHandlingMiddleware` is now a backstop. See CLAUDE.md → **Error Handling**. The last plain-return queries (`CheckUsernameQuery`, `CheckDisplayNameQuery`, Browse) were moved to `Result` too, and the legacy `ValidationException` branch was removed.
 
 ### Deferred follow-ups
 

@@ -26,10 +26,15 @@ internal static class ResultFailureFactory
 
     /// <summary>
     /// Returns <c>Result&lt;TValue, Error&gt;.Failure(error)</c> boxed as <c>TResponse</c>.
-    /// Call only when <see cref="IsResult{TResponse}"/> is true.
+    /// Throws <see cref="InvalidOperationException"/> when <c>TResponse</c> is not a
+    /// <c>Result&lt;TValue, Error&gt;</c> - every MediatR request must return one.
     /// </summary>
     public static TResponse Create<TResponse>(Error error)
     {
+        if (!IsResult<TResponse>())
+            throw new InvalidOperationException(
+                $"Request response type '{typeof(TResponse).Name}' must be Result<T, Error> to carry a validation failure.");
+
         var factory = Cache.GetOrAdd(typeof(TResponse), BuildFactory);
         return (TResponse)factory(error);
     }
