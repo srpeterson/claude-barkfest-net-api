@@ -14,8 +14,8 @@ public class GetBrowseBreedsQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsDog_Returns_DogBreeds()
     {
-        var result = await _getBrowseBreedsQueryHandler.Handle(
-            new GetBrowseBreedsQuery(PetType.Dog.Value), CancellationToken.None);
+        var result = (await _getBrowseBreedsQueryHandler.Handle(
+            new GetBrowseBreedsQuery(PetType.Dog.Value), CancellationToken.None)).Value;
 
         result.ShouldNotBeEmpty();
         result.ShouldContain(b => b.Name == "Beagle");
@@ -26,8 +26,8 @@ public class GetBrowseBreedsQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsDog_DoesNotReturn_CatBreeds()
     {
-        var result = await _getBrowseBreedsQueryHandler.Handle(
-            new GetBrowseBreedsQuery(PetType.Dog.Value), CancellationToken.None);
+        var result = (await _getBrowseBreedsQueryHandler.Handle(
+            new GetBrowseBreedsQuery(PetType.Dog.Value), CancellationToken.None)).Value;
 
         result.ShouldNotContain(b => b.Name == "Siamese");
         result.ShouldNotContain(b => b.Name == "Maine Coon");
@@ -40,8 +40,8 @@ public class GetBrowseBreedsQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsCat_Returns_CatBreeds()
     {
-        var result = await _getBrowseBreedsQueryHandler.Handle(
-            new GetBrowseBreedsQuery(PetType.Cat.Value), CancellationToken.None);
+        var result = (await _getBrowseBreedsQueryHandler.Handle(
+            new GetBrowseBreedsQuery(PetType.Cat.Value), CancellationToken.None)).Value;
 
         result.ShouldNotBeEmpty();
         result.ShouldContain(b => b.Name == "Siamese");
@@ -52,8 +52,8 @@ public class GetBrowseBreedsQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsCat_DoesNotReturn_DogBreeds()
     {
-        var result = await _getBrowseBreedsQueryHandler.Handle(
-            new GetBrowseBreedsQuery(PetType.Cat.Value), CancellationToken.None);
+        var result = (await _getBrowseBreedsQueryHandler.Handle(
+            new GetBrowseBreedsQuery(PetType.Cat.Value), CancellationToken.None)).Value;
 
         result.ShouldNotContain(b => b.Name == "Beagle");
         result.ShouldNotContain(b => b.Name == "Labrador Retriever");
@@ -66,8 +66,8 @@ public class GetBrowseBreedsQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsUnrecognised_Returns_EmptyList()
     {
-        var result = await _getBrowseBreedsQueryHandler.Handle(
-            new GetBrowseBreedsQuery(99), CancellationToken.None);
+        var result = (await _getBrowseBreedsQueryHandler.Handle(
+            new GetBrowseBreedsQuery(99), CancellationToken.None)).Value;
 
         result.ShouldBeEmpty();
     }
@@ -75,8 +75,8 @@ public class GetBrowseBreedsQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsZero_Returns_EmptyList()
     {
-        var result = await _getBrowseBreedsQueryHandler.Handle(
-            new GetBrowseBreedsQuery(0), CancellationToken.None);
+        var result = (await _getBrowseBreedsQueryHandler.Handle(
+            new GetBrowseBreedsQuery(0), CancellationToken.None)).Value;
 
         result.ShouldBeEmpty();
     }

@@ -1,3 +1,4 @@
+using Barkfest.API.Extensions;
 using Barkfest.Application.Features.Browse.Queries;
 using Barkfest.Application.Features.Browse.Queries.GetBrowseBreeds;
 using Barkfest.Application.Features.Browse.Queries.GetBrowsePetTypes;
@@ -22,14 +23,14 @@ public class BrowseController(IMediator mediator) : ControllerBase
     {
         var result = await mediator.Send(
             new GetBrowseImagesQuery(petTypeValue, breedValue, page, pageSize), cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("pet-types")]
     public async Task<IActionResult> GetPetTypes(CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetBrowsePetTypesQuery(), cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 
     [HttpGet("breeds")]
@@ -38,6 +39,6 @@ public class BrowseController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetBrowseBreedsQuery(petTypeValue), cancellationToken);
-        return Ok(result);
+        return result.ToActionResult();
     }
 }

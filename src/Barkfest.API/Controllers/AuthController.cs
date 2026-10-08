@@ -39,15 +39,15 @@ public class AuthController(IMediator mediator) : ControllerBase
     [HttpGet("check-display-name")]
     public async Task<IActionResult> CheckDisplayName([FromQuery] string value, CancellationToken cancellationToken)
     {
-        var available = await mediator.Send(new CheckDisplayNameQuery(value), cancellationToken);
-        return Ok(new { available });
+        var result = await mediator.Send(new CheckDisplayNameQuery(value), cancellationToken);
+        return result.ToActionResult(available => Ok(new { available }));
     }
 
     [HttpGet("check-username")]
     public async Task<IActionResult> CheckUsername([FromQuery] string value, CancellationToken cancellationToken)
     {
-        var available = await mediator.Send(new CheckUsernameQuery(value), cancellationToken);
-        return Ok(new { available });
+        var result = await mediator.Send(new CheckUsernameQuery(value), cancellationToken);
+        return result.ToActionResult(available => Ok(new { available }));
     }
 
     [HttpPost("logout")]

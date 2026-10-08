@@ -23,8 +23,8 @@ public class CheckUsernameQueryHandlerTests
     {
         _ownerRepository.IsUsernameAvailableAsync("johndoe", CancellationToken.None).Returns(true);
 
-        var result = await _checkUsernameQueryHandler.Handle(
-            new CheckUsernameQuery("johndoe"), CancellationToken.None);
+        var result = (await _checkUsernameQueryHandler.Handle(
+            new CheckUsernameQuery("johndoe"), CancellationToken.None)).Value;
 
         result.ShouldBeTrue();
     }
@@ -34,8 +34,8 @@ public class CheckUsernameQueryHandlerTests
     {
         _ownerRepository.IsUsernameAvailableAsync("johndoe", CancellationToken.None).Returns(false);
 
-        var result = await _checkUsernameQueryHandler.Handle(
-            new CheckUsernameQuery("johndoe"), CancellationToken.None);
+        var result = (await _checkUsernameQueryHandler.Handle(
+            new CheckUsernameQuery("johndoe"), CancellationToken.None)).Value;
 
         result.ShouldBeFalse();
     }
@@ -68,8 +68,8 @@ public class CheckUsernameQueryHandlerTests
     [InlineData("   ")]
     public async Task Handle_When_ValueIsEmptyOrWhitespace_Returns_True_WithoutQueryingRepository(string value)
     {
-        var result = await _checkUsernameQueryHandler.Handle(
-            new CheckUsernameQuery(value), CancellationToken.None);
+        var result = (await _checkUsernameQueryHandler.Handle(
+            new CheckUsernameQuery(value), CancellationToken.None)).Value;
 
         result.ShouldBeTrue();
         await _ownerRepository.DidNotReceive().IsUsernameAvailableAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());

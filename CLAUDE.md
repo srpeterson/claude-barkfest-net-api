@@ -241,14 +241,13 @@ public static class OwnerMappings
 - Commands and queries implement `IRequest<TResponse>`
 - Handlers implement `IRequestHandler<TRequest, TResponse>`
 - Pipeline behaviours: `ValidationBehavior` (runs first), `LoggingBehavior`
-- **Fallible handlers return `Result<T, Error>`** (CSharpFunctionalExtensions) - see Error Handling.
+- **Every handler returns `Result<T, Error>`** (CSharpFunctionalExtensions) - see Error Handling.
   A command that creates a resource returns `IRequest<Result<Guid, Error>>`; a command with no
   payload returns `IRequest<Result<Unit, Error>>` (MediatR's `Unit`); a query returns
   `IRequest<Result<TDto, Error>>`.
-- **Infallible queries stay plain** - a query that cannot fail (no not-found / forbidden / validation
-  path; invalid input yields an empty result) returns its value directly, not `Result`. Examples:
-  `CheckUsernameQuery`, `CheckDisplayNameQuery`, and the Browse queries. Don't wrap
-  what can't fail.
+- **Queries that cannot fail still return `Result`** - `CheckUsernameQuery`, `CheckDisplayNameQuery` and the
+  Browse queries return `Result<T, Error>` and simply always succeed (invalid input yields an empty
+  or default result). A uniform response type is what lets `ValidationBehavior` drop its legacy branch.
 - **The handler class is always defined in the same file as its command or query - never in a separate `*CommandHandler.cs` or `*QueryHandler.cs` file.** The record and its handler live together in `CreatePetCommand.cs`, `LoginCommand.cs`, etc.
 
 ---
@@ -258,12 +257,10 @@ public static class OwnerMappings
 **No manual validation in handlers.** All validation uses FluentValidation
 `AbstractValidator<T>` and is executed automatically by `ValidationBehavior`.
 
-`ValidationBehavior` is **dual-mode**: when the request's `TResponse` is a `Result<T, Error>`, a
-validation failure short-circuits into a failed `Result` carrying a `ValidationError` (built via the
-cached-reflection `ResultFailureFactory`), so validation flows through the railway. For any
-non-`Result` request it falls back to throwing `ValidationException` (handled by middleware). The
-fallback exists only for the infallible plain-return queries; it would be removed if those ever
-adopted `Result`.
+`ValidationBehavior` requires every request to return `Result<T, Error>`: a validation failure
+short-circuits into a failed `Result` carrying a `ValidationError` (built via the cached-reflection
+`ResultFailureFactory`), so validation flows through the railway. A non-`Result` response type throws
+`InvalidOperationException` - there is no `ValidationException` path.
 
 ```csharp
 public class CreatePetCommandValidator : AbstractValidator<CreatePetCommand>
@@ -505,7 +502,7 @@ so `Domain` stays dependency-free. The cases mirror the old middleware mapping 1
   `result.ToNoContentResult()` (204). Failures map by `Error` case to the same `ProblemDetails`
   responses as before. The mapping has a `_ => throw` arm guarded by an exhaustiveness test.
 - **`ExceptionHandlingMiddleware`** is now a **backstop only**: `DomainException` (escape past the
-  bridge), `ValidationException` (the behavior's legacy non-`Result` path), and unhandled → 500.
+  bridge) and unhandled → 500.
 
 Never add try/catch blocks in handlers or controllers to handle *expected* failures - return a
 `Result` failure, and let `DomainResult.Try` / the middleware own the exception edges. The sole

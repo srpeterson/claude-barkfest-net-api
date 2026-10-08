@@ -9,8 +9,8 @@ public class GetBrowsePetTypesQueryHandlerTests
     [Fact]
     public async Task Handle_When_Called_Returns_AllPetTypes()
     {
-        var result = await _getBrowsePetTypesQueryHandler.Handle(
-            new GetBrowsePetTypesQuery(), CancellationToken.None);
+        var result = (await _getBrowsePetTypesQueryHandler.Handle(
+            new GetBrowsePetTypesQuery(), CancellationToken.None)).Value;
 
         result.ShouldNotBeEmpty();
         result.ShouldContain(pt => pt.Name == "Dog" && pt.Value == 1);
@@ -20,8 +20,8 @@ public class GetBrowsePetTypesQueryHandlerTests
     [Fact]
     public async Task Handle_When_Called_Returns_NoDuplicates()
     {
-        var result = await _getBrowsePetTypesQueryHandler.Handle(
-            new GetBrowsePetTypesQuery(), CancellationToken.None);
+        var result = (await _getBrowsePetTypesQueryHandler.Handle(
+            new GetBrowsePetTypesQuery(), CancellationToken.None)).Value;
 
         result.Count.ShouldBe(result.Select(pt => pt.Value).Distinct().Count());
     }
@@ -29,8 +29,8 @@ public class GetBrowsePetTypesQueryHandlerTests
     [Fact]
     public async Task Handle_When_Called_Returns_PetTypes_OrderedByValue()
     {
-        var result = await _getBrowsePetTypesQueryHandler.Handle(
-            new GetBrowsePetTypesQuery(), CancellationToken.None);
+        var result = (await _getBrowsePetTypesQueryHandler.Handle(
+            new GetBrowsePetTypesQuery(), CancellationToken.None)).Value;
 
         // Dog = 1, Cat = 2 — Dog should come first
         result[0].Name.ShouldBe("Dog");

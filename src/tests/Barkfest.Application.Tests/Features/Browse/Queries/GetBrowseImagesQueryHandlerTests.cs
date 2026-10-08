@@ -40,8 +40,8 @@ public class GetBrowseImagesQueryHandlerTests
             .GetBrowseImagesAsync(null, null, DefaultPage, DefaultPageSize, CancellationToken.None)
             .Returns(pagedResult);
 
-        var result = await _getBrowseImagesQueryHandler.Handle(
-            new GetBrowseImagesQuery(null, null, DefaultPage, DefaultPageSize), CancellationToken.None);
+        var result = (await _getBrowseImagesQueryHandler.Handle(
+            new GetBrowseImagesQuery(null, null, DefaultPage, DefaultPageSize), CancellationToken.None)).Value;
 
         result.Items.Count.ShouldBe(2);
         result.TotalCount.ShouldBe(2);
@@ -75,8 +75,8 @@ public class GetBrowseImagesQueryHandlerTests
     [Fact]
     public async Task Handle_When_PetTypeValueIsUnrecognised_Returns_EmptyPagedResult_WithoutCallingRepository()
     {
-        var result = await _getBrowseImagesQueryHandler.Handle(
-            new GetBrowseImagesQuery(99, null, DefaultPage, DefaultPageSize), CancellationToken.None);
+        var result = (await _getBrowseImagesQueryHandler.Handle(
+            new GetBrowseImagesQuery(99, null, DefaultPage, DefaultPageSize), CancellationToken.None)).Value;
 
         result.Items.ShouldBeEmpty();
         result.TotalCount.ShouldBe(0);
