@@ -561,7 +561,7 @@ or connect directly to the database. A password-protected Scalar avoids both.
 
 **Priority:** Low
 
-**Status:** Blocked — pinned to latest 2.x (2.12.2)
+**Status:** Blocked — pinned to 2.x (2.13.0, the floor `Microsoft.AspNetCore.OpenApi` 10.0.15 requires)
 
 ### What
 Upgrade `Microsoft.OpenApi` from 2.x to 3.x once `Microsoft.AspNetCore.OpenApi`
@@ -590,13 +590,17 @@ Reconfirmed still blocked, and bumped within the 2.x line (2.11.0 → 2.12.2), a
 of the NuGet dependency update in [#31](https://github.com/srpeterson/claude-barkfest-net-api/pull/31)
 — that PR also fixed a high-severity transitive SSH.NET CVE via a `Testcontainers` bump.
 
+Still blocked, and bumped within the 2.x line (2.12.2 → 2.13.0) during the vulnerable-package
+fix below: `Microsoft.AspNetCore.OpenApi` 10.0.15's nuspec now declares
+`Microsoft.OpenApi [2.13.0, 3.0.0)`, so 2.12.2 no longer restores.
+
 ---
 
 ## Upgrade MessagePack to 3.x
 
 **Priority:** Low
 
-**Status:** Blocked — pinned to latest 2.x (2.5.302)
+**Status:** Blocked — pinned to 2.x (2.5.307)
 
 ### What
 Upgrade `MessagePack` (referenced directly in `Barkfest.AppHost.csproj`) from
@@ -625,6 +629,44 @@ Reconfirmed still blocked as of `Aspire.Hosting.SqlServer` 13.5.3 — its nuspec
 still declares `StreamJsonRpc 2.25.29`, unchanged from when this was first pinned.
 Checked as part of the same NuGet update in [#31](https://github.com/srpeterson/claude-barkfest-net-api/pull/31)
 that bumped `Aspire.Hosting.SqlServer` itself to 13.5.3.
+
+Reconfirmed still blocked as of `Aspire.Hosting.SqlServer` 13.6.5 — its nuspec still
+declares `StreamJsonRpc 2.25.29` (which itself still floors `MessagePack` at 2.5.302).
+Bumped within 2.x (2.5.302 → 2.5.307) in the vulnerable-package fix below: 2.5.302 is
+affected by GHSA-qhrr-8q5h-9q3h (fixed in 2.5.303 / 3.1.9), and 13.6.5's
+`Aspire.Hosting.SqlServer` now requires `MessagePack >= 2.5.307` anyway.
+
+---
+
+## Vulnerable Package Fixes and Transitive Pin Cleanup
+
+**Priority:** Low
+
+**Status:** Fixed — follow-up cleanup pending
+
+### What
+Fixed five NuGet advisories flagged by Visual Studio / `dotnet list package --vulnerable
+--include-transitive`:
+
+| Package | Advisory | Fix |
+|---|---|---|
+| `Aspire.Dashboard.Sdk.win-x64` 13.5.3 (critical) | GHSA-4g86-54fm-h9h8 | Aspire 13.6.5 |
+| `Aspire.Hosting` / `Aspire.Hosting.AppHost` 13.5.3 (high) | GHSA-f7vh-h5g3-7jrh | Aspire 13.6.5 |
+| `System.Security.Cryptography.Pkcs` 10.0.11 (high + moderate, transitive via `Microsoft.Data.SqlClient`) | GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7 | Pinned to 10.0.15 (fixed in 10.0.13) |
+| `MessagePack` 2.5.302 (moderate) | GHSA-qhrr-8q5h-9q3h | 2.5.307 (stays on 2.x) |
+
+Aspire 13.6.5 required the `10.0.x` Microsoft packages (EF Core, `Logging.Abstractions`,
+ASP.NET Core) to move from 10.0.12 to 10.0.15 and `Microsoft.OpenApi` to 2.13.0.
+`ASPIRE010` (`AspireUseCliBundle=false`) is suppressed in `Barkfest.AppHost.csproj`
+with an explanatory comment.
+
+### Still to do
+The `System.Security.Cryptography.Pkcs` pin uses `CentralPackageTransitivePinningEnabled`
+in `Directory.Packages.props` (plus a direct reference in `Barkfest.AppHost.csproj`, which
+opts out of central management). Once `Microsoft.Data.SqlClient` / EF Core SqlServer resolve
+Pkcs >= 10.0.13 on their own, remove the `PackageVersion`, the AppHost reference, and the
+transitive-pinning flag if nothing else needs it, then re-run
+`dotnet list package --vulnerable --include-transitive` to confirm it stays clean.
 
 ---
 
