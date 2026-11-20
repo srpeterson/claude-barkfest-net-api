@@ -460,6 +460,12 @@ Format: `{Verb}{Subject}` in PascalCase. For compound changes use `And`.
 
 **No Swagger/Swashbuckle.** Use Scalar.
 
+**Why:** .NET 10 generates the OpenAPI spec itself via `AddOpenApi()`, so Swashbuckle is no
+longer needed for the spec. That leaves only the UI layer, and Scalar's UI is significantly
+better than Swagger UI (see DECISIONS.md - "Scalar instead of Swagger/Swashbuckle"). Scalar
+only renders the spec, so it is a drop-in replacement for the UI with no custom Swashbuckle
+filters or schema generators to carry over.
+
 ```csharp
 builder.Services.AddOpenApi();          // built-in .NET 10 OpenAPI spec generation
 app.MapOpenApi();                       // serves /openapi/v1.json
