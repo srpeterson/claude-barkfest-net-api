@@ -1,7 +1,19 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+  <!--
+    Transitive security pin. System.Security.Cryptography.Pkcs arrives only via
+    Microsoft.Data.SqlClient (EF Core SqlServer) and 10.0.11 has two DoS advisories
+    (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7), fixed in 10.0.13. Transitive pinning
+    forces this version across all centrally-managed projects. Remove once SqlClient /
+    EF Core resolve to >= 10.0.13 on their own. AppHost opts out of central management,
+    so it carries its own direct reference.
+  -->
+  <ItemGroup>
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.15" />
+  </ItemGroup>
   <!-- Application -->
   <ItemGroup>
     <PackageVersion Include="Ardalis.SmartEnum" Version="8.2.0" />
@@ -10,15 +22,15 @@
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="MediatR" Version="14.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
   </ItemGroup>
   <!-- Infrastructure -->
   <ItemGroup>
     <PackageVersion Include="Azure.ResourceManager" Version="1.14.0" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.2" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.6.5" />
   </ItemGroup>
   <!--
     Persistence / EF Core
@@ -32,10 +44,10 @@
     stays on the same version and is updated together.
   -->
   <ItemGroup>
-    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.5.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12" />
+    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.6.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.15" />
   </ItemGroup>
   <!--
     API
@@ -46,15 +58,15 @@
     that explicitly declares compatibility with Microsoft.OpenApi 3.x.
   -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.12.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.17.3" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
   </ItemGroup>
   <!-- Testing -->
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />

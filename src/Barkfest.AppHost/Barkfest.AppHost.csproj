@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.5.3">
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,12 +7,20 @@
     <Nullable>enable</Nullable>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <UserSecretsId>d33f7c7c-6286-410c-a3dc-1393eb108232</UserSecretsId>
+    <!--
+      ASPIRE010 (introduced with Aspire 13.6.x) warns that AspireUseCliBundle=false disables
+      some features that need the Aspire CLI bundle. Barkfest runs the AppHost only via
+      "dotnet run" on this project and uses none of those features, so the warning is
+      noise. Suppressed deliberately rather than enabling the bundle. Revisit if we adopt
+      the Aspire CLI (aspire run / aspire publish).
+    -->
+    <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.5.3" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.6.5" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.6.5" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.6.5" />
     <PackageReference Include="Azure.ResourceManager" Version="1.14.0" />
     <!--
       DO NOT upgrade MessagePack to 3.x. Not used directly by Barkfest code - it's a
@@ -24,7 +32,9 @@
       compatibility is not guaranteed at runtime even though the build succeeds. See
       ROADMAP.md "Upgrade MessagePack to 3.x" for the full writeup and revisit criteria.
     -->
-    <PackageReference Include="MessagePack" Version="2.5.302" />
+    <PackageReference Include="MessagePack" Version="2.5.307" />
+    <!-- Transitive security pin (see Directory.Packages.props): >= 10.0.13 fixes two DoS advisories. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.15" />
   </ItemGroup>
 
   <ItemGroup>
